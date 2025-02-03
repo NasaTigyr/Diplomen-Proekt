@@ -1,0 +1,78 @@
+Базата данни се намира на /var/lib/mysql/
+-- Създаване на база данни
+CREATE DATABASE competition_platform;
+
+-- Избор на базата данни
+USE competition_platform;
+
+-- Таблица за потребителите (обща за всички потребители)
+CREATE TABLE Users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('athlete', 'coach', 'admin') NOT NULL, -- Роля на потребителя
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица за организации (федерации, отбори и треньори)
+CREATE TABLE Organizations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    type ENUM('federation', 'team', 'coach') NOT NULL, -- Тип на организацията
+    country VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица за състезатели
+CREATE TABLE Athletes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    team_id INT,  -- Свързване със съответния отбор
+    organization_id INT,  -- Свързване с федерация или треньор
+    registration_code VARCHAR(255) UNIQUE NOT NULL, -- Уникален код за състезателя
+    profile_picture VARCHAR(255),  -- Път до снимката
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id),
+    FOREIGN KEY (team_id) REFERENCES Teams(id),
+    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+);
+
+-- Таблица за отборите
+CREATE TABLE Teams (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    organization_id INT NOT NULL,  -- Външен ключ към федерацията
+    name VARCHAR(255) NOT NULL,  -- Име на отбора
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+);
+
+-- Таблица за треньорите
+CREATE TABLE Coaches (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,  -- Външен ключ към таблицата Users
+    organization_id INT NOT NULL,  -- Външен ключ към таблицата Organizations
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES Users(id),
+    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+);
+
+-- Таблица за събития
+CREATE TABLE Events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,  -- Име на събитието
+    date DATE NOT NULL,  -- Дата на събитието
+    description TEXT,  -- Описание на събитието
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица за регистрациите на състезатели за събития
+CREATE TABLE EventRegistrations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id INT NOT NULL,
+    athlete_id INT NOT NULL,
+    category VARCHAR(255),  -- Категория на състезателя
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (event_id) REFERENCES Events(id),
+    FOREIGN KEY (athlete_id) REFERENCES Athletes(id)
+);
+
