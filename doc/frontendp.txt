@@ -1,0 +1,35 @@
+Let's break down what you need for each page:
+1. Home Page:
+
+    Navbar with links to login, registration, events, etc.
+    Option to either login/register or browse events as a guest.
+
+2. Login/Registration Page:
+
+    Login Form: Fields for username and password.
+    Registration Form: Fields for name, email, password, and role selection (e.g., athlete, coach, referee).
+    Include validation for form input (e.g., check if email format is correct, passwords match, etc.).
+
+3. Event Page:
+
+    List of all available events.
+    Option to register for events (either individually or as part of a team, depending on the user type).
+
+4. Dashboard (after login):
+
+    Display the current user's information (name, role, etc.).
+    If a coach or athlete, show the events they are registered for.
+    If a coach, allow them to register athletes for events.
+
+5. Event Management (for Coaches):
+
+    Coaches should have a page where they can create events, categories, and register their athletes.
+    Create Event Form: Fields for event name, date, category, and other event-specific details.
+    Option to view a list of registered athletes for an event and generate a random draw.
+
+Frontend Technologies:
+
+    HTML: Structure of your website.
+    CSS/Bootstrap: For styling.
+    JavaScript: For interactivity, such as form validation, AJAX calls to backend, and handling UI updates.
+    AJAX/Fetch API: For interacting with the backend without page refresh.

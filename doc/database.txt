@@ -1,78 +1,71 @@
 Базата данни се намира на /var/lib/mysql/
--- Създаване на база данни
-CREATE DATABASE competition_platform;
 
--- Избор на базата данни
-USE competition_platform;
-
--- Таблица за потребителите (обща за всички потребители)
-CREATE TABLE Users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('athlete', 'coach', 'admin') NOT NULL, -- Роля на потребителя
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Таблица за състезанията
+CREATE TABLE events (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на събитието
+    name VARCHAR(255) NOT NULL,               -- Име на събитието
+    date DATE NOT NULL,                       -- Дата на събитието
+    created_by INT,                           -- Идентификатор на организатора
+    FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
--- Таблица за организации (федерации, отбори и треньори)
-CREATE TABLE Organizations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    type ENUM('federation', 'team', 'coach') NOT NULL, -- Тип на организацията
-    country VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Таблица за категориите (могат да бъдат мъжки, женски, и килограми)
+CREATE TABLE categories (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на категорията
+    event_id INT,                             -- Идентификатор на събитието, където принадлежи категорията
+    gender ENUM('male', 'female') NOT NULL,   -- Пол за категорията
+    weight_category VARCHAR(100),             -- Категория по килограми
+    FOREIGN KEY (event_id) REFERENCES events(id)
 );
 
--- Таблица за състезатели
-CREATE TABLE Athletes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    team_id INT,  -- Свързване със съответния отбор
-    organization_id INT,  -- Свързване с федерация или треньор
-    registration_code VARCHAR(255) UNIQUE NOT NULL, -- Уникален код за състезателя
-    profile_picture VARCHAR(255),  -- Път до снимката
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES Users(id),
-    FOREIGN KEY (team_id) REFERENCES Teams(id),
-    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+-- Таблица за състезателите
+CREATE TABLE participants (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на състезателя
+    name VARCHAR(255) NOT NULL,               -- Име на състезателя
+    category_id INT,                          -- Идентификатор на категорията
+    profile_picture VARCHAR(255),             -- Път до профилната снимка
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+-- Таблица за федерациите
+CREATE TABLE federations (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на федерацията
+    name VARCHAR(255) NOT NULL,               -- Име на федерацията
+    country VARCHAR(100) NOT NULL             -- Страна на федерацията
 );
 
 -- Таблица за отборите
-CREATE TABLE Teams (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    organization_id INT NOT NULL,  -- Външен ключ към федерацията
-    name VARCHAR(255) NOT NULL,  -- Име на отбора
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+CREATE TABLE teams (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на отбора
+    name VARCHAR(255) NOT NULL,               -- Име на отбора
+    federation_id INT,                        -- Идентификатор на федерацията, на която принадлежи
+    FOREIGN KEY (federation_id) REFERENCES federations(id)
 );
 
 -- Таблица за треньорите
-CREATE TABLE Coaches (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,  -- Външен ключ към таблицата Users
-    organization_id INT NOT NULL,  -- Външен ключ към таблицата Organizations
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES Users(id),
-    FOREIGN KEY (organization_id) REFERENCES Organizations(id)
+CREATE TABLE coaches (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на треньора
+    user_id INT,                              -- Идентификатор на потребителя, който е треньор
+    team_id INT,                              -- Идентификатор на отбора
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
--- Таблица за събития
-CREATE TABLE Events (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,  -- Име на събитието
-    date DATE NOT NULL,  -- Дата на събитието
-    description TEXT,  -- Описание на събитието
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Таблица за записване на състезатели в отборите (могат да се записват както индивидуално, така и чрез треньора)
+CREATE TABLE team_participants (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на записа
+    participant_id INT,                       -- Идентификатор на състезателя
+    team_id INT,                              -- Идентификатор на отбора
+    FOREIGN KEY (participant_id) REFERENCES participants(id),
+    FOREIGN KEY (team_id) REFERENCES teams(id)
 );
 
--- Таблица за регистрациите на състезатели за събития
-CREATE TABLE EventRegistrations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    event_id INT NOT NULL,
-    athlete_id INT NOT NULL,
-    category VARCHAR(255),  -- Категория на състезателя
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (event_id) REFERENCES Events(id),
-    FOREIGN KEY (athlete_id) REFERENCES Athletes(id)
+-- Таблица за жребия
+CREATE TABLE draw (
+    id INT PRIMARY KEY AUTO_INCREMENT,        -- Уникален идентификатор на жребия
+    category_id INT,                          -- Идентификатор на категорията
+    participant_id INT,                       -- Идентификатор на състезателя
+    draw_position INT,                        -- Позиция в жребия
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (participant_id) REFERENCES participants(id)
 );
-
