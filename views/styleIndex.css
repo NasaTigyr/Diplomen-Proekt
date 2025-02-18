@@ -1,0 +1,40 @@
+/* Set background image for entire page */
+html, body {
+    display: flex; 
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Keeps the background fixed when scrolling */
+    flex-direction: column;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Full viewport height */
+}
+
+.custom-background {
+    background-size: cover;
+    padding: 50px 0; /* Adjust padding to make it look good */
+}
+
+.custom-background .content {
+    max-width: 800px;
+    margin: auto;
+    background: rgba(255, 255, 255, 0.8); /* Light background for readability */
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.main-content {
+  flex:1;
+  background: url('giakucuki.jpg') no-repeat center center;
+}
+
+  footer {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 10px;
+    text-align: center;
+}
