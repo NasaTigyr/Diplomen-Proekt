@@ -1,0 +1,8 @@
+        200 means everything worked fine (like a successful login).
+        201 means something was created (like a new user).
+        400 means there was a bad request (like missing data).
+        500 means there was a server error.
+        404 means the requested resource wasn’t found (like a non-existing user).
+        401 means unauthorized (wrong password).
+
+
