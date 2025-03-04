@@ -7,6 +7,9 @@ const port = 3000;
 
 app.use(express.json()); 
 
+app.use(express.urlencoded({ extended: true })); // Middleware to parse form data
+app.use(express.json()); // Middleware to parse JSON data
+
 // this shit worked!!!
 const db = mysql.createConnection({
   host: '127.0.0.1', // database host
@@ -44,6 +47,12 @@ app.get('/events', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'events.html'));
 });
 
+//Post, retrive the fukni data
+app.post('/register', (req, res) => {
+  const {name, passsword} = req.body;
+  console.log(req.body); 
+
+});
 
 // Start the server
 app.listen(port, () => {
