@@ -16,7 +16,21 @@ app.use(session({
   cookie: { secure: false } // Set to true if using HTTPS
 }));
 
-const db = require('./db'); 
+// Database connection
+const db = mysql.createConnection({
+  host: '127.0.0.1', // database host
+  user: 'serverUser', // database user
+  password: 'password', // database password (if any)
+  database: 'test', // your database name
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('Database connection failed:', err.stack);
+    return;
+  }
+  console.log('Connected to the database.');
+});
 
 app.use(express.static(path.join(__dirname, 'public'))); 
 
@@ -28,7 +42,7 @@ app.get('/', (req, res) => {
   } else {
     console.log('you are not in');
   }
-  res.render(path.join(__dirname, 'views', 'index.ejs'));
+  res.sendFile(path.join(__dirname, 'views', 'index.ejs'));
 });
 
 app.get('/login', (req, res) => {
@@ -46,10 +60,37 @@ app.get('/events', (req, res) => {
   // Check if user is logged in
   if (req.session.user) {
     console.log('you are in');
+    res.render('events', {user: req.session.user});
   } else {
     console.log('you are not in');
+    res.redirect('/login'); // Redirect to login if not authenticated
   }
-    res.render('events', {user: req.session.user});
+});
+
+// Protected dashboard route
+app.get('/dashboard', (req, res) => {
+  if (req.session.user) {
+    console.log('you are in');
+    res.send(`
+      <h1>Welcome ${req.session.user.name}!</h1>
+      <p>You are logged in.</p>
+      <a href="/logout">Logout</a>
+      <a href="/events">Go to Events</a>
+    `);
+  } else {
+    console.log('you are not in');
+    res.redirect('/login');
+  }
+});
+
+// Logout route
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
+    res.redirect('/');
+  });
 });
 
 // Registration route
@@ -121,7 +162,7 @@ app.post('/login', async (req, res) => {
         //redirectTo: '/dashboard' // Front-end can use this for redirection
       //});
       
-      res.render('events'); 
+      res.redirect('/events'); 
 
     } catch (error) {
       console.error(error);
