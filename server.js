@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs'); // da cryptira
 const app = express(); 
 const port = 3000; 
 
+const authController = require('./controllers/authController');
+
 // Middleware setup
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true })); // Middleware to parse form data
@@ -53,82 +55,12 @@ app.get('/events', (req, res) => {
 });
 
 // Registration route
-app.post('/register', async (req, res) => {
-  const {name, password} = req.body;
-  console.log(req.body); 
-  
-  if(!name || !password) { 
-    return res.status(400).send('all fields are required');
-  }
-  
-  try {
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    // Insert user into database
-    const query = "INSERT INTO users (name, password) VALUES (?, ?)";
-    db.query(query, [name, hashedPassword], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: 'Database error or user already exists' });
-      }
-      res.json({ message: 'User registered successfully', userId: result.insertId });
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+app.post('/register', authController.register);
+
+
 
 // Login route - FIXED
-app.post('/login', async (req, res) => {
-  const {name, password} = req.body;
-  console.log(req.body); 
-  
-  if(!name || !password) {
-    return res.status(400).send('All fields are required');
-  }
-  
-  const query = "SELECT * FROM users WHERE name = ?";
-  db.query(query, [name], async (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Database error' });
-    }
-    
-    // If no user is found
-    if (results.length === 0) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-    
-    // Extract user data
-    const user = results[0];
-    
-    // Compare hashed password
-    try {
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      
-      if (!passwordMatch) {
-        return res.status(401).json({ message: 'Invalid password' });
-      }
-      
-      // Store user in session BEFORE sending response
-      req.session.user = { id: user.id, name: user.name };
-      
-      // Send success response AFTER setting session
-      //res.json({ 
-        //message: 'Login successful', 
-        //user: { id: user.id, name: user.name },
-        //redirectTo: '/dashboard' // Front-end can use this for redirection
-      //});
-      
-      res.render('events'); 
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Error verifying password' });
-    }
-  });
-});
+app.post('/login', authController.login);
 
 // Start the server
 app.listen(port, () => {

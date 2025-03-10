@@ -22,15 +22,21 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/">Home</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/login">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/register">Register</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/events">Events</a>
-                    </li>
+                    <% if(user) { %>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/profile">Profile</a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/logout">Login</a>
+                      </li>
+                    <% } else { %>
+                      <li class="nav-item">
+                          <a class="nav-link" href="/login">Login</a>
+                      </li>
+                      <li class="nav-item">
+                          <a class="nav-link active" href="/events">Events</a>
+                      </li>
+                    <% } %>
                 </ul>
             </div>
         </div>
