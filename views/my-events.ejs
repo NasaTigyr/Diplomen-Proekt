@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Events - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'my-events', user: user}); %>
+    
+    <div class="container my-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>My Events</h1>
+            <a href="/create-event" class="btn btn-primary">Create New Event</a>
+        </div>
+        
+        <div id="my-events-container">
+            <!-- Loading indicator -->
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="no-events-message" class="alert alert-info text-center mt-4 d-none">
+            You haven't created any events yet. Click the "Create New Event" button to get started.
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserEvents();
+        });
+        
+        function loadUserEvents() {
+            fetch('/api/events?creator=me')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load events');
+                    }
+                    return response.json();
+                })
+                .then(events => {
+                    const container = document.getElementById('my-events-container');
+                    const noEventsMessage = document.getElementById('no-events-message');
+                    
+                    container.innerHTML = '';
+                    
+                    if (events.length === 0) {
+                        noEventsMessage.classList.remove('d-none');
+                        return;
+                    }
+                    
+                    noEventsMessage.classList.add('d-none');
+                    
+                    // Group events by status (upcoming, ongoing, past)
+                    const now = new Date();
+                    
+                    const upcomingEvents = [];
+                    const ongoingEvents = [];
+                    const pastEvents = [];
+                    
+                    events.forEach(event => {
+                        const eventDate = event.event_date ? new Date(event.event_date) : null;
+                        const regOpenDate = new Date(event.registration_open_date);
+                        const regCloseDate = new Date(event.registration_close_date);
+                        
+                        if (eventDate && eventDate < now) {
+                            pastEvents.push(event);
+                        } else if (now >= regOpenDate && now <= regCloseDate) {
+                            ongoingEvents.push(event);
+                        } else {
+                            upcomingEvents.push(event);
+                        }
+                    });
+                    
+                    // Display events by group
+                    if (ongoingEvents.length > 0) {
+                        container.appendChild(createEventSection('Ongoing Events', ongoingEvents));
+                    }
+                    
+                    if (upcomingEvents.length > 0) {
+                        container.appendChild(createEventSection('Upcoming Events', upcomingEvents));
+                    }
+                    
+                    if (pastEvents.length > 0) {
+                        container.appendChild(createEventSection('Past Events', pastEvents));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const container = document.getElementById('my-events-container');
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            Failed to load your events. Please try again later.
+                        </div>
+                    `;
+                });
+        }
+        
+        function createEventSection(title, events) {
+            const section = document.createElement('div');
+            section.className = 'mb-5';
+            
+            const heading = document.createElement('h2');
+            heading.className = 'h4 mb-3';
+            heading.textContent = title;
+            
+            section.appendChild(heading);
+            
+            const row = document.createElement('div');
+            row.className = 'row';
+            
+            events.forEach(event => {
+                const eventDate = event.event_date 
+                    ? new Date(event.event_date).toLocaleDateString() 
+                    : 'Date TBD';
+                
+                const regOpenDate = new Date(event.registration_open_date).toLocaleDateString();
+                const regCloseDate = new Date(event.registration_close_date).toLocaleDateString();
+                
+                const col = document.createElement('div');
+                col.className = 'col-md-4 mb-4';
+                
+                col.innerHTML = `
+                    <div class="card h-100">
+                        <img src="${event.banner_url || '/images/default-event.jpg'}" class="card-img-top" alt="${event.title}">
+                        <div class="card-body">
+                            <h5 class="card-title">${event.title}</h5>
+                            <p class="card-text">${event.description ? (event.description.length > 100 ?

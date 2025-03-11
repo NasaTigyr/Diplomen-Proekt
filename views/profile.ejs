@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Profile - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'profile', user: user}); %>
+    
+    <div class="container my-5">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <h5 class="card-title"><%= user.full_name %></h5>
+                        <p class="card-text text-muted">@<%= user.username %></p>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item active" id="profile-tab">Profile Information</li>
+                        <li class="list-group-item" id="my-events-tab">My Events</li>
+                        <li class="list-group-item" id="my-registrations-tab">My Registrations</li>
+                        <li class="list-group-item" id="change-password-tab">Change Password</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="col-md-9">
+                <!-- Alert message container (hidden by default) -->
+                <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+                
+                <!-- Profile Information Section -->
+                <div id="profile-section" class="content-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Profile Information</h4>
+                            <button id="edit-profile-btn" class="btn btn-sm btn-outline-primary">Edit</button>
+                        </div>
+                        <div class="card-body">
+                            <form id="profile-form">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username" value="<%= user.username %>" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" value="<%= user.email %>" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" value="<%= user.full_name %>" disabled>
+                                </div>
+                                <div class="d-grid d-md-flex justify-content-md-end">
+                                    <button type="submit" id="save-profile-btn" class="btn btn-primary" disabled>Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- My Events Section -->
+                <div id="my-events-section" class="content-section d-none">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">My Events</h4>
+                            <a href="/create-event" class="btn btn-sm btn-primary">Create Event</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="my-events-container">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="no-events-message" class="alert alert-info text-center mt-4 d-none">
+                                You haven't created any events yet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- My Registrations Section -->
+                <div id="my-registrations-section" class="content-section d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">My Registrations</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="my-registrations-container">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="no-registrations-message" class="alert alert-info text-center mt-4 d-none">
+                                You haven't registered for any events yet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Change Password Section -->
+                <div id="change-password-section" class="content-section d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Change Password</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="password-form">
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" required>
+                                    <div class="form-text">Password must be at least 8 characters long.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Change Password</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab navigation
+            document.getElementById('profile-tab').addEventListener('click', showProfileSection);
+            document.getElementById('my-events-tab').addEventListener('click', showMyEventsSection);
+            document.getElementById('my-registrations-tab').addEventListener('click', showMyRegistrationsSection);
+            document.getElementById('change-password-tab').addEventListener('click', showChangePasswordSection);
+            
+            // Edit profile
+            document.getElementById('edit-profile-btn').addEventListener('click', toggleProfileEdit);
+            document.getElementById('profile-form').addEventListener('submit', updateProfile);
+            
+            // Password form
+            document.getElementById('password-form').addEventListener('submit', changePassword);
+            
+            // Load user events and registrations
+            loadUserEvents();
+            loadUserRegistrations();
+        });
+        
+        function showProfileSection() {
+            setActiveTab('profile-tab');
+            showSection('profile-section');
+        }
+        
+        function showMyEventsSection() {
+            setActiveTab('my-events-tab');
+            showSection('my-events-section');
+            loadUserEvents();
+        }
+        
+        function showMyRegistrationsSection() {
+            setActiveTab('my-registrations-tab');
+            showSection('my-registrations-section');
+            loadUserRegistrations();
+        }
+        
+        function showChangePasswordSection() {
+            setActiveTab('change-password-tab');
+            showSection('change-password-section');
+        }
+        
+        function setActiveTab(tabId) {
+            document.querySelectorAll('.list-group-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('d-none');
+            });
+            document.getElementById(sectionId).classList.remove('d-none');
+        }
+        
+        function toggleProfileEdit() {
+            const editButton = document.getElementById('edit-profile-btn');
+            const saveButton = document.getElementById('save-profile-btn');
+            const inputs = document.querySelectorAll('#profile-form input');
+            
+            const isEditing = editButton.textContent === 'Cancel';
+            
+            if (isEditing) {
+                // Cancel editing
+                editButton.textContent = 'Edit';
+                editButton.classList.remove('btn-outline-danger');
+                editButton.classList.add('btn-outline-primary');
+                saveButton.disabled = true;
+                
+                // Reset form values
+                document.getElementById('username').value = '<%= user.username %>';
+                document.getElementById('email').value = '<%= user.email %>';
+                document.getElementById('full_name').value = '<%= user.full_name %>';
+                
+                // Disable inputs
+                inputs.forEach(input => {
+                    input.disabled = true;
+                });
+            } else {
+                // Start editing
+                editButton.textContent = 'Cancel';
+                editButton.classList.remove('btn-outline-primary');
+                editButton.classList.add('btn-outline-danger');
+                saveButton.disabled = false;
+                
+                // Enable inputs (keep username disabled as it shouldn't change)
+                inputs.forEach(input => {
+                    if (input.id !== 'username') {
+                        input.disabled = false;
+                    }
+                });
+            }
+        }
+        
+        function updateProfile(e) {
+            e.preventDefault();
+            
+            const data = {
+                email: document.getElementById('email').value,
+                full_name: document.getElementById('full_name').value
+            };
+            
+            fetch('/api/user', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to update profile');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Profile updated successfully!', 'success');
+                toggleProfileEdit(); // Reset form to view mode
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function changePassword(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Validate passwords
+            if (newPassword !== confirmPassword) {
+                showAlert('New passwords do not match', 'danger');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                showAlert('Password must be at least 8 characters long', 'danger');
+                return;
+            }
+            
+            const data = {
+                current_password: currentPassword,
+                new_password: newPassword
+            };
+            
+            fetch('/api/user/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to change password');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Password changed successfully!', 'success');
+                document.getElementById('password-form').reset();
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function loadUserEvents() {
+            fetch('/api/my-events')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load events');
+                    }
+                    return response.json();
+                })
+                .then(events => {
+                    const container = document.getElementById('my-events-container');
+                    const noEventsMessage = document.getElementById('no-events-message');
+                    
+                    container.innerHTML = '';
+                    
+                    if (events.length === 0) {
+                        noEventsMessage.classList.remove('d-none');
+                        return;
+                    }
+                    
+                    noEventsMessage.classList.add('d-none');
+                    
+                    events.forEach(event => {
+                        const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
+                        
+                        const card = document.createElement('div');
+                        card.className = 'card mb-3';
+                        card.innerHTML = `
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="${event.banner_url || '/images/default-event.jpg'}" class="img-fluid rounded-start" alt="${event.title}">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${event.title}</h5>
+                                        <p class="card-text">${event.description ? event.description.substring(0, 100) + '...' : 'No description'}</p>
+                                        <p class="card-text"><small class="text-muted">Date: ${eventDate}</small></p>
+                                        <div class="btn-group">
+                                            <a href="/event/${event.id}" class="btn btn-sm btn-primary">View</a>
+                                            <a href="/event/${event.id}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteEvent(${event.id})">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Failed to load your events', 'danger');
+                });
+        }
+        
+        function loadUserRegistrations() {
+            fetch('/api/my-registrations')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load registrations');
+                    }
+                    return response.json();
+                })
+                .then(registrations => {
+                    const container = document.getElementById('my-registrations-container');
+                    const noRegistrationsMessage = document.getElementById('no-registrations-message');
+                    
+                    container.innerHTML = '';
+                    
+                    if (registrations.length === 0) {
+                        noRegistrationsMessage.classList.remove('d-none');
+                        return;
+                    }
+                    
+                    noRegistrationsMessage.classList.add('d-none');
+                    
+                    // Group registrations by event
+                    const eventGroups = {};
+                    
+                    registrations.forEach(reg => {
+                        if (!eventGroups[reg.event_title]) {
+                            eventGroups[reg.event_title] = {
+                                eventId: reg.event_id,
+                                eventTitle: reg.event_title,
+                                eventDate: reg.event_date,
+                                registrations: []
+                            };
+                        }
+                        
+                        eventGroups[reg.event_title].registrations.push(reg);
+                    });
+                    
+                    // Create cards for each event
+                    Object.values(eventGroups).forEach(group => {
+                        const card = document.createElement('div');
+                        card.className = 'card mb-3';
+                        
+                        const eventDate = group.eventDate ? new Date(group.eventDate).toLocaleDateString() : 'Date TBD';
+                        
+                        let regsList = '';
+                        group.registrations.forEach(reg => {
+                            let statusBadge = '';
+                            switch(reg.status) {
+                                case 'pending':
+                                    statusBadge = '<span class="badge bg-warning">Pending</span>';
+                                    break;
+                                case 'approved':
+                                    statusBadge = '<span class="badge bg-success">Approved</span>';
+                                    break;
+                                case 'rejected':
+                                    statusBadge = '<span class="badge bg-danger">Rejected</span>';
+                                    break;
+                            }
+                            
+                            regsList += `
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    ${reg.category_name}
+                                    <div>
+                                        ${statusBadge}
+                                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelRegistration(${reg.id})">Cancel</button>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                        
+                        card.innerHTML = `
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">${group.eventTitle}</h5>
+                                    <small class="text-muted">${eventDate}</small>
+                                </div>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                ${regsList}
+                            </ul>
+                            <div class="card-footer">
+                                <a href="/event/${group.eventId}" class="btn btn-sm btn-primary">View Event</a>
+                            </div>
+                        `;
+                        
+                        container.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Failed to load your registrations', 'danger');
+                });
+        }
+        
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+                fetch(`/api/events/${eventId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete event');
+                    }
+                    showAlert('Event deleted successfully', 'success');
+                    loadUserEvents();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Failed to delete event', 'danger');
+                });
+            }
+        }
+        
+        function cancelRegistration(regId) {
+            if (confirm('Are you sure you want to cancel this registration?')) {
+                fetch(`/api/registrations/${regId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to cancel registration');
+                    }
+                    showAlert('Registration cancelled successfully', 'success');
+                    loadUserRegistrations();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Failed to cancel registration', 'danger');
+                });
+            }
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.textContent = message;
+            alertContainer.className = `alert alert-${type}`;
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertContainer.classList.add('d-none');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Include flatpickr for date selection -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'create-event', user: user}); %>
+    
+    <div class="container my-5">
+        <h1 class="mb-4">Create a New Event</h1>
+        
+        <!-- Alert message container (hidden by default) -->
+        <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+        
+        <form id="create-event-form">
+            <div class="row">
+                <!-- Left Column -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Event Title*</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="5"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="banner_url" class="form-label">Banner Image URL</label>
+                        <input type="url" class="form-control" id="banner_url" name="banner_url" placeholder="https://example.com/image.jpg">
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="event_date" class="form-label">Event Date</label>
+                        <input type="text" class="form-control datepicker" id="event_date" name="event_date">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="registration_open_date" class="form-label">Registration Open Date*</label>
+                        <input type="text" class="form-control datepicker" id="registration_open_date" name="registration_open_date" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="registration_close_date" class="form-label">Registration Close Date*</label>
+                        <input type="text" class="form-control datepicker" id="registration_close_date" name="registration_close_date" required>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_published" name="is_published">
+                        <label class="form-check-label" for="is_published">Publish Event Immediately</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h3>Event Categories</h3>
+                <p class="text-muted">You can add categories after creating the event.</p>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <button type="button" class="btn btn-outline-secondary me-md-2" onclick="window.location.href='/events'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Event</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <script>
+        // Initialize date pickers
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr(".datepicker", {
+                enableTime: false,
+                dateFormat: "Y-m-d",
+                minDate: "today"
+            });
+            
+            // Set up form submission
+            document.getElementById('create-event-form').addEventListener('submit', submitForm);
+        });
+        
+        function submitForm(e) {
+            e.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                location: document.getElementById('location').value,
+                banner_url: document.getElementById('banner_url').value,
+                event_date: document.getElementById('event_date').value,
+                registration_open_date: document.getElementById('registration_open_date').value,
+                registration_close_date: document.getElementById('registration_close_date').value,
+                is_published: document.getElementById('is_published').checked
+            };
+            
+            // Validate required fields
+            if (!formData.title || !formData.registration_open_date || !formData.registration_close_date) {
+                showAlert('Please fill in all required fields.', 'danger');
+                return;
+            }
+            
+            // Validate dates
+            const regOpenDate = new Date(formData.registration_open_date);
+            const regCloseDate = new Date(formData.registration_close_date);
+            
+            if (regCloseDate <= regOpenDate) {
+                showAlert('Registration close date must be after registration open date.', 'danger');
+                return;
+            }
+            
+            // Submit the form
+            fetch('/api/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to create event');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Event created successfully!', 'success');
+                // Redirect to the event page after a short delay
+                setTimeout(() => {
+                    window.location.href = `/event/${data.id}`;
+                }, 1500);
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.textContent = message;
+            alertContainer.className = `alert alert-${type}`;
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertContainer.classList.add('d-none');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>

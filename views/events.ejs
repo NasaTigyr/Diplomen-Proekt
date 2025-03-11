@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,70 +8,168 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">Martial Arts Competitions</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                    <% if(user) { %>
-                      <li class="nav-item">
-                          <a class="nav-link" href="/profile">Profile</a>
-                      </li>
-                      <li class="nav-item">
-                          <a class="nav-link" href="/logout">Login</a>
-                      </li>
-                    <% } else { %>
-                      <li class="nav-item">
-                          <a class="nav-link" href="/login">Login</a>
-                      </li>
-                      <li class="nav-item">
-                          <a class="nav-link active" href="/events">Events</a>
-                      </li>
-                    <% } %>
-                </ul>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'events', user: user}); %>
+    
+    <!-- Events Header -->
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>Martial Arts Events</h1>
+            
+            <% if (user) { %>
+                <a href="/create-event" class="btn btn-primary">Create Event</a>
+            <% } %>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="row mt-4 mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" id="searchBar" class="form-control" placeholder="Search events by sport, location, or name">
+                    <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex justify-content-end">
+                    <select class="form-select ms-2" style="width: auto;" id="sort-select">
+                        <option value="date-asc">Date (Nearest First)</option>
+                        <option value="date-desc">Date (Furthest First)</option>
+                        <option value="title-asc">Title (A-Z)</option>
+                        <option value="title-desc">Title (Z-A)</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <!-- Search Bar -->
-    <div class="container mt-4">
-        <input type="text" id="searchBar" class="form-control" placeholder="Search events by sport, location, or name">
     </div>
-
+    
     <!-- Events Section -->
-    <section class="events mt-5">
+    <section class="events mt-3">
         <div class="container">
             <div class="row" id="eventsList">
-                <!-- Event Item -->
-                <div class="col-md-4 event-item">
-                    <div class="card">
-                        <img src="event-image.jpg" class="card-img-top" alt="Event Image">
-                        <div class="card-body">
-                            <h5 class="card-title">Event Name</h5>
-                            <p class="card-text">Location: City</p>
-                            <p class="card-text">Date: 2025-03-20</p>
-                        </div>
+                <!-- Loading indicator -->
+                <div class="col-12 text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
-                <!-- Repeat similar event cards as needed -->
+            </div>
+            
+            <!-- No events message (hidden by default) -->
+            <div id="no-events-message" class="alert alert-info text-center mt-4 d-none">
+                No events found matching your criteria.
             </div>
         </div>
     </section>
-
+    
     <!-- Footer -->
-    <footer class="bg-light text-center py-3">
+    <footer class="bg-light text-center py-3 mt-5">
         <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="scriptEvents.js"></script>
+    
+    <script>
+        let allEvents = [];
+        
+        // Load all events
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchEvents();
+            
+            // Set up event listeners
+            document.getElementById('search-button').addEventListener('click', filterEvents);
+            document.getElementById('searchBar').addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    filterEvents();
+                }
+            });
+            document.getElementById('sort-select').addEventListener('change', filterEvents);
+        });
+        
+        function fetchEvents() {
+            fetch('/api/events')
+                .then(response => response.json())
+                .then(events => {
+                    allEvents = events;
+                    displayEvents(events);
+                })
+                .catch(error => {
+                    console.error('Error fetching events:', error);
+                    const container = document.getElementById('eventsList');
+                    container.innerHTML = '<div class="col-12 text-center"><p>Failed to load events</p></div>';
+                });
+        }
+        
+        function displayEvents(events) {
+            const container = document.getElementById('eventsList');
+            const noEventsMessage = document.getElementById('no-events-message');
+            
+            // Clear loading spinner
+            container.innerHTML = '';
+            
+            if (events.length === 0) {
+                container.innerHTML = '';
+                noEventsMessage.classList.remove('d-none');
+                return;
+            }
+            
+            noEventsMessage.classList.add('d-none');
+            
+            // Create event cards
+            events.forEach(event => {
+                const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
+                const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
+                const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
+                
+                const card = `
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <img src="${event.banner_url || '/images/default-event.jpg'}" class="card-img-top" alt="${event.title}">
+                            <div class="card-body">
+                                <h5 class="card-title">${event.title}</h5>
+                                <p class="card-text">${event.description ? (event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description) : 'No description'}</p>
+                                <p><strong>Date:</strong> ${eventDate}</p>
+                                <p><strong>Location:</strong> ${event.location || 'TBD'}</p>
+                                <p><small class="text-muted">Registration: ${registrationOpenDate} - ${registrationCloseDate}</small></p>
+                            </div>
+                            <div class="card-footer">
+                                <a href="/event/${event.id}" class="btn btn-primary">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+        
+        function filterEvents() {
+            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+            const sortOption = document.getElementById('sort-select').value;
+            
+            // Filter events by search term
+            let filteredEvents = allEvents.filter(event => 
+                event.title.toLowerCase().includes(searchTerm) ||
+                (event.description && event.description.toLowerCase().includes(searchTerm)) ||
+                (event.location && event.location.toLowerCase().includes(searchTerm))
+            );
+            
+            // Sort events
+            filteredEvents.sort((a, b) => {
+                switch(sortOption) {
+                    case 'date-asc':
+                        return new Date(a.event_date || '9999-12-31') - new Date(b.event_date || '9999-12-31');
+                    case 'date-desc':
+                        return new Date(b.event_date || '0000-01-01') - new Date(a.event_date || '0000-01-01');
+                    case 'title-asc':
+                        return a.title.localeCompare(b.title);
+                    case 'title-desc':
+                        return b.title.localeCompare(a.title);
+                    default:
+                        return 0;
+                }
+            });
+            
+            displayEvents(filteredEvents);
+        }
+    </script>
 </body>
 </html>
