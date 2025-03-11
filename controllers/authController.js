@@ -30,7 +30,9 @@ exports.register = async (req, res) => {
       id: user.id,
       username: user.username,
       email: user.email,
-      full_name: user.full_name
+      full_name: user.full_name,
+      // Set default isAdmin status to false for new users
+      isAdmin: false
     };
     
     // For API requests
@@ -67,12 +69,17 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
+    // Define admin emails - you can replace this with a database check later
+    const adminEmails = ['admin@example.com', 'karateka@test.com']; // Add your admin emails here
+    
     // Set session
     req.session.user = {
       id: user.id,
       username: user.username,
       email: user.email,
-      full_name: user.full_name
+      full_name: user.full_name,
+      // Check if user email is in the admin list
+      isAdmin: adminEmails.includes(user.email)
     };
     
     // For API requests

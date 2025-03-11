@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Club - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'become-club-admin', user: user}); %>
+    
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Register Your Martial Arts Club</h1>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="alert alert-info mb-4">
+                    <h5>Benefits of registering your club:</h5>
+                    <ul>
+                        <li>Create and manage martial arts competitions</li>
+                        <li>Build your club's profile and reputation</li>
+                        <li>Connect with athletes and other clubs</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">Club Registration Form</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+                        
+                        <form id="club-registration-form">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Club Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                                <div class="form-text">Describe your club, including martial arts styles, history, and achievements.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="registration_number" class="form-label">Official Registration Number *</label>
+                                <input type="text" class="form-control" id="registration_number" name="registration_number" required>
+                                <div class="form-text">Enter your club's official registration number from your national sports federation, business registration, or other governing body.</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label">Supporting Documentation</label>
+                                <div class="alert alert-warning">
+                                    <strong>Note:</strong> After submitting this form, you will be asked to upload supporting documentation to verify your club.
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Submit Registration</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('club-registration-form');
+            form.addEventListener('submit', registerClub);
+        });
+        
+        function registerClub(e) {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                registration_number: document.getElementById('registration_number').value
+            };
+            
+            fetch('/api/clubs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to register club');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Club registration submitted successfully! Your registration will be reviewed by an administrator.', 'success');
+                
+                // Redirect to profile page after a delay
+                setTimeout(() => {
+                    window.location.href = '/profile';
+                }, 3000);
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.textContent = message;
+            alertContainer.className = `alert alert-${type}`;
+        }
+    </script>
+</body>
+</html>

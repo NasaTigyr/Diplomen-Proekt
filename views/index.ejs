@@ -21,7 +21,11 @@
                 <% if (user) { %>
                     <div class="mt-3">
                         <a href="/events" class="btn btn-primary btn-lg me-2">Browse Events</a>
-                        <a href="/create-event" class="btn btn-outline-primary btn-lg">Create Event</a>
+                        <% if (user.isAdmin) { %>
+                            <a href="/create-event" class="btn btn-outline-primary btn-lg">Create Event</a>
+                        <% } else { %>
+                            <a href="/become-admin" class="btn btn-outline-primary btn-lg">Apply for Event Creator</a>
+                        <% } %>
                     </div>
                 <% } else { %>
                     <div class="mt-3">
@@ -44,12 +48,18 @@
                                             <h3 class="card-title">Welcome back, <%= user.username %>!</h3>
                                             <p class="card-text">Thanks for being part of our martial arts community. Here are some things you can do:</p>
                                             <ul class="list-group list-group-flush mb-3">
-                                                <li class="list-group-item">Create or manage your own events</li>
+                                                <% if (user.isAdmin) { %>
+                                                    <li class="list-group-item">Create or manage your own events</li>
+                                                <% } else { %>
+                                                    <li class="list-group-item">Apply to become an Event Creator</li>
+                                                <% } %>
                                                 <li class="list-group-item">Register for upcoming competitions</li>
                                                 <li class="list-group-item">View tournament brackets and schedules</li>
                                             </ul>
                                             <div class="d-grid gap-2">
-                                                <a href="/my-events" class="btn btn-primary">My Events</a>
+                                                <% if (user.isAdmin) { %>
+                                                    <a href="/my-events" class="btn btn-primary">My Events</a>
+                                                <% } %>
                                                 <a href="/events" class="btn btn-outline-primary">Browse All Events</a>
                                             </div>
                                         </div>
@@ -83,7 +93,7 @@
                                             <div class="card h-100">
                                                 <div class="card-body text-center">
                                                     <h3 class="h5">Organize Events</h3>
-                                                    <p>Create your own tournaments, manage registrations, and generate brackets.</p>
+                                                    <p>Apply to become an Event Creator and manage your competitions.</p>
                                                 </div>
                                             </div>
                                         </div>

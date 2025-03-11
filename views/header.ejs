@@ -20,9 +20,13 @@
                     <li class="nav-item">
                         <a class="nav-link <%= currentPage === 'my-events' ? 'active' : '' %>" href="/my-events">My Events</a>
                     </li>
+                    
+                    <% if (user.isAdmin) { %>
                     <li class="nav-item">
                         <a class="nav-link <%= currentPage === 'create-event' ? 'active' : '' %>" href="/create-event">Create Event</a>
                     </li>
+                    <% } %>
+                    
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <%= user.username %>
@@ -30,6 +34,9 @@
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li><a class="dropdown-item" href="/profile">Profile</a></li>
                             <li><a class="dropdown-item" href="/my-registrations">My Registrations</a></li>
+                            <% if (!user.isAdmin) { %>
+                            <li><a class="dropdown-item" href="/become-admin">Apply for Event Creator</a></li>
+                            <% } %>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/logout">Logout</a></li>
                         </ul>
