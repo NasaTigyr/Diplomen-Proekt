@@ -18,12 +18,12 @@
                 <% if (user) { %>
                     <!-- Logged in navigation options -->
                     <li class="nav-item">
-                        <a class="nav-link <%= currentPage === 'my-events' ? 'active' : '' %>" href="/my-events">My Events</a>
+                        <a class="nav-link <%= currentPage === 'Register Club' ? 'active' : '' %>" href="/registerClub">Regist Club </a>
                     </li>
                     
                     <% if (user.isAdmin) { %>
                     <li class="nav-item">
-                        <a class="nav-link <%= currentPage === 'create-event' ? 'active' : '' %>" href="/create-event">Create Event</a>
+                        <a class="nav-link <%= currentPage === 'createEvent' ? 'active' : '' %>" href="/createEvent">Create Event</a>
                     </li>
                     <% } %>
                     
@@ -35,7 +35,7 @@
                             <li><a class="dropdown-item" href="/profile">Profile</a></li>
                             <li><a class="dropdown-item" href="/my-registrations">My Registrations</a></li>
                             <% if (!user.isAdmin) { %>
-                            <li><a class="dropdown-item" href="/become-admin">Apply for Event Creator</a></li>
+                            <li><a class="dropdown-item" href="/becomeAdmin">Apply for Event Creator</a></li>
                             <% } %>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/logout">Logout</a></li>

@@ -70,7 +70,7 @@ exports.login = async (req, res) => {
     }
     
     // Define admin emails - you can replace this with a database check later
-    const adminEmails = ['admin@example.com', 'karateka@test.com']; // Add your admin emails here
+    const adminEmails = ['admin@example.com', 'karateka@test.com', 'nikolay.ts.stefanov@gmail.com']; // Add your admin emails here
     
     // Set session
     req.session.user = {

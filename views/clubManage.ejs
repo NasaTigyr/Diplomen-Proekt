@@ -1,0 +1,182 @@
+<%- include('partials/header') %>
+
+<div class="container my-5">
+  <div class="row">
+    <div class="col-md-12">
+      <div id="clubDetails">
+        <h2>Loading club details...</h2>
+      </div>
+      
+      <div class="row mt-4">
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Manage Members</h5>
+              <p class="card-text">Invite users and manage your club members.</p>
+              <a href="/club/<%= clubId %>/members" class="btn btn-primary">Manage Members</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Create Event</h5>
+              <p class="card-text">Create a new event for your club members.</p>
+              <a href="/create-event" class="btn btn-primary">Create Event</a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Edit Club Details</h5>
+              <p class="card-text">Update your club's information.</p>
+              <button id="editClubBtn" class="btn btn-primary">Edit Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Edit Club Modal -->
+  <div class="modal fade" id="editClubModal" tabindex="-1" aria-labelledby="editClubModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editClubModalLabel">Edit Club Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editClubForm">
+            <div class="mb-3">
+              <label for="clubName" class="form-label">Club Name *</label>
+              <input type="text" class="form-control" id="clubName" name="name" required>
+            </div>
+            
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="mb-3">
+              <label for="registrationNumber" class="form-label">Registration Number</label>
+              <input type="text" class="form-control" id="registrationNumber" name="registrationNumber">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveClubBtn">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Store the club ID
+const clubId = <%= clubId %>;
+
+// Function to load club details
+async function loadClubDetails() {
+  try {
+    // You need to create a new endpoint for this
+    const response = await fetch(`/api/clubs/${clubId}`);
+    const data = await response.json();
+    
+    if (response.ok) {
+      displayClubDetails(data.club);
+    } else {
+      document.getElementById('clubDetails').innerHTML = `
+        <div class="alert alert-danger">
+          Error loading club details: ${data.message}
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading club details:', error);
+    document.getElementById('clubDetails').innerHTML = `
+      <div class="alert alert-danger">
+        An error occurred while loading club details. Please refresh the page to try again.
+      </div>
+    `;
+  }
+}
+
+// Function to display club details
+function displayClubDetails(club) {
+  // For now, we'll just use placeholder data
+  // In reality, this would be populated with the data from the API
+  const club = {
+    id: clubId,
+    name: "Sample Club",
+    description: "This is a sample club description.",
+    registrationNumber: "ABC123",
+    verificationStatus: "pending"
+  };
+  
+  document.getElementById('clubDetails').innerHTML = `
+    <h2>${club.name}</h2>
+    <p>${club.description || 'No description provided.'}</p>
+    <div class="badge bg-${club.verificationStatus === 'verified' ? 'success' : club.verificationStatus === 'rejected' ? 'danger' : 'warning'}">
+      ${club.verificationStatus.charAt(0).toUpperCase() + club.verificationStatus.slice(1)}
+    </div>
+    ${club.registrationNumber ? `<p class="mt-2"><strong>Registration Number:</strong> ${club.registrationNumber}</p>` : ''}
+  `;
+  
+  // Populate the edit form
+  document.getElementById('clubName').value = club.name;
+  document.getElementById('description').value = club.description || '';
+  document.getElementById('registrationNumber').value = club.registrationNumber || '';
+}
+
+// Edit Club button click handler
+document.getElementById('editClubBtn').addEventListener('click', function() {
+  // Show the modal
+  const modal = new bootstrap.Modal(document.getElementById('editClubModal'));
+  modal.show();
+});
+
+// Save Club button click handler
+document.getElementById('saveClubBtn').addEventListener('click', async function() {
+  const formData = {
+    name: document.getElementById('clubName').value,
+    description: document.getElementById('description').value,
+    registrationNumber: document.getElementById('registrationNumber').value
+  };
+  
+  try {
+    // You need to create a new endpoint for this
+    const response = await fetch(`/api/clubs/${clubId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      // Close the modal
+      bootstrap.Modal.getInstance(document.getElementById('editClubModal')).hide();
+      
+      // Reload club details
+      loadClubDetails();
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch (error) {
+    console.error('Error updating club:', error);
+    alert('An error occurred while updating club details. Please try again.');
+  }
+});
+
+// Load club details on page load
+window.addEventListener('DOMContentLoaded', loadClubDetails);
+</script>
+
+<%- include('partials/footer') %>
