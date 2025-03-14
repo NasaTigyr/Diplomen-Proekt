@@ -1,25 +1,29 @@
 const express = require('express');
 const session = require('express-session');
+const multer = require('multer'); 
+const fs = require('fs'); 
 const path = require('path');
-const mysql = require('mysql2/promise'); // Add MySQL connection
-const db = require('./db'); 
 const app = express();
 const port = 3000;
 
-// Import controllers
+// Importni controlleri
+
+const userRoutes = require('./routes/userRoutes');
+
 const authController = require('./controllers/authController');
 const eventController = require('./controllers/eventController');
-// Uncomment as you implement them
+
 const clubController = require('./controllers/clubController');
 //const categoryController = require('./controllers/categoryController');
 //const registrationController = require('./controllers/registrationController');
 //const matchController = require('./controllers/matchController');
 //const timetableController = require('./controllers/timetableController');
 
-// Import middleware
+// Importni middleware
 const authMiddleware = require('./middleware/authMiddleware');
+const uploadMiddleware = require('./middleware/uploadMiddleware');
 
-// Middleware setup
+// Middleware setupa
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
@@ -41,6 +45,45 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
+
+const uploadDir = 'public/uploads/profile_pictures';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads/profile_pictures/')
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'profile-' + uniqueSuffix + ext);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+// Create upload middleware
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: function (req, file, cb) {
+    // Accept images only
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('Only image files are allowed!'), false);
+    }
+    cb(null, true);
+  }
+});
+
+app.use('/api/user', userRoutes)
 
 // Web routes (for serving views)
 app.get('/', (req, res) => {
@@ -72,7 +115,7 @@ app.get('/createEvent', authMiddleware.isAuthenticated, (req, res) => {
   res.render('createEvent', { user: req.session.user });
 });
 
-// Club management routes
+// Club management routove
 app.get('/myClub', authMiddleware.isAuthenticated, (req, res) => {
   // Check if user is a coach
   if (!req.session.user || req.session.user.user_type !== 'coach') {
@@ -121,6 +164,52 @@ app.post('/api/clubs', authMiddleware.isAuthenticated, (req, res, next) => {
   next();
 }, clubController.createClub);
 
+// Add this to your server.js where you define routes
+app.put('/api/user/profile', authMiddleware.isAuthenticated, upload.single('profile_picture'), async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { first_name, last_name, email, contact_number } = req.body;
+    
+    // Build update data
+    const userData = {
+      first_name,
+      last_name,
+      email,
+      contact_number
+    };
+    
+    // If a file was uploaded, add the path to the update data
+    if (req.file) {
+      userData.profile_picture = `/uploads/profile_pictures/${req.file.filename}`;
+    }
+    
+    // Update the user in the database
+    const updated = await User.update(userId, userData);
+    
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update profile' });
+    }
+    
+    // Get the updated user data
+    const user = await User.findById(userId);
+    
+    // Update session data
+    req.session.user = {
+      ...req.session.user,
+      ...userData
+    };
+    
+    res.status(200).json({ 
+      message: 'Profile updated successfully', 
+      user: user
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error updating profile: ' + error.message });
+  }
+});
+
+app.put('/api/user/profile', authMiddleware.isAuthenticated, uploadMiddleware.uploadProfilePicture, authController.updateProfile);
 
 app.get('/api/clubs/:id', clubController.getClubById);
 app.get('/api/coaches/:coachId/clubs', clubController.getClubsByCoach);

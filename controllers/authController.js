@@ -1,6 +1,8 @@
 // controllers/authController.js
 const User = require('../modules/User');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
 const db = require('../db'); 
 
 exports.register = async (req, res) => {
@@ -361,5 +363,86 @@ exports.becomeCoach = async (req, res) => {
     
     // For form submissions
     return res.redirect('/becomeCoach?error=' + encodeURIComponent('Update failed: ' + error.message));
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { first_name, last_name, email, contact_number } = req.body;
+    
+    // Validate input
+    if (!first_name || !last_name || !email) {
+      return res.status(400).json({ message: 'First name, last name, and email are required' });
+    }
+    
+    // Check if email already exists (if changed)
+    if (email !== req.session.user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).json({ message: 'Email is already in use by another account' });
+      }
+    }
+    
+    // Build update data
+    const userData = {
+      first_name,
+      last_name,
+      email,
+      contact_number: contact_number || null
+    };
+    
+    // If a file was uploaded, add the path to the update data
+    if (req.file) {
+      userData.profile_picture = `/uploads/profile_pictures/${req.file.filename}`;
+      
+      // Optionally delete old profile picture if it exists
+      if (req.session.user.profile_picture) {
+        const oldPicturePath = path.join(__dirname, '..', 'public', req.session.user.profile_picture);
+        if (fs.existsSync(oldPicturePath)) {
+          fs.unlinkSync(oldPicturePath);
+        }
+      }
+    }
+    
+    // Update the user in the database
+    const updated = await User.update(userId, userData);
+    
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update profile' });
+    }
+    
+    // Get the updated user data
+    const user = await User.findById(userId);
+    
+    // Update session data
+    req.session.user = {
+      ...req.session.user,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      contact_number: userData.contact_number
+    };
+    
+    // Add profile picture to session if it was updated
+    if (userData.profile_picture) {
+      req.session.user.profile_picture = userData.profile_picture;
+    }
+    
+    res.status(200).json({ 
+      message: 'Profile updated successfully', 
+      user: {
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        contact_number: user.contact_number,
+        profile_picture: user.profile_picture,
+        user_type: user.user_type
+      }
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Error updating profile: ' + error.message });
   }
 };
