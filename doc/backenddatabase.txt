@@ -1,0 +1,113 @@
+Базата данни се намира на /var/lib/mysql/
+
+# Sports Competition Management System - Database Schema
+
+## Tables and Relationships
+
+### Users
+- **id**: Primary key
+- **email**: Unique email for login
+- **password_hash**: Securely stored password
+- **first_name**: User's first name
+- **last_name**: User's last name
+- **date_of_birth**: For calculating age categories
+- **gender**: For gender-specific categories
+- **user_type**: Enum ('regular', 'coach', 'athlete')
+- **profile_picture**: Optional profile image
+- **contact_number**: Phone number
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Clubs
+- **id**: Primary key
+- **name**: Club name
+- **description**: Club description
+- **logo**: Club logo image
+- **coach_id**: Foreign key to Users (the coach who owns this club)
+- **address**: Club location
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Club_Athletes (Membership table)
+- **id**: Primary key
+- **club_id**: Foreign key to Clubs
+- **athlete_id**: Foreign key to Users (with user_type='athlete')
+- **join_date**: When the athlete joined the club
+- **status**: Enum ('active', 'inactive', 'pending')
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Events
+- **id**: Primary key
+- **name**: Event name
+- **description**: Event description
+- **banner_image**: Event promotional image
+- **address**: Event location address
+- **start_date**: When the competition begins
+- **end_date**: When the competition ends
+- **registration_start**: When registration opens
+- **registration_end**: When registration closes
+- **event_type**: Enum ('team', 'free_for_all')
+- **creator_id**: Foreign key to Users (the coach who created the event)
+- **timetable_file**: Uploaded timetable file path
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Categories
+- **id**: Primary key
+- **event_id**: Foreign key to Events
+- **name**: Category name (e.g., "Kumite Junior")
+- **age_group**: Enum ('under_8', 'under_12', 'under_14', 'under_16', 'under_18', 'under_21', 'senior')
+- **gender**: Enum ('male', 'female', 'mixed')
+- **description**: Additional details about the category
+- **max_participants**: Optional limit on participants
+- **draw_file_path**: Path to generated draw file
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Individual_Registrations
+- **id**: Primary key
+- **event_id**: Foreign key to Events
+- **category_id**: Foreign key to Categories
+- **athlete_id**: Foreign key to Users (the athlete registering)
+- **registration_date**: When registration was completed
+- **status**: Enum ('pending', 'approved', 'rejected')
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Team_Registrations
+- **id**: Primary key
+- **event_id**: Foreign key to Events
+- **category_id**: Foreign key to Categories
+- **club_id**: Foreign key to Clubs
+- **coach_id**: Foreign key to Users (the coach registering the team)
+- **registration_date**: When registration was completed
+- **status**: Enum ('pending', 'approved', 'rejected')
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Team_Registration_Athletes
+- **id**: Primary key
+- **team_registration_id**: Foreign key to Team_Registrations
+- **athlete_id**: Foreign key to Users (member of the team being registered)
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+
+### Draws
+- **id**: Primary key
+- **category_id**: Foreign key to Categories
+- **created_at**: Timestamp
+- **updated_at**: Timestamp
+- **status**: Enum ('pending', 'generated', 'finalized')
+- **file_path**: Path to the draw file
+
+## Important Relationships
+
+1. A User can be either a regular user, coach, or athlete (user_type field)
+2. A Coach (User with user_type='coach') can create multiple Clubs
+3. A Club can have multiple Athletes (through Club_Athletes table)
+4. A Coach can create multiple Events
+5. An Event can have multiple Categories
+6. An Athlete can register for multiple Categories (through Individual_Registrations)
+7. A Coach can register athletes from their Club for team events (through Team_Registrations and Team_Registration_Athletes)
+8. Each Category can have one Draw generated

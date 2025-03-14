@@ -17,26 +17,42 @@
                 
                 <% if (user) { %>
                     <!-- Logged in navigation options -->
-                    <li class="nav-item">
-                        <a class="nav-link <%= currentPage === 'Register Club' ? 'active' : '' %>" href="/registerClub">Regist Club </a>
-                    </li>
                     
-                    <% if (user.isAdmin) { %>
+                    <% if (user.user_type === 'coach') { %>
+                    <!-- Coach-specific navigation -->
                     <li class="nav-item">
                         <a class="nav-link <%= currentPage === 'createEvent' ? 'active' : '' %>" href="/createEvent">Create Event</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= currentPage === 'manageClub' ? 'active' : '' %>" href="/manageClub">Manage Club</a>
                     </li>
                     <% } %>
                     
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <%= user.username %>
+                            <%= user.first_name %> <%= user.last_name %>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
-                            <li><a class="dropdown-item" href="/my-registrations">My Registrations</a></li>
-                            <% if (!user.isAdmin) { %>
-                            <li><a class="dropdown-item" href="/becomeAdmin">Apply for Event Creator</a></li>
+                            <li><a class="dropdown-item" href="/profile">Profile Settings</a></li>
+                            
+                            <% if (user.user_type === 'regular') { %>
+                            <!-- Regular user options -->
+                            <li><a class="dropdown-item" href="/createClub">Create Club</a></li>
+                            <li><a class="dropdown-item" href="/joinClub">Join a Club</a></li>
                             <% } %>
+                            
+                            <% if (user.user_type === 'coach') { %>
+                            <!-- Coach options -->
+                            <li><a class="dropdown-item" href="/getAthletes">View Athletes</a></li>
+                            <li><a class="dropdown-item" href="/manageClub">Manage Club</a></li>
+                            <% } %>
+                            
+                            <% if (user.user_type === 'athlete') { %>
+                            <!-- Athlete options -->
+                            <li><a class="dropdown-item" href="/myClub">My Club</a></li>
+                            <li><a class="dropdown-item" href="/myRegistrations">My Competitions</a></li>
+                            <% } %>
+                            
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="/logout">Logout</a></li>
                         </ul>

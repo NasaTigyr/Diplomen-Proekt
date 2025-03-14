@@ -1,14 +1,36 @@
 // controllers/authController.js
 const User = require('../modules/User');
 const bcrypt = require('bcryptjs');
+const db = require('../db'); 
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, full_name } = req.body;
+    const { 
+      email, 
+      password, 
+      confirm_password,
+      first_name, 
+      last_name, 
+      date_of_birth,
+      gender,
+      user_type = 'regular',
+      contact_number,
+      profile_picture,
+      // Club info for coaches
+      club_name,
+      club_description,
+      club_logo,
+      club_address
+    } = req.body;
     
-    // Validate input
-    if (!username || !email || !password || !full_name) {
-      return res.status(400).json({ message: 'All fields are required' });
+    // Validate required input
+    if (!email || !password || !first_name || !last_name || !date_of_birth || !gender) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
+    
+    // Check if passwords match
+    if (password !== confirm_password) {
+      return res.status(400).json({ message: 'Passwords do not match' });
     }
     
     // Check if user already exists
@@ -19,38 +41,68 @@ exports.register = async (req, res) => {
     
     // Create user
     const user = await User.create({
-      username,
       email,
       password,
-      full_name
+      first_name,
+      last_name,
+      date_of_birth,
+      gender,
+      user_type,
+      contact_number,
+      profile_picture
     });
+    
+    // If registering as a coach and club info is provided, create a club
+    if (user_type === 'coach' && club_name && club_address) {
+      // Import and use Club model
+      const Club = require('../modules/Club');
+      
+      await Club.create({
+        name: club_name,
+        description: club_description || null,
+        logo: club_logo || null,
+        coach_id: user.id,
+        address: club_address
+      });
+    }
     
     // Set session
     req.session.user = {
       id: user.id,
-      username: user.username,
       email: user.email,
-      full_name: user.full_name,
-      // Set default isAdmin status to false for new users
-      isAdmin: false
+      first_name: user.first_name,
+      last_name: user.last_name,
+      user_type: user.user_type,
+      gender: user.gender,
+      date_of_birth: user.date_of_birth
     };
     
     // For API requests
     if (req.path.startsWith('/api/')) {
-      return res.status(201).json({ message: 'Registration successful', user: req.session.user });
+      return res.status(201).json({ 
+        message: 'Registration successful', 
+        user: req.session.user 
+      });
+    }
+    
+    // For form submissions, redirect with success message
+    return res.redirect('/?success=' + encodeURIComponent('Registration successful'));
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ message: 'Registration failed: ' + error.message });
     }
     
     // For form submissions
-    return res.redirect('/');
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Registration failed' });
+    return res.redirect('/register?error=' + encodeURIComponent('Registration failed: ' + error.message));
   }
 };
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, remember } = req.body;
     
     // Validate input
     if (!email || !password) {
@@ -60,38 +112,65 @@ exports.login = async (req, res) => {
     // Find user
     const user = await User.findByEmail(email);
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      // For API requests
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      // For form submissions
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid email or password'));
     }
     
     // Verify password
     const isMatch = await User.verifyPassword(user, password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      // For API requests
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      // For form submissions
+      return res.redirect('/login?error=' + encodeURIComponent('Invalid email or password'));
     }
     
-    // Define admin emails - you can replace this with a database check later
-    const adminEmails = ['admin@example.com', 'karateka@test.com', 'nikolay.ts.stefanov@gmail.com']; // Add your admin emails here
+    // Set session cookie expiration if "remember me" is checked
+    if (remember) {
+      // Set to 30 days
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+    }
     
     // Set session
     req.session.user = {
       id: user.id,
-      username: user.username,
       email: user.email,
-      full_name: user.full_name,
-      // Check if user email is in the admin list
-      isAdmin: adminEmails.includes(user.email)
+      first_name: user.first_name,
+      last_name: user.last_name,
+      user_type: user.user_type,
+      gender: user.gender,
+      date_of_birth: user.date_of_birth,
+      profile_picture: user.profile_picture
     };
     
     // For API requests
     if (req.path.startsWith('/api/')) {
-      return res.status(200).json({ message: 'Login successful', user: req.session.user });
+      return res.status(200).json({ 
+        message: 'Login successful', 
+        user: req.session.user 
+      });
     }
     
     // For form submissions
     return res.redirect('/');
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Login failed' });
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ message: 'Login failed: ' + error.message });
+    }
+    
+    // For form submissions
+    return res.redirect('/login?error=' + encodeURIComponent('Login failed: ' + error.message));
   }
 };
 
@@ -113,4 +192,174 @@ exports.getCurrentUser = (req, res) => {
   }
   
   res.status(200).json(req.session.user);
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    const { 
+      email, 
+      first_name, 
+      last_name, 
+      contact_number,
+      profile_picture
+    } = req.body;
+    
+    // Validate required fields
+    if (!email || !first_name || !last_name) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
+    
+    // If email is changing, check if new email is already in use
+    if (email !== req.session.user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser && existingUser.id !== req.session.user.id) {
+        return res.status(400).json({ message: 'Email is already in use' });
+      }
+    }
+    
+    // Update user
+    const updated = await User.update(req.session.user.id, {
+      email,
+      first_name,
+      last_name,
+      contact_number,
+      profile_picture
+    });
+    
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update profile' });
+    }
+    
+    // Update session data
+    req.session.user = {
+      ...req.session.user,
+      email,
+      first_name,
+      last_name,
+      contact_number,
+      profile_picture
+    };
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(200).json({ 
+        message: 'Profile updated successfully', 
+        user: req.session.user 
+      });
+    }
+    
+    // For form submissions
+    return res.redirect('/profile?success=' + encodeURIComponent('Profile updated successfully'));
+  } catch (error) {
+    console.error('Update profile error:', error);
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ message: 'Update failed: ' + error.message });
+    }
+    
+    // For form submissions
+    return res.redirect('/profile?error=' + encodeURIComponent('Update failed: ' + error.message));
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    const { current_password, new_password, confirm_password } = req.body;
+    
+    // Validate input
+    if (!current_password || !new_password || !confirm_password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+    
+    if (new_password !== confirm_password) {
+      return res.status(400).json({ message: 'New passwords do not match' });
+    }
+    
+    // Get user with password hash
+    const user = await User.findByEmail(req.session.user.email);
+    
+    // Verify current password
+    const isMatch = await User.verifyPassword(user, current_password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password
+    const updated = await User.updatePassword(req.session.user.id, new_password);
+    
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update password' });
+    }
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(200).json({ message: 'Password updated successfully' });
+    }
+    
+    // For form submissions
+    return res.redirect('/profile?success=' + encodeURIComponent('Password updated successfully'));
+  } catch (error) {
+    console.error('Change password error:', error);
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ message: 'Password update failed: ' + error.message });
+    }
+    
+    // For form submissions
+    return res.redirect('/profile?error=' + encodeURIComponent('Password update failed: ' + error.message));
+  }
+};
+
+exports.becomeCoach = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    // Only regular users or athletes can become coaches
+    if (req.session.user.user_type === 'coach') {
+      return res.status(400).json({ message: 'You are already a coach' });
+    }
+    
+    // Update user type to coach
+    const updated = await User.updateUserType(req.session.user.id, 'coach');
+    
+    if (!updated) {
+      return res.status(500).json({ message: 'Failed to update user type' });
+    }
+    
+    // Update session
+    req.session.user.user_type = 'coach';
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(200).json({ 
+        message: 'User type updated to coach successfully', 
+        user: req.session.user 
+      });
+    }
+    
+    // For form submissions
+    return res.redirect('/myClub?success=' + encodeURIComponent('You are now a coach! Create your club.'));
+  } catch (error) {
+    console.error('Become coach error:', error);
+    
+    // For API requests
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ message: 'Update failed: ' + error.message });
+    }
+    
+    // For form submissions
+    return res.redirect('/becomeCoach?error=' + encodeURIComponent('Update failed: ' + error.message));
+  }
 };

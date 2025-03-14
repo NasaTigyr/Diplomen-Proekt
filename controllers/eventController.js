@@ -1,7 +1,7 @@
 const db = require('../db');
 
 exports.getAllEvents = (req, res) => {
-  db.query('SELECT * FROM events ORDER BY event_date DESC', (err, results) => {
+  db.query('SELECT * FROM events ORDER BY start_date DESC', (err, results) => {
     if (err) {
       console.error('Error fetching events:', err);
       return res.status(500).json({ message: 'Failed to fetch events' });

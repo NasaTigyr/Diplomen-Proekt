@@ -42,6 +42,9 @@
         <!-- Alert for errors (hidden by default) -->
         <div id="alert-container" class="alert alert-danger d-none" role="alert"></div>
         
+        <!-- Success message (e.g., after registration) -->
+        <div id="success-container" class="alert alert-success d-none" role="alert"></div>
+        
         <form action="/login" method="POST" class="mx-auto" style="max-width: 400px;">
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
@@ -53,7 +56,16 @@
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
             
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                <label class="form-check-label" for="remember">Remember me</label>
+            </div>
+            
             <button type="submit" class="btn btn-primary w-100">Log In</button>
+            
+            <div class="mt-3 text-center">
+                <a href="/forgot-password">Forgot your password?</a>
+            </div>
         </form>
         
         <p class="text-center mt-3">Don't have an account? <a href="/register">Register</a></p>
@@ -71,11 +83,18 @@
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get('error');
+            const success = urlParams.get('success');
             const alertContainer = document.getElementById('alert-container');
+            const successContainer = document.getElementById('success-container');
             
             if (error) {
                 alertContainer.textContent = decodeURIComponent(error);
                 alertContainer.classList.remove('d-none');
+            }
+            
+            if (success) {
+                successContainer.textContent = decodeURIComponent(success);
+                successContainer.classList.remove('d-none');
             }
         };
     </script>
