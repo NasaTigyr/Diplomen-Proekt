@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Club - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'registerClub', user: user}); %>
+    
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">Register Your Martial Arts Club</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Alert message container (hidden by default) -->
+                        <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+                        
+                        <div class="alert alert-info mb-4">
+                            <h5 class="alert-heading">Important Information</h5>
+                            <p>Registering a club on our platform confirms your role as a coach and allows you to create events and manage athletes.</p>
+                            <hr>
+                            <p class="mb-0">Please provide accurate information. Club verification may require documentation.</p>
+                        </div>
+                        
+                        <form id="club-registration-form" action="/api/clubs" method="POST" enctype="multipart/form-data">
+                            <h4 class="mb-3">Club Information</h4>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="name" class="form-label">Club Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="established_date" class="form-label">Established Date</label>
+                                    <input type="date" class="form-control" id="established_date" name="established_date">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Club Description <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                                <div class="form-text">Include information about your club's philosophy, training styles, and achievements.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Club Address <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="phone" class="form-label">Club Phone Number <span class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="email" class="form-label">Club Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="website" class="form-label">Club Website</label>
+                                <input type="url" class="form-control" id="website" name="website" placeholder="https://...">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="logo" class="form-label">Club Logo</label>
+                                <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                                <div class="form-text">Recommended: Square image, minimum 300x300 pixels.</div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            
+                            <h4 class="mb-3">Verification Information</h4>
+                            
+                            <div class="mb-3">
+                                <label for="registration_code" class="form-label">Registration Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="registration_code" name="registration_code" required>
+                                <div class="form-text">Enter the registration code provided by your national federation or sports authority. Don't have a code? <a href="/contact">Contact us</a>.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="federation_affiliation" class="form-label">Federation Affiliation</label>
+                                <select class="form-select" id="federation_affiliation" name="federation_affiliation">
+                                    <option value="" selected>Select federation (optional)</option>
+                                    <option value="national_karate">National Karate Federation</option>
+                                    <option value="national_judo">National Judo Federation</option>
+                                    <option value="national_taekwondo">National Taekwondo Federation</option>
+                                    <option value="national_kungfu">National Kung Fu Association</option>
+                                    <option value="national_boxing">National Boxing Association</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3" id="other_federation_div" style="display: none;">
+                                <label for="other_federation" class="form-label">Specify Federation</label>
+                                <input type="text" class="form-control" id="other_federation" name="other_federation">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="certification" class="form-label">Club Certification Document</label>
+                                <input type="file" class="form-control" id="certification" name="certification" accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Upload your club's certification document from a recognized federation or sports authority (PDF or image).</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="coach_certification" class="form-label">Coach Certification</label>
+                                <input type="file" class="form-control" id="coach_certification" name="coach_certification" accept=".pdf,.jpg,.jpeg,.png">
+                                <div class="form-text">Upload your coaching certification (PDF or image).</div>
+                            </div>
+                            
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="terms_agreement" name="terms_agreement" required>
+                                <label class="form-check-label" for="terms_agreement">
+                                    I confirm that all information provided is accurate, and I agree to the <a href="/terms" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.
+                                </label>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h5 class="alert-heading">Please Note</h5>
+                                <p>By registering your club, your account will be upgraded to a coach account, which comes with additional responsibilities:</p>
+                                <ul>
+                                    <li>You will be responsible for managing your club's athletes</li>
+                                    <li>You will have access to create and manage competitions</li>
+                                    <li>You are responsible for the accuracy of all data related to your club</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">Register Club</button>
+                                <a href="/" class="btn btn-outline-secondary">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show/hide other federation field
+            document.getElementById('federation_affiliation').addEventListener('change', function() {
+                const otherFederationDiv = document.getElementById('other_federation_div');
+                if (this.value === 'other') {
+                    otherFederationDiv.style.display = 'block';
+                } else {
+                    otherFederationDiv.style.display = 'none';
+                }
+            });
+            
+            // Form submission
+            document.getElementById('club-registration-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Create FormData for file upload
+                const formData = new FormData(this);
+                
+                fetch('/api/clubs', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || 'Failed to register club');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    showAlert('Club registered successfully! You are now a coach.', 'success');
+                    
+                    // Redirect to manage club page after success
+                    setTimeout(() => {
+                        window.location.href = `/myClub${data.clubId ? '/' + data.clubId : ''}`;
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert(error.message, 'danger');
+                });
+            });
+            
+            // Alert function
+            function showAlert(message, type) {
+                const alertContainer = document.getElementById('alert-container');
+                alertContainer.textContent = message;
+                alertContainer.className = `alert alert-${type} mb-4`;
+                
+                // Scroll to the top to make sure alert is visible
+                window.scrollTo(0, 0);
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        alertContainer.classList.add('d-none');
+                    }, 5000);
+                }
+            }
+            
+            // Check URL for error parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            const success = urlParams.get('success');
+            
+            if (error) {
+                showAlert(decodeURIComponent(error), 'danger');
+            }
+            
+            if (success) {
+                showAlert(decodeURIComponent(success), 'success');
+            }
+        });
+    </script>
+</body>
+</html>

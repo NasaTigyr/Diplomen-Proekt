@@ -9,6 +9,7 @@ const port = 3000;
 // Importni controlleri
 
 const userRoutes = require('./routes/userRoutes');
+const clubRoutes = require('./routes/clubRoutes');
 
 const authController = require('./controllers/authController');
 const eventController = require('./controllers/eventController');
@@ -213,6 +214,15 @@ app.put('/api/user/profile', authMiddleware.isAuthenticated, uploadMiddleware.up
 
 app.get('/api/clubs/:id', clubController.getClubById);
 app.get('/api/coaches/:coachId/clubs', clubController.getClubsByCoach);
+
+//club api handler
+app.use('/api/clubs', clubRoutes);
+
+// Club routes - Views
+app.get('/createClub', (req, res) => {
+  res.redirect('/clubs/register');
+});
+app.use('/clubs', clubRoutes);
 
 // Error handler middleware
 app.use((err, req, res, next) => {
