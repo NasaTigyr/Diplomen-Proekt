@@ -76,7 +76,8 @@ exports.register = async (req, res) => {
       last_name: user.last_name,
       user_type: user.user_type,
       gender: user.gender,
-      date_of_birth: user.date_of_birth
+      date_of_birth: user.date_of_birth,
+      contact_number: user.contact_number 
     };
     
     // For API requests
@@ -150,7 +151,8 @@ exports.login = async (req, res) => {
       user_type: user.user_type,
       gender: user.gender,
       date_of_birth: user.date_of_birth,
-      profile_picture: user.profile_picture
+      profile_picture: user.profile_picture,
+      contact_number: user.contact_number 
     };
     
     // For API requests
