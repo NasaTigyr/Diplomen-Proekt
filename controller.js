@@ -7,15 +7,7 @@ const mysql = require('mysql2/promise');
 
 const jwt = require('jsonwebtoken'); 
 
-const db = mysql.createPool({
-    host: '127.0.0.1',
-    user: 'serverUser',
-    password: 'password',
-    database: 'test',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
+const db = require('./db');
 
 async function login(req, res) {
     
@@ -36,7 +28,7 @@ async function login(req, res) {
         const user = users[0];
         console.log("User found:", user);
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Invalid credentials" });

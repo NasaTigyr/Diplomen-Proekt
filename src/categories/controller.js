@@ -2,15 +2,7 @@
 const queries = require('./queries.js'); 
 
 //import mysql from 'mysql2/promise';
-const mysql = require('mysql2/promise'); 
-
-  
-const db = mysql.createConnection({
-  host: '127.0.0.1', // database host
-  user: 'serverUser', // database user
-  password: 'password', // database password (if any)
-  database: 'test', // your database name
-});
+const db = require('../../db');  
 
  const getCategories = async (req, res) => { 
   try {
