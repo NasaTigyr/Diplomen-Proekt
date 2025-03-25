@@ -1,12 +1,14 @@
 //import { queries }  from './queries.js'; 
-const queries = require('./queries.js'); 
+const queries = require('./queries'); 
 
 //import mysql from 'mysql2/promise';
 const db = require('../../db');  
 
  const getCategories = async (req, res) => { 
   try {
-    const [rows] = await db.query(queries.getCategories); 
+    console.log('Query being executed:', queries.getCategories);
+    const [rows] = await db.query(queries.getCategories);
+    console.log('Rows:', rows);
     console.log(rows); 
     res.json(rows); 
   }catch (error) {

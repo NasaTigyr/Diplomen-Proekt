@@ -6,6 +6,7 @@ const path = require('path');
 const session = require('express-session');
 const multer = require('multer');
 const fs = require('fs');
+const controller = require('./controller.js');
 
 // Import routes
 const categoryRoutes = require('./src/categories/routes.js');
@@ -17,7 +18,6 @@ const individualRegistrationRoutes = require('./src/individual_registration/rout
 const teamRegistrationAthletesRoutes = require('./src/team_registration_athletes/routes.js');
 const teamRegistrationsRoutes = require('./src/team_registrations/routes.js');
 const userRoutes = require('./src/users/routes.js');
-const controller = require('./controller.js');
 
 // Initialize express app
 const app = express();
@@ -37,7 +37,6 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
-
 const upload = multer({ storage: storage });
 
 // Middleware
@@ -49,8 +48,27 @@ app.use(session({
   secret: 'martial_arts_session_secret',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using HTTPS
+  cookie: { 
+    secure: false, // Set to true if using HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
+
+// Session debug middleware (optional - remove in production)
+app.use((req, res, next) => {
+  console.log('Session ID:', req.sessionID);
+  console.log('Session User:', req.session.user ? req.session.user.email : 'Not logged in');
+  next();
+});
+
+// Authentication middleware
+function isAuthenticated(req, res, next) {
+  if (req.session && req.session.user) {
+    return next();
+  }
+
+  return res.redirect('/login?error=' + encodeURIComponent('Please login to access this page'));
+}
 
 // Set view engine
 app.set('view engine', 'ejs');
@@ -65,58 +83,56 @@ app.use('/api', eventsRoutes);
 app.use('/api', individualRegistrationRoutes);
 app.use('/api', teamRegistrationAthletesRoutes);
 app.use('/api', teamRegistrationsRoutes);
-app.use('/api', userRoutes);
-app.post('/api/login', controller.login);
+app.use('/api', userRoutes); 
+
+// Direct routes for form submissions
+app.post('/login', controller.login); // Keep this as your form submits to /login
+app.post('/register', controller.register); 
+
 
 // View routes
 app.get('/', (req, res) => {
-    res.render('index', { user: req.session.user || null });
+  res.render('index', { user: req.session.user || null });
 });
 
 app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'login.html'));
+  // If user is already logged in, redirect to home
+  if (req.session.user) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
 app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'register.html'));
+  // If user is already logged in, redirect to home
+  if (req.session.user) {
+    return res.redirect('/');
+  }
+  res.sendFile(path.join(__dirname, 'views', 'register.html'));
 });
 
-app.get('/profile', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login?error=' + encodeURIComponent('Please login to view your profile'));
-    }
-    res.render('profile', { user: req.session.user });
+app.get('/profile', isAuthenticated, (req, res) => {
+  res.render('profile', { user: req.session.user });
 });
 
-app.get('/createClub', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login?error=' + encodeURIComponent('Please login to create a club'));
-    }
-    res.render('createClub', { user: req.session.user });
+app.get('/createClub', isAuthenticated, (req, res) => {
+  res.render('createClub', { user: req.session.user });
 });
 
 app.get('/events', (req, res) => {
-    res.render('events', { user: req.session.user || null });
+  res.render('events', { user: req.session.user || null });
 });
 
 app.get('/logout', (req, res) => {
-    req.session.destroy();
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
     res.redirect('/');
-});
-
-// Handle post requests
-app.post('/login', (req, res) => {
-    // This will be handled by your controller.login function
-    // but you need to set up a route to the HTML form
-    controller.login(req, res);
-});
-
-app.post('/register', upload.single('profile_picture'), (req, res) => {
-    // Handle registration logic
-    // You'll need to implement this in your controller
+  });
 });
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

@@ -1,5 +1,7 @@
 //import express from 'express';
 const express = require('express'); 
+const controller = require('../../controller');
+const multer = require('multer');
 
 const { 
   addUser, 
@@ -16,14 +18,10 @@ const {
 
 const router = express.Router(); 
 
-router.get('/users', getUsers);
-router.get('/users/id/:id', getUserById);
-router.get('/users/role/:role', getUsersByRole); 
-router.get('/users/name/:name', getUserByName);
-router.get('/users/email/:email', getUserByEmail);
-router.post('/users', addUser);
-router.put('users/:id', updateUser); 
+router.post('/login', controller.login);
+//router.post('register', upload.single('profile_picture'), controller.register); 
+//router.put('/user/profile', upload.single('profile_picture'), controller.updateProfile);
+router.put('/user/password', controller.changePassword);
 //router.put('users/:id', updatePassword); 
-router.delete('/users', deleteUser);
 
 module.exports = router;

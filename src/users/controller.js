@@ -64,6 +64,8 @@ const login = async (req, res) => {
     if (!match) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    console.log('i am using this method in the users/controller.js'); 
     
     // Login successful
     res.status(200).json({ 

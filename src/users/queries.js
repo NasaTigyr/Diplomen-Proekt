@@ -1,8 +1,9 @@
 const getUsers = 'SELECT * FROM users';
+const getUserByEmail = 'SELECT * FROM users WHERE email = ?'; 
 const getUsersByRole = 'SELECT * FROM users WHERE role = ?';
 const getUserById = 'SELECT * FROM users WHERE id = ?';
 const getUserByName = 'SELECT * FROM users WHERE name = ?';
-const getUserByEmail = 'SELECT email, password_hash FROM users WHERE email = ?';
+//const getUserByEmail = 'SELECT id, email, password_hash FROM users WHERE email = ?';
 const getPassword = 'SELECT password_hash FROM users WHERE id = ?';  // Uncommented
 
 const login = 'SELECT id, email, password_hash, first_name, last_name, user_type FROM users WHERE email = ?';

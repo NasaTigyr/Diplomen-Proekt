@@ -10,4 +10,15 @@ const addCategory = `INSERT INTO categories (event_id, name, age_group, gender, 
 const deleteCategory = 'DELETE FROM categories WHERE id = ?';
 const updateCategory = 'Update categories SET name = ?, age_group = ?, gender = ?, description = ?, max_participants = ?, draw_file_path = ?, updated_at = ? WHERE id = ?';
 
-
+module.exports = {
+  getCategories,
+  getCategoryById,
+  getCategoriesByEventId,
+  getCategoryByName,
+  getCategoriesByGender,
+  getCategoriesByAge,
+  getCategoriesByDescription,
+  addCategory,
+  deleteCategory,
+  updateCategory,
+};
