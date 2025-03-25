@@ -75,15 +75,15 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // API routes
-app.use('/api', categoryRoutes);
-app.use('/api', clubAthletesRoutes);
-app.use('/api', clubRoutes);
-app.use('/api', drawRoutes);
-app.use('/api', eventsRoutes);
-app.use('/api', individualRegistrationRoutes);
-app.use('/api', teamRegistrationAthletesRoutes);
-app.use('/api', teamRegistrationsRoutes);
-app.use('/api', userRoutes); 
+//app.use('/api', categoryRoutes);
+//app.use('/api', clubAthletesRoutes);
+//app.use('/api', clubRoutes);
+//app.use('/api', drawRoutes);
+//app.use('/api', eventsRoutes);
+//app.use('/api', individualRegistrationRoutes);
+//app.use('/api', teamRegistrationAthletesRoutes);
+//app.use('/api', teamRegistrationsRoutes);
+//app.use('/api', userRoutes); 
 
 // Direct routes for form submissions
 app.post('/login', controller.login); // Keep this as your form submits to /login
