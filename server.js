@@ -37,7 +37,13 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
+
 const upload = multer({ storage: storage });
+const clubUpload = upload.fields([
+  { name: 'logo', maxCount: 1 },
+  { name: 'certification', maxCount: 1 },
+  { name: 'coach_certification', maxCount: 1 }
+]);
 
 // Middleware
 app.use(cors());
@@ -66,7 +72,6 @@ function isAuthenticated(req, res, next) {
   if (req.session && req.session.user) {
     return next();
   }
-
   return res.redirect('/login?error=' + encodeURIComponent('Please login to access this page'));
 }
 
@@ -88,7 +93,7 @@ app.set('views', path.join(__dirname, 'views'));
 // Direct routes for form submissions
 app.post('/login', controller.login); // Keep this as your form submits to /login
 app.post('/register', controller.register); 
-
+app.post('/clubs', clubUpload, controller.createClub); // Add the club creation route here
 
 // View routes
 app.get('/', (req, res) => {

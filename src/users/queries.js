@@ -9,8 +9,11 @@ const getPassword = 'SELECT password_hash FROM users WHERE id = ?';  // Uncommen
 const login = 'SELECT id, email, password_hash, first_name, last_name, user_type FROM users WHERE email = ?';
 
 const addUser = `INSERT INTO users (email, password_hash, first_name, last_name, date_of_birth, gender, user_type, profile_picture, contact_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
 const deleteUser = 'DELETE FROM users WHERE id = ?';
+
 const updateUser = 'UPDATE users SET email = ?, first_name = ?, last_name = ?, date_of_birth = ?, gender = ?, user_type = ?, profile_picture = ?, contact_number = ? WHERE id = ?';
+
 const updatePassword = 'UPDATE users SET password_hash = ? WHERE id = ?';
 
 const queries = { 

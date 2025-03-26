@@ -170,14 +170,21 @@
                 // Create FormData for file upload
                 const formData = new FormData(this);
                 
-                fetch('/api/clubs', {
+                fetch('/clubs', {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => {
                     if (!response.ok) {
-                        return response.json().then(data => {
-                            throw new Error(data.message || 'Failed to register club');
+                        return response.text().then(text => {
+                            try {
+                                // Try to parse as JSON first
+                                const data = JSON.parse(text);
+                                throw new Error(data.message || 'Failed to register club');
+                            } catch (e) {
+                                // If parsing fails, return the raw text
+                                throw new Error('Server error: ' + text.substring(0, 100) + '...');
+                            }
                         });
                     }
                     return response.json();
@@ -191,6 +198,7 @@
                     }, 1500);
                 })
                 .catch(error => {
+                    console.log('this is line 194, not 240'); 
                     console.error('Error:', error);
                     showAlert(error.message, 'danger');
                 });

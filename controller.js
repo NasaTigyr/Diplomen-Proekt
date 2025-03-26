@@ -1,5 +1,6 @@
 //import {queries}  from './users/queries.js';
 const queries = require('./src/users/queries'); 
+const clubQueries = require('./src/clubs/queries'); 
 //import bcrypt from 'bcrypt';
 const bcrypt = require('bcrypt'); 
 //import mysql from 'mysql2/promise';
@@ -289,7 +290,6 @@ async function changePassword(req, res) {
     }
 }
 
-// Additional function to handle club creation
 async function createClub(req, res) {
     try {
         // Ensure user is logged in
@@ -313,32 +313,29 @@ async function createClub(req, res) {
         
         // Handle club logo if uploaded
         let logoPath = null;
-        if (req.file) {
-            logoPath = '/uploads/' + req.file.filename;
+        if (req.files && req.files.logo) {
+            logoPath = '/uploads/' + req.files.logo[0].filename;
         }
         
+        const currentDate = new Date();
+      console.log('the query is this: ' + clubQueries.addClub); 
         // Insert club into database
-        const result = await db.query(
-            queries.createClub,
-            [
-                name,
-                description,
-                address,
-                logoPath,
-                userId, // coach_id
-                phone,
-                email,
-                website,
-                established_date || null,
-                federation_affiliation === 'other' ? other_federation : federation_affiliation,
-                registration_code
-            ]
-        );
+        const result = await db.query(clubQueries.addClub,[name,description,logoPath,userId, address,currentDate, currentDate, registration_code,
+                  phone,
+                  email,
+                  website,
+                  established_date || null,
+                  federation_affiliation === 'other' ? other_federation : federation_affiliation,
+                  req.files && req.files.certification ? '/uploads/' + req.files.certification[0].filename : null,
+                  req.files && req.files.coach_certification ? '/uploads/' + req.files.coach_certification[0].filename : null,
+                  'pending' // status
+              ]
+          );
         
         const clubId = result[0].insertId;
         
         // Update user type to coach
-        await db.query(queries.updateUserType, ['coach', userId]);
+        await db.query('UPDATE users SET user_type = ? WHERE id = ?', ['coach', userId]);
         
         // Update session user_type
         req.session.user.user_type = 'coach';
