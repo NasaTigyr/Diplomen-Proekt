@@ -45,6 +45,7 @@ async function login(req, res) {
             first_name: user.first_name, 
             last_name: user.last_name,
             user_type: user.user_type, // Mapping role to user_type
+            contact_number: user.contact_number,
             profile_picture: user.profile_picture // Add this if it exists in your DB
         };
 
@@ -66,6 +67,8 @@ async function login(req, res) {
                 { expiresIn: "3h" }
             );
             
+            console.log('this is the path: ', user.profilePicturePath); 
+            
             return res.status(200).json({ 
                 message: "Logged in successfully", 
                 token, 
@@ -74,7 +77,9 @@ async function login(req, res) {
                     email: user.email, 
                     name: user.name, 
                     role: user.role, 
-                    family_name: user.family_name 
+                    family_name: user.family_name,
+                    contact_number: user.contact_number,
+                    profilePicturePath: user.profilePicturePath
                 } 
             });
         }
@@ -102,12 +107,15 @@ async function register(req, res) {
             email, 
             date_of_birth, 
             gender, 
+            profile_picture,
             contact_number, 
             password, 
             confirm_password 
         } = req.body;
         
         console.log("Registration attempt for:", email);
+        console.log("the contact number: ",contact_number); 
+        console.log("the profile picture name: ", profile_picture); 
         
         // Validate inputs
         if (!first_name || !last_name || !email || !password) {
@@ -135,7 +143,8 @@ async function register(req, res) {
         // Handle profile picture if uploaded
         let profilePicturePath = null;
         if (req.file) {
-            profilePicturePath = '/uploads/' + req.file.filename;
+            profilePicturePath = '/uploads/profile_picture/' + req.file.filename;
+          console.log('this is the photo path', profilePicturePath); 
         }
         
         // Insert user into database using your specific query
@@ -166,7 +175,8 @@ async function register(req, res) {
             first_name: first_name,
             last_name: last_name,
             user_type: 'regular',
-            profile_picture: profilePicturePath
+            profile_picture: profilePicturePath,
+            contact_number: contact_number 
         };
         
         // Set the session

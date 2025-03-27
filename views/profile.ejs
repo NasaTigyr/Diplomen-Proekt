@@ -89,7 +89,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="contact_number" class="form-label">Contact Number</label>
-                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>" disabled>
+                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>"placeholder="<%= user.contact_number %>" disabled>
                                 </div>
                                 <div class="mb-3">
                                     <label for="profile_picture" class="form-label">Profile Picture</label>
@@ -251,7 +251,7 @@
                 formData.append('profile_picture', profilePicture);
             }
             
-            fetch('/api/user/profile', {
+            fetch('/user/profile', {
                 method: 'PUT',
                 body: formData
             })
@@ -307,7 +307,7 @@
                 confirm_password: confirmPassword
             };
             
-            fetch('/api/user/password', {
+            fetch('/user/password', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

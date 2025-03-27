@@ -92,8 +92,9 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Direct routes for form submissions
 app.post('/login', controller.login); // Keep this as your form submits to /login
-app.post('/register', controller.register); 
+app.post('/register', upload.single('profile_picture'), controller.register); 
 app.post('/clubs', clubUpload, controller.createClub); // Add the club creation route here
+app.post('/profile', controller.updateProfile); 
 
 // View routes
 app.get('/', (req, res) => {
@@ -119,6 +120,7 @@ app.get('/register', (req, res) => {
 app.get('/profile', isAuthenticated, (req, res) => {
   res.render('profile', { user: req.session.user });
 });
+
 
 app.get('/createClub', isAuthenticated, (req, res) => {
   res.render('createClub', { user: req.session.user });
