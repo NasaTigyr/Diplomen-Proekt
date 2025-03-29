@@ -17,7 +17,7 @@
             <h1>Martial Arts Events</h1>
             
             <% if (user) { %>
-                <a href="/create-event" class="btn btn-primary">Create Event</a>
+                <a href="/createEvent" class="btn btn-primary">Create Event</a>
             <% } %>
         </div>
         
@@ -70,23 +70,34 @@
     
     <script>
         let allEvents = [];
-        
-        // Load all events
-        document.addEventListener('DOMContentLoaded', function() {
+    
+    // Load all events
+    document.addEventListener('DOMContentLoaded', function() {
+        // Use initial events if available, otherwise fetch them
+        <% if (typeof initialEvents !== 'undefined') { %>
+            try {
+                allEvents = JSON.parse('<%- initialEvents %>');
+                displayEvents(allEvents);
+            } catch (e) {
+                console.error('Error parsing initial events:', e);
+                fetchEvents(); // Fallback to fetch if parsing fails
+            }
+        <% } else { %>
             fetchEvents();
-            
-            // Set up event listeners
-            document.getElementById('search-button').addEventListener('click', filterEvents);
-            document.getElementById('searchBar').addEventListener('keyup', function(event) {
-                if (event.key === 'Enter') {
-                    filterEvents();
-                }
-            });
-            document.getElementById('sort-select').addEventListener('change', filterEvents);
-        });
+        <% } %>
         
+        // Set up event listeners
+        document.getElementById('search-button').addEventListener('click', filterEvents);
+        document.getElementById('searchBar').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                filterEvents();
+            }
+        });
+        document.getElementById('sort-select').addEventListener('change', filterEvents);
+    });
+               
         function fetchEvents() {
-            fetch('/api/events')
+            fetch('/events')
                 .then(response => response.json())
                 .then(events => {
                     allEvents = events;

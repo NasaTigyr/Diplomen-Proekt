@@ -1,11 +1,13 @@
 //import {queries}  from './users/queries.js';
 const queries = require('./src/users/queries'); 
 const clubQueries = require('./src/clubs/queries'); 
+const eventQueries = require('./src/events/queries'); 
 //import bcrypt from 'bcrypt';
 const bcrypt = require('bcrypt'); 
 //import mysql from 'mysql2/promise';
 const jwt = require('jsonwebtoken'); 
 const db = require('./db');
+const path = require('path'); 
 
 async function login(req, res) {
     const { email, password, remember } = req.body;
@@ -360,12 +362,106 @@ async function createClub(req, res) {
     }
 }
 
+async function createEvent(req, res) {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'You must be logged in to create an event' });
+    }
+    
+    console.log('the user is good');
+    console.log('the status of account: ', req.session.user.user_type);
+    
+    if (req.session.user.user_type != 'coach') {
+      return res.status(401).json({ message: 'You must be a coach to be able to create an event' });
+    }
+    
+    console.log('there is a coach tag on you');
+    
+    const {
+      name,
+      description,
+      address,
+      event_type,
+      start_date,
+      end_date,
+      registration_start,
+      registration_end,
+    } = req.body;
+    
+    console.log('this is the form data from the post: ', JSON.stringify(req.body));
+    
+    // Get file paths if files were uploaded
+    const timetable_file = req.files && req.files.timetable_file ? 
+      '/uploads/' + path.basename(req.files.timetable_file[0].path) : null;
+    
+    const banner_image = req.files && req.files.banner_image_file ? 
+      './public/uploads/event_banner' + path.basename(req.files.banner_image_file[0].path) : null;
+    
+    const creatorId = req.session.user.id;
+    const currentDate = new Date();
+    const updatedAt = new Date();
+    
+    console.log('this is the query for the event creation: ', eventQueries.addEvent);
+    
+    // Execute the database query
+    const result = await db.query(eventQueries.addEvent, [
+      name, description, banner_image, address, start_date, end_date, 
+      registration_start, registration_end, event_type, creatorId, 
+      timetable_file, currentDate, updatedAt
+    ]);
+    
+    // Return success response with the ID of the newly created event
+    return res.status(200).json({ 
+      message: 'Event created successfully', 
+      id: result.insertId 
+    });
+    
+  } catch (error) {
+    console.error('Event creation error:', error);
+    return res.status(500).json({ message: 'An error occurred while creating the event' });
+  }
+}
+
+async function getEvents() {
+  try {
+    // Query to get all events from the database
+    const eventQueries = {
+      getEvents: 'SELECT * FROM events'
+    };
+
+    // Execute the query and get the rows
+    const [rows] = await db.query(eventQueries.getEvents);
+    
+    // Transform the database fields to match frontend expectations
+    return rows.map(event => ({
+      id: event.id,
+      title: event.name,
+      description: event.description,
+      event_date: event.start_date,
+      location: event.address,
+      banner_url: event.banner_image,
+      registration_open_date: event.registration_start,
+      registration_close_date: event.registration_end,
+      sport_type: event.sport_type,
+      organizer_id: event.organizer_id,
+      status: event.status || 'active',
+      created_at: event.created_at
+    }));
+  } catch (error) {
+    console.error('Error in getEvents:', error);
+    throw error;
+  }
+}
+
 const controller = {
     login,
     register,
     updateProfile,
     changePassword,
-    createClub
+    createClub,
+    createEvent,
+    getEvents
+
 };
 
 module.exports = controller;

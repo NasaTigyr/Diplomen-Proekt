@@ -83,13 +83,12 @@
                                         <select class="form-select" id="gender" disabled>
                                             <option value="male" <%= user.gender === 'male' ? 'selected' : '' %>>Male</option>
                                             <option value="female" <%= user.gender === 'female' ? 'selected' : '' %>>Female</option>
-                                            <option value="other" <%= user.gender === 'other' ? 'selected' : '' %>>Other</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="contact_number" class="form-label">Contact Number</label>
-                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>"placeholder="<%= user.contact_number %>" disabled>
+                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>" placeholder="<%= user.contact_numbe ? user.contact_number : 'No number provided' %>" disabled>
                                 </div>
                                 <div class="mb-3">
                                     <label for="profile_picture" class="form-label">Profile Picture</label>

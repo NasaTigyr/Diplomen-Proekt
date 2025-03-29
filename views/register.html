@@ -42,7 +42,7 @@
         <!-- Alert for errors (hidden by default) -->
         <div id="alert-container" class="alert alert-danger d-none" role="alert"></div>
         
-        <form action="/register" method="POST" class="mx-auto" style="max-width: 500px;">
+        <form action="/register" method="POST" enctype="multipart/form-data" class="mx-auto" style="max-width: 500px;">
             <div class="mb-3">
                 <label for="first_name" class="form-label">First Name</label>
                 <input type="text" class="form-control" id="first_name" name="first_name" required>

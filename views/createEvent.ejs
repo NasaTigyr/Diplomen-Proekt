@@ -24,8 +24,8 @@
                 <!-- Left Column -->
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="title" class="form-label">Event Title*</label>
-                        <input type="text" class="form-control" id="title" name="title" required>
+                        <label for="name" class="form-label">Event Name*</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
                     </div>
                     
                     <div class="mb-3">
@@ -34,36 +34,51 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="location" class="form-label">Location</label>
-                        <input type="text" class="form-control" id="location" name="location">
+                        <label for="address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="address" name="address">
                     </div>
                     
                     <div class="mb-3">
-                        <label for="banner_image" class="form-label">Banner Image URL</label>
-                        <input type="url" class="form-control" id="banner_image" name="banner_image" placeholder="https://example.com/image.jpg">
+                        <label for="banner_image_file" class="form-label">Banner Image</label>
+                        <input type="file" class="form-control" id="banner_image_file" name="banner_image_file" accept="image/*">
+                        <small class="text-muted">Upload an image for your event banner</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="event_type" class="form-label">Event Type*</label>
+                        <select class="form-control" id="event_type" name="event_type" required>
+                            <option value="">Select Event Type</option>
+                            <option value="team">Team event</option>
+                            <option value="free_for_all">Free for All</option>
+                        </select>
                     </div>
                 </div>
                 
                 <!-- Right Column -->
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="event_date" class="form-label">Event Date</label>
-                        <input type="text" class="form-control datepicker" id="event_date" name="event_date">
+                        <label for="start_date" class="form-label">Start Date*</label>
+                        <input type="text" class="form-control datepicker" id="start_date" name="start_date" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="registration_open_date" class="form-label">Registration Open Date*</label>
-                        <input type="text" class="form-control datepicker" id="registration_open_date" name="registration_open_date" required>
+                        <label for="end_date" class="form-label">End Date*</label>
+                        <input type="text" class="form-control datepicker" id="end_date" name="end_date" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="registration_close_date" class="form-label">Registration Close Date*</label>
-                        <input type="text" class="form-control datepicker" id="registration_close_date" name="registration_close_date" required>
+                        <label for="registration_start" class="form-label">Registration Start Date*</label>
+                        <input type="text" class="form-control datepicker" id="registration_start" name="registration_start" required>
                     </div>
                     
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="is_published" name="is_published">
-                        <label class="form-check-label" for="is_published">Publish Event Immediately</label>
+                    <div class="mb-3">
+                        <label for="registration_end" class="form-label">Registration End Date*</label>
+                        <input type="text" class="form-control datepicker" id="registration_end" name="registration_end" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="timetable_file" class="form-label">Timetable File</label>
+                        <input type="file" class="form-control" id="timetable_file" name="timetable_file">
+                        <small class="text-muted">Upload a PDF or Excel file with the event schedule</small>
                     </div>
                 </div>
             </div>
@@ -92,8 +107,8 @@
         // Initialize date pickers
         document.addEventListener('DOMContentLoaded', function() {
             flatpickr(".datepicker", {
-                enableTime: false,
-                dateFormat: "Y-m-d",
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
                 minDate: "today"
             });
             
@@ -104,39 +119,67 @@
         function submitForm(e) {
             e.preventDefault();
             
-            const formData = {
-                title: document.getElementById('title').value,
-                description: document.getElementById('description').value,
-                location: document.getElementById('location').value,
-                banner_image: document.getElementById('banner_image').value,
-                event_date: document.getElementById('event_date').value,
-                registration_open_date: document.getElementById('registration_open_date').value,
-                registration_close_date: document.getElementById('registration_close_date').value,
-                is_published: document.getElementById('is_published').checked
-            };
+            // Create FormData object to handle file uploads
+            const formData = new FormData();
+            
+            // Add form fields to FormData
+            formData.append('name', document.getElementById('name').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('address', document.getElementById('address').value);
+            const bannerImageFile = document.getElementById('banner_image_file').files[0];
+            if (bannerImageFile) {
+                formData.append('banner_image_file', bannerImageFile);
+            }
+            formData.append('start_date', document.getElementById('start_date').value);
+            formData.append('end_date', document.getElementById('end_date').value);
+            formData.append('registration_start', document.getElementById('registration_start').value);
+            formData.append('registration_end', document.getElementById('registration_end').value);
+            formData.append('event_type', document.getElementById('event_type').value);
+            formData.append('creator_id', '<%= user.id %>'); // Get from session
+            
+            // Add timetable file if selected
+            const timetableFile = document.getElementById('timetable_file').files[0];
+            if (timetableFile) {
+                formData.append('timetable_file', timetableFile);
+            }
+            
+            // Add timestamps
+            const now = new Date().toISOString();
+            formData.append('created_at', now);
+            formData.append('updated_at', now);
             
             // Validate required fields
-            if (!formData.title || !formData.registration_open_date || !formData.registration_close_date) {
+            if (!formData.get('name') || !formData.get('start_date') || !formData.get('end_date') || 
+                !formData.get('registration_start') || !formData.get('registration_end') || !formData.get('event_type')) {
                 showAlert('Please fill in all required fields.', 'danger');
                 return;
             }
             
             // Validate dates
-            const regOpenDate = new Date(formData.registration_open_date);
-            const regCloseDate = new Date(formData.registration_close_date);
+            const startDate = new Date(formData.get('start_date'));
+            const endDate = new Date(formData.get('end_date'));
+            const regStartDate = new Date(formData.get('registration_start'));
+            const regEndDate = new Date(formData.get('registration_end'));
             
-            if (regCloseDate <= regOpenDate) {
-                showAlert('Registration close date must be after registration open date.', 'danger');
+            if (endDate < startDate) {
+                showAlert('End date must be after start date.', 'danger');
                 return;
             }
             
+            if (regEndDate < regStartDate) {
+                showAlert('Registration end date must be after registration start date.', 'danger');
+                return;
+            }
+            
+            if (startDate < regEndDate) {
+                showAlert('Event start date should be after registration closes.', 'warning');
+                // Continue anyway, just a warning
+            }
+            
             // Submit the form
-            fetch('/createEvent', {
+            fetch('createEvent', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -150,7 +193,7 @@
                 showAlert('Event created successfully!', 'success');
                 // Redirect to the event page after a short delay
                 setTimeout(() => {
-                    window.location.href = `/event/${data.id}`;
+                    window.location.href = `/events/${data.id}`;
                 }, 1500);
             })
             .catch(error => {
@@ -162,6 +205,7 @@
             const alertContainer = document.getElementById('alert-container');
             alertContainer.textContent = message;
             alertContainer.className = `alert alert-${type}`;
+            alertContainer.classList.remove('d-none');
             
             // Auto-hide success messages after 5 seconds
             if (type === 'success') {
