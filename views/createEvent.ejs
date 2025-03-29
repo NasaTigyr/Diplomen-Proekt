@@ -39,8 +39,8 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="banner_url" class="form-label">Banner Image URL</label>
-                        <input type="url" class="form-control" id="banner_url" name="banner_url" placeholder="https://example.com/image.jpg">
+                        <label for="banner_image" class="form-label">Banner Image URL</label>
+                        <input type="url" class="form-control" id="banner_image" name="banner_image" placeholder="https://example.com/image.jpg">
                     </div>
                 </div>
                 
@@ -108,7 +108,7 @@
                 title: document.getElementById('title').value,
                 description: document.getElementById('description').value,
                 location: document.getElementById('location').value,
-                banner_url: document.getElementById('banner_url').value,
+                banner_image: document.getElementById('banner_image').value,
                 event_date: document.getElementById('event_date').value,
                 registration_open_date: document.getElementById('registration_open_date').value,
                 registration_close_date: document.getElementById('registration_close_date').value,
@@ -131,7 +131,7 @@
             }
             
             // Submit the form
-            fetch('/api/events', {
+            fetch('/createEvent', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
