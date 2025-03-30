@@ -425,12 +425,38 @@ async function createEvent(req, res) {
 async function getEvents() {
   try {
     // Query to get all events from the database
-    const eventQueries = {
-      getEvents: 'SELECT * FROM events'
-    };
+//    const eventQueries = {
+//      getEvents: 'SELECT * FROM events'
+//    };
 
     // Execute the query and get the rows
     const [rows] = await db.query(eventQueries.getEvents);
+    
+    // Transform the database fields to match frontend expectations
+    return rows.map(event => ({
+      id: event.id,
+      title: event.name,
+      description: event.description,
+      event_date: event.start_date,
+      location: event.address,
+      banner_url: event.banner_image,
+      registration_open_date: event.registration_start,
+      registration_close_date: event.registration_end,
+      sport_type: event.sport_type,
+      organizer_id: event.organizer_id,
+      status: event.status || 'active',
+      created_at: event.created_at
+    }));
+  } catch (error) {
+    console.error('Error in getEvents:', error);
+    throw error;
+  }
+}
+
+async function getEventById(eventId) {
+  try {
+    // Execute the query and get the rows
+    const [rows] = await db.query(eventQueries.getEventById, [eventId]);
     
     // Transform the database fields to match frontend expectations
     return rows.map(event => ({
@@ -460,8 +486,8 @@ const controller = {
     changePassword,
     createClub,
     createEvent,
-    getEvents
-
+    getEvents,
+    getEventById
 };
 
 module.exports = controller;

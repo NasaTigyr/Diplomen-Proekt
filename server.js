@@ -146,6 +146,11 @@ app.get('/createClub', isAuthenticated, (req, res) => {
 //app.get('/events', (req, res) => { 
 //  res.render('events', { user: req.session.user });
 //});
+app.get('/eventDetails', (req,res) => {
+  const eventId = req.params.id; 
+  res.render('eventDetails',{ user: req.session.user,
+    eventId: eventId} ); 
+});
 
 app.get('/events', async (req, res) => {
     try {
