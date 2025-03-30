@@ -148,9 +148,34 @@ app.get('/createClub', isAuthenticated, (req, res) => {
 
 //app.get('/eventDetails/:id', (req,res) => {
 //  const eventId = req.params.id; 
-//  res.render('eventDetails',{ user: req.session.user,
-//    eventId: eventId} ); 
+//  res.render('eventDetails',controller.getEventById,{ user: req.session.user} ); 
 //});
+
+app.get("/eventDetails/:id", async (req, res) => {
+    try {
+        const eventId = req.params.id;
+        const event = await controller.getEventById(eventId);
+        console.log("this is the event in the route: ",event); 
+
+        if (!event) {
+            return res.status(404).render("error", {
+                message: "Event not found",
+                error: { status: 404 }
+            });
+        }
+
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+            return res.json(event);
+        }
+
+        res.render("eventDetails", { event, eventId, user: req.session.user });
+    } catch (error) {
+        res.status(500).render("error", {
+            message: "Internal server error",
+            error: { status: 500 }
+        });
+    }
+});
 
 app.get('/events', async (req, res) => {
     try {

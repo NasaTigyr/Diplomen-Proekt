@@ -1,108 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Details - Martial Arts Competitions</title>
     <link rel="stylesheet" href="/styleIndex.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+  </head>
+  <body>
     <!-- Include the navigation header -->
     <%- include('header', {currentPage: '', user: user}); %>
-    
+
     <div class="container my-5">
-        <div id="event-details">
-            <!-- This will be populated with JavaScript -->
+      <div id="event-details">
+        <!-- This will be populated with JavaScript -->
+        <div class="text-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs for event details -->
+      <ul class="nav nav-tabs mt-4" id="eventTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab" aria-controls="categories" aria-selected="true">Categories</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="timetable-tab" data-bs-toggle="tab" data-bs-target="#timetable" type="button" role="tab" aria-controls="timetable" aria-selected="false">Timetable</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab" aria-controls="location" aria-selected="false">Location</button>
+        </li>
+      </ul>
+
+      <div class="tab-content p-3 border border-top-0 rounded-bottom" id="eventTabsContent">
+        <!-- Categories Tab -->
+        <div class="tab-pane fade show active" id="categories" role="tabpanel" aria-labelledby="categories-tab">
+          <div id="categories-container">
             <div class="text-center">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
             </div>
+          </div>
+
+          <div id="no-categories-message" class="alert alert-info text-center mt-4 d-none">
+            No categories found for this event.
+          </div>
         </div>
-        
-        <!-- Tabs for event details -->
-        <ul class="nav nav-tabs mt-4" id="eventTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab" aria-controls="categories" aria-selected="true">Categories</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="timetable-tab" data-bs-toggle="tab" data-bs-target="#timetable" type="button" role="tab" aria-controls="timetable" aria-selected="false">Timetable</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab" aria-controls="location" aria-selected="false">Location</button>
-            </li>
-        </ul>
-        
-        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="eventTabsContent">
-            <!-- Categories Tab -->
-            <div class="tab-pane fade show active" id="categories" role="tabpanel" aria-labelledby="categories-tab">
-                <div id="categories-container">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="no-categories-message" class="alert alert-info text-center mt-4 d-none">
-                    No categories found for this event.
-                </div>
+
+        <!-- Timetable Tab -->
+        <div class="tab-pane fade" id="timetable" role="tabpanel" aria-labelledby="timetable-tab">
+          <div id="timetable-container">
+            <div class="text-center">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
             </div>
-            
-            <!-- Timetable Tab -->
-            <div class="tab-pane fade" id="timetable" role="tabpanel" aria-labelledby="timetable-tab">
-                <div id="timetable-container">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="no-timetable-message" class="alert alert-info text-center mt-4 d-none">
-                    No timetable entries found for this event.
-                </div>
-            </div>
-            
-            <!-- Location Tab -->
-            <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
-                <div id="location-info">
-                </div>
-            </div>
+          </div>
+
+          <div id="no-timetable-message" class="alert alert-info text-center mt-4 d-none">
+            No timetable entries found for this event.
+          </div>
         </div>
-        
-        <!-- Registration Section -->
-        <div class="card mt-4" id="registration-section">
-            <div class="card-header">
-                <h4>Registration</h4>
-            </div>
-            <div class="card-body" id="registration-body">
-                <!-- This will be populated with JavaScript -->
-            </div>
+
+        <!-- Location Tab -->
+        <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
+          <div id="location-info">
+          </div>
         </div>
+      </div>
+
+      <!-- Registration Section -->
+      <div class="card mt-4" id="registration-section">
+        <div class="card-header">
+          <h4>Registration</h4>
+        </div>
+        <div class="card-body" id="registration-body">
+          <!-- This will be populated with JavaScript -->
+        </div>
+      </div>
     </div>
-    
+
     <!-- Footer -->
     <footer class="bg-light text-center py-3 mt-5">
-        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+      <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
-        const eventId = <%= eventId %>;
-        let eventData = null;
-        let categories = [];
-        let timetableEntries = [];
-        let userRegistrations = [];
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            // Fetch event details
-            fetchEventDetails();
-            
-            // Fetch categories
-            fetchCategories();
+      const eventId = <%= eventId %>;
+      let eventData = null;
+      let categories = [];
+      let timetableEntries = [];
+      let userRegistrations = [];
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // Fetch event details
+        fetchEventDetails();
+
+        // Fetch categories
+        fetchCategories();
             
             // Fetch timetable
             fetchTimetable();
@@ -114,8 +114,12 @@
         });
         
         function fetchEventDetails() {
-            fetch(`/api/events/${eventId}`)
+            fetch(`/eventDetails/${eventId}`)
                 .then(response => response.json())
+                .then(text => {
+                  console.log("ras response: ", text);
+                  return JSON.parse(text); 
+                })
                 .then(event => {
                     eventData = event;
                     displayEventDetails(event);
@@ -181,7 +185,7 @@
         }
         
         function fetchCategories() {
-            fetch(`/api/events/${eventId}/categories`)
+            fetch(`/event/${eventId}/categories`)
                 .then(response => response.json())
                 .then(data => {
                     categories = data;

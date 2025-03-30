@@ -453,30 +453,98 @@ async function getEvents() {
   }
 }
 
+//async function getEventById(eventId) {
+//  try {
+//    // Execute the query and get the rows
+//    const [rows] = await db.query(eventQueries.getEventById, [eventId]);
+//    
+//    // Transform the database fields to match frontend expectations
+//    return rows.map(event => ({
+//      id: event.id,
+//      title: event.name,
+//      description: event.description,
+//      event_date: event.start_date,
+//      location: event.address,
+//      banner_url: event.banner_image,
+//      registration_open_date: event.registration_start,
+//      registration_close_date: event.registration_end,
+//      sport_type: event.sport_type,
+//      organizer_id: event.organizer_id,
+//      status: event.status || 'active',
+//      created_at: event.created_at
+//    }));
+//  } catch (error) {
+//    console.error('Error in getEvents:', error);
+//    throw error;
+//  }
+//}
+//async function getEventById(eventId) {
+//    try {
+//        const eventId = req.params.id;
+//      console.log("the event id: ", eventId); 
+//        
+//        // Validate that eventId is a number
+//        if (isNaN(parseInt(eventId))) {
+//            return res.status(400).render('error', { 
+//                message: 'Invalid event ID',
+//                error: { status: 400 }
+//            });
+//        }
+//        
+//        // Check if event exists (optional validation step)
+//        const eventCheck = await db.query(
+//            'SELECT id FROM events WHERE id = $1',
+//            [eventId]
+//        );
+//        
+//        if (eventCheck.rows.length === 0) {
+//            return res.status(404).render('error', { 
+//                message: 'Event not found',
+//                error: { status: 404 }
+//            });
+//        }
+//        
+//        // Render the event details page with the event ID
+//        res.render('event-details', {
+//            eventId: eventId,
+//            user: req.user || null, // Pass the user object if authenticated
+//            title: 'Event Details' // Page title
+//        });
+//    } catch (error) {
+//        console.error('Error in getEventDetails controller:', error);
+//        res.status(500).render('error', {
+//            message: 'Internal server error',
+//            error: { status: 500 }
+//        });
+//    }
+//}
+
 async function getEventById(eventId) {
-  try {
-    // Execute the query and get the rows
-    const [rows] = await db.query(eventQueries.getEventById, [eventId]);
-    
-    // Transform the database fields to match frontend expectations
-    return rows.map(event => ({
-      id: event.id,
-      title: event.name,
-      description: event.description,
-      event_date: event.start_date,
-      location: event.address,
-      banner_url: event.banner_image,
-      registration_open_date: event.registration_start,
-      registration_close_date: event.registration_end,
-      sport_type: event.sport_type,
-      organizer_id: event.organizer_id,
-      status: event.status || 'active',
-      created_at: event.created_at
-    }));
-  } catch (error) {
-    console.error('Error in getEvents:', error);
-    throw error;
-  }
+    try {
+        console.log("Fetching event with ID:", eventId);
+
+        // Validate eventId
+        if (isNaN(parseInt(eventId))) {
+            throw new Error("Invalid event ID");
+        }
+
+        // Fetch event from database
+        const [rows] = await db.query(
+            "SELECT * FROM events WHERE id = ?",
+            [eventId]
+        );
+
+        console.log("The event i have here: ", rows); 
+
+        if (rows.length === 0) {
+            return null; // No event found
+        }
+
+        return rows[0]; // Return event details
+    } catch (error) {
+        console.error("Error in getEventById:", error);
+        throw error;
+    }
 }
 
 const controller = {
