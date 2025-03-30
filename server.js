@@ -70,7 +70,6 @@ const clubUpload = upload.fields([
 app.use((req, res, next) => {
   console.log('Session ID:', req.sessionID);
   console.log('Session User:', req.session.user ? req.session.user.email : 'Not logged in');
-//  res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' http://localhost:3000; font-src 'self'; style-src 'self'; script-src 'self'");
   next();
 });
 
@@ -146,11 +145,12 @@ app.get('/createClub', isAuthenticated, (req, res) => {
 //app.get('/events', (req, res) => { 
 //  res.render('events', { user: req.session.user });
 //});
-app.get('/eventDetails', (req,res) => {
-  const eventId = req.params.id; 
-  res.render('eventDetails',{ user: req.session.user,
-    eventId: eventId} ); 
-});
+
+//app.get('/eventDetails/:id', (req,res) => {
+//  const eventId = req.params.id; 
+//  res.render('eventDetails',{ user: req.session.user,
+//    eventId: eventId} ); 
+//});
 
 app.get('/events', async (req, res) => {
     try {
@@ -184,7 +184,7 @@ app.get('/events', async (req, res) => {
     }
 });
 
-app.get('/favicon.ico', (req, res) => res.status(204).end());
+//app.get('/favicon.ico', (req, res) => res.status(204).end());
 //app.get('/events', async (req, res) => {
 //  try {
 //    const events = await controller.getEvents(); // Call controller function
