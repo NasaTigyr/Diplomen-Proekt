@@ -85,11 +85,6 @@
                                 <input type="text" class="form-control datepicker" id="registration_end" name="registration_end" required>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="timetable_file" class="form-label">Timetable File</label>
-                                <input type="file" class="form-control" id="timetable_file" name="timetable_file" accept=".pdf,.xls,.xlsx,.doc,.docx">
-                                <small class="text-muted">Upload a PDF or Excel file with the event schedule</small>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,21 +175,6 @@
                             </div>
                         </div>
                         
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="category-draw-file" class="form-label">Draw File</label>
-                                <input type="file" class="form-control" id="category-draw-file" accept=".pdf,.jpg,.png">
-                                <small class="form-text text-muted">Upload a tournament bracket/draw (optional)</small>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="category-status" class="form-label">Status</label>
-                                <select class="form-select" id="category-status">
-                                    <option value="active">Active</option>
-                                    <option value="draft">Draft</option>
-                                </select>
-                            </div>
-                        </div>
-                        
                         <div class="mb-3">
                             <label for="category-rules" class="form-label">Special Rules</label>
                             <textarea class="form-control" id="category-rules" rows="3"></textarea>
@@ -238,6 +218,7 @@
         // Global variables
         const categories = [];
         let categoryModal;
+        const categoryFiles = []; // Added this line to fix the error
         
         // Initialize date pickers and other setup
         document.addEventListener('DOMContentLoaded', function() {
@@ -326,8 +307,6 @@
             // Get category index (if editing existing category)
             const categoryIndex = parseInt(document.getElementById('category-index').value);
             
-            // Get draw file
-            const drawFile = document.getElementById('category-draw-file').files[0];
             
             // Create category object
             const category = {
@@ -340,13 +319,7 @@
                 rules: document.getElementById('category-rules').value,
                 fee: categoryFee,
                 status: document.getElementById('category-status').value,
-                drawFile: drawFile ? drawFile.name : null
             };
-            
-            // If there's a file, we'll need to handle this on the server side
-            if (drawFile) {
-                category.hasDrawFile = true;
-            }
             
             // Add or update category in the array
             if (categoryIndex === -1) {
@@ -485,34 +458,11 @@
                 formData.append('banner_image_file', bannerImageFile);
             }
             
-            // Handle category draw files
-            const categoryFiles = [];
-            categories.forEach((category, index) => {
-                if (category.hasDrawFile) {
-                    const fileInput = document.getElementById('category-draw-file');
-                    // We only keep the last selected file for simplicity
-                    // In a real implementation, you'd need to store files for each category
-                    if (fileInput.files.length > 0) {
-                        const file = fileInput.files[0];
-                        formData.append(`category_draw_${index}`, file);
-                        categoryFiles.push({
-                            categoryIndex: index,
-                            fileName: file.name
-                        });
-                    }
-                }
-            });
-            
             // Add category files info
             if (categoryFiles.length > 0) {
                 formData.append('category_files', JSON.stringify(categoryFiles));
             }
             
-            // Add timetable file if selected
-            const timetableFile = document.getElementById('timetable_file').files[0];
-            if (timetableFile) {
-                formData.append('timetable_file', timetableFile);
-            }
             
             // Add categories as JSON
             formData.append('categories', JSON.stringify(categories));

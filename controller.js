@@ -2,6 +2,7 @@
 const queries = require('./src/users/queries'); 
 const clubQueries = require('./src/clubs/queries'); 
 const eventQueries = require('./src/events/queries'); 
+const categoryQueries = require('./src/categories/queries'); 
 //import bcrypt from 'bcrypt';
 const bcrypt = require('bcrypt'); 
 //import mysql from 'mysql2/promise';
@@ -364,19 +365,22 @@ async function createClub(req, res) {
 
 async function createEvent(req, res) {
   try {
+    // Check if user is logged in
     if (!req.session.user) {
       return res.status(401).json({ message: 'You must be logged in to create an event' });
     }
     
-    console.log('the user is good');
-    console.log('the status of account: ', req.session.user.user_type);
+    console.log('User is authenticated');
+    console.log('Account type:', req.session.user.user_type);
     
-    if (req.session.user.user_type != 'coach') {
+    // Check if user is a coach
+    if (req.session.user.user_type !== 'coach') {
       return res.status(401).json({ message: 'You must be a coach to be able to create an event' });
     }
     
-    console.log('there is a coach tag on you');
+    console.log('User has coach privileges');
     
+    // Extract event data from request body
     const {
       name,
       description,
@@ -386,39 +390,148 @@ async function createEvent(req, res) {
       end_date,
       registration_start,
       registration_end,
+      categories
     } = req.body;
     
-    console.log('this is the form data from the post: ', JSON.stringify(req.body));
+    console.log('Form data received:', req.body);
     
-    // Get file paths if files were uploaded
-    const timetable_file = req.files && req.files.timetable_file ? 
-      '/uploads/' + path.basename(req.files.timetable_file[0].path) : null;
+    // Process file uploads
+    let timetable_file = null;
+    let banner_image = null;
     
-    const banner_image = req.files && req.files.banner_image_file ? 
-      './public/uploads/event_banner' + path.basename(req.files.banner_image_file[0].path) : null;
+    if (req.files) {
+      // Handle timetable file
+      if (req.files.timetable_file && req.files.timetable_file.length > 0) {
+        timetable_file = '/uploads/' + req.files.timetable_file[0].filename;
+        console.log('Timetable file saved at:', timetable_file);
+      }
+      
+      // Handle banner image file
+      if (req.files.banner_image_file && req.files.banner_image_file.length > 0) {
+        banner_image = '/uploads/' + req.files.banner_image_file[0].filename;
+        console.log('Banner image saved at:', banner_image);
+      }
+    }
     
     const creatorId = req.session.user.id;
-    const currentDate = new Date();
-    const updatedAt = new Date();
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
     
-    console.log('this is the query for the event creation: ', eventQueries.addEvent);
+    // Create the event
+    console.log('Creating event with name:', name);
     
-    // Execute the database query
     const result = await db.query(eventQueries.addEvent, [
-      name, description, banner_image, address, start_date, end_date, 
-      registration_start, registration_end, event_type, creatorId, 
-      timetable_file, currentDate, updatedAt
+      name, 
+      description, 
+      banner_image, 
+      address, 
+      start_date, 
+      end_date, 
+      registration_start, 
+      registration_end, 
+      event_type, 
+      creatorId, 
+      timetable_file, 
+      currentDate, 
+      currentDate
     ]);
     
-    // Return success response with the ID of the newly created event
+    // Extract the event ID (depends on how your db.query returns results)
+    const eventId = result[0].insertId;
+    console.log('Event created with ID:', eventId);
+    
+    // Process categories if provided
+    if (categories) {
+      let parsedCategories = [];
+      
+      // Parse categories data if it's a string
+      if (typeof categories === 'string') {
+        try {
+          parsedCategories = JSON.parse(categories);
+          console.log('Parsed categories:', parsedCategories);
+        } catch (e) {
+          console.error('Error parsing categories JSON:', e);
+          // Continue processing even if categories fail
+          console.log('Continuing without categories due to parsing error');
+        }
+      } else if (Array.isArray(categories)) {
+        parsedCategories = categories;
+      } else {
+        console.error('Categories is neither a string nor an array:', categories);
+        // Continue processing even if categories data is invalid
+        console.log('Continuing without categories due to invalid format');
+      }
+      
+      console.log('Processing', parsedCategories.length, 'categories');
+      
+      // Create each category
+      for (const category of parsedCategories) {
+        try {
+          console.log('Creating category:', category.name);
+          
+          // Store additional category details in description if they're not in the database schema
+          let enhancedDescription = category.description || '';
+          
+          // Collect additional fields that aren't in the database schema
+          const additionalFields = [];
+          
+          if (category.weight_class) {
+            additionalFields.push(`Weight Class: ${category.weight_class}`);
+          }
+          
+          if (category.rules) {
+            additionalFields.push(`Special Rules: ${category.rules}`);
+          }
+          
+          if (category.fee) {
+            additionalFields.push(`Registration Fee: $${parseFloat(category.fee).toFixed(2)}`);
+          }
+          
+          if (category.status && category.status !== 'active') {
+            additionalFields.push(`Status: ${category.status}`);
+          }
+          
+          // Append additional fields to description if they exist
+          if (additionalFields.length > 0) {
+            enhancedDescription += (enhancedDescription ? '\n\n' : '') + 
+              additionalFields.join('\n\n');
+          }
+          
+          // Check the available query to ensure we're using it correctly
+          console.log('Using addCategory query:', eventQueries.addCategory);
+          
+          // Execute query to add category
+          await db.query(categoryQueries.addCategory, [
+            eventId,
+            category.name,
+            category.age_group || 'senior', // Default to senior if not specified
+            category.gender || 'mixed',      // Default to mixed if not specified
+            enhancedDescription,
+            category.max_participants || null,
+            null, // draw_file_path is null initially
+            currentDate,
+            currentDate
+          ]);
+          
+          console.log(`Category "${category.name}" created successfully`);
+        } catch (categoryError) {
+          // Log error but continue with next category
+          console.error(`Error creating category "${category.name}":`, categoryError);
+        }
+      }
+    }
+    
+    // Return success response
     return res.status(200).json({ 
       message: 'Event created successfully', 
-      id: result.insertId 
+      id: eventId 
     });
     
   } catch (error) {
     console.error('Event creation error:', error);
-    return res.status(500).json({ message: 'An error occurred while creating the event' });
+    return res.status(500).json({ 
+      message: 'An error occurred while creating the event', 
+      error: error.message 
+    });
   }
 }
 
@@ -478,6 +591,7 @@ async function getEvents() {
 //    throw error;
 //  }
 //}
+//
 //async function getEventById(eventId) {
 //    try {
 //        const eventId = req.params.id;
