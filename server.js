@@ -346,6 +346,10 @@ app.post('/cancel-registration', async (req, res) => {
   }
 });
 
+app.get('/manageClub', isAuthenticated, (req, res) => {
+  res.render('manageClub', { user: req.session.user });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
