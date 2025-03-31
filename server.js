@@ -85,17 +85,6 @@ function isAuthenticated(req, res, next) {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// API routes
-//app.use('/api', categoryRoutes);
-//app.use('/api', clubAthletesRoutes);
-//app.use('/api', clubRoutes);
-//app.use('/api', drawRoutes);
-//app.use('/api', eventsRoutes);
-//app.use('/api', individualRegistrationRoutes);
-//app.use('/api', teamRegistrationAthletesRoutes);
-//app.use('/api', teamRegistrationsRoutes);
-//app.use('/api', userRoutes); 
-//
 const eventUpload = upload.fields([
   {name: 'timetable_file', maxCount: 1},
   {name: 'banner_image_file', maxCount: 1}
@@ -107,6 +96,10 @@ app.post('/register', upload.single('profile_picture'), controller.register);
 app.post('/clubs', clubUpload, controller.createClub); // Add the club creation route here
 app.post('/profile', controller.updateProfile); 
 app.post('/createEvent',eventUpload, controller.createEvent); 
+
+// Add these routes to your app.js file
+app.post('/register-category', isAuthenticated, controller.registerForCategory);
+app.post('/cancel-registration', isAuthenticated, controller.cancelRegistration);
 
 // View routes
 app.get('/', (req, res) => {
@@ -142,40 +135,29 @@ app.get('/createClub', isAuthenticated, (req, res) => {
   res.render('createClub', { user: req.session.user });
 });
 
-//app.get('/events', (req, res) => { 
-//  res.render('events', { user: req.session.user });
+//app.get('/eventDetails/:id', async (req, res) => {
+//  try {
+//    console.log("1. Route handler started");
+//    const eventId = req.params.id;
+//    console.log("2. Event ID:", eventId);
+//    
+//    const eventData = await controller.getEventById(eventId);
+//    console.log("3. Event data received");
+//    
+//    const event = Array.isArray(eventData) ? eventData[0] : eventData;
+//    console.log("4. Preparing to render");
+//    
+//    res.render('eventDetails', {
+//      event: event,
+//      eventId: parseInt(eventId),
+//      user: req.session.user || null
+//    });
+//    console.log("5. Render function called");
+//  } catch (error) {
+//    console.error("ERROR in event details route:", error);
+//    res.status(500).send("Error: " + error.message);
+//  }
 //});
-
-//app.get('/eventDetails/:id', (req,res) => {
-//  const eventId = req.params.id; 
-//  res.render('eventDetails',controller.getEventById,{ user: req.session.user} ); 
-//});
-
-app.get("/eventDetails/:id", async (req, res) => {
-    try {
-        const eventId = req.params.id;
-        const event = await controller.getEventById(eventId);
-        console.log("this is the event in the route: ",event); 
-
-        if (!event) {
-            return res.status(404).render("error", {
-                message: "Event not found",
-                error: { status: 404 }
-            });
-        }
-
-        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-            return res.json(event);
-        }
-
-        res.render("eventDetails", { event, eventId, user: req.session.user });
-    } catch (error) {
-        res.status(500).render("error", {
-            message: "Internal server error",
-            error: { status: 500 }
-        });
-    }
-});
 
 app.get('/events', async (req, res) => {
     try {
@@ -209,17 +191,6 @@ app.get('/events', async (req, res) => {
     }
 });
 
-//app.get('/favicon.ico', (req, res) => res.status(204).end());
-//app.get('/events', async (req, res) => {
-//  try {
-//    const events = await controller.getEvents(); // Call controller function
-//    res.render('events', { user: req.session.user || null, events }); // Pass both user & events
-//  } catch (error) {
-//    console.error('Error fetching events:', error);
-//    res.status(500).send('Internal Server Error');
-//  }
-//});
-
 app.get('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -227,6 +198,152 @@ app.get('/logout', (req, res) => {
     }
     res.redirect('/');
   });
+});
+
+// Main route for the event details page
+app.get('/eventDetails/:id', async (req, res) => {
+  try {
+    console.log("1. Route handler started");
+    const eventId = req.params.id;
+    console.log("2. Event ID:", eventId);
+    
+    // Just render the template with the eventId
+    // The actual data will be fetched by the frontend via API endpoints
+    res.render('eventDetails', {
+      eventId: parseInt(eventId),
+      user: req.session.user || null
+    });
+    console.log("5. Render function called");
+  } catch (error) {
+    console.error("ERROR in event details route:", error);
+    res.status(500).send("Error: " + error.message);
+  }
+});
+
+// API endpoint for event data
+app.get('/eventDetails/:id/data', async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const eventData = await controller.getEventById(eventId);
+    const event = Array.isArray(eventData) ? eventData[0] : eventData;
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    res.json(event);
+  } catch (error) {
+    console.error("ERROR fetching event data:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API endpoint for categories
+app.get('/eventDetails/:id/categories', async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const categories = await controller.getCategoriesByEventId(eventId);
+    
+    res.json(categories);
+  } catch (error) {
+    console.error("ERROR fetching categories:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API endpoint for timetable
+app.get('/eventDetails/:id/timetable', async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const timetable = await controller.getTimetableByEventId(eventId);
+    
+    if (!timetable || timetable.length === 0) {
+      return res.status(404).json([]); // Return empty array with 404 status
+    }
+    
+    res.json(timetable);
+  } catch (error) {
+    console.error("ERROR fetching timetable:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API endpoint for user registrations (requires authentication)
+app.get('/eventDetails/:id/registrations', async (req, res) => {
+  try {
+    // Check if user is logged in
+    if (!req.session.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const userId = req.session.user.id;
+    const eventId = req.params.id;
+    
+    // Get all registrations for the user (not just for this event)
+    // Frontend will filter for the specific event
+    const registrations = await controller.getUserRegistrations(userId);
+    
+    res.json(registrations);
+  } catch (error) {
+    console.error("ERROR fetching user registrations:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint for registering for a category
+app.post('/register-category', async (req, res) => {
+  try {
+    // Check if user is logged in
+    if (!req.session.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const userId = req.session.user.id;
+    const { categoryId } = req.body;
+    
+    if (!categoryId) {
+      return res.status(400).json({ error: 'Category ID is required' });
+    }
+    
+    // Register user for the category
+    const registration = await controller.registerUserForCategory(userId, categoryId);
+    
+    res.json(registration);
+  } catch (error) {
+    console.error("ERROR registering for category:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint for cancelling a registration
+app.post('/cancel-registration', async (req, res) => {
+  try {
+    // Check if user is logged in
+    if (!req.session.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    const userId = req.session.user.id;
+    const { registrationId } = req.body;
+    
+    if (!registrationId) {
+      return res.status(400).json({ error: 'Registration ID is required' });
+    }
+    
+    // Verify this registration belongs to the user
+    const registration = await controller.getRegistrationById(registrationId);
+    if (!registration || registration.user_id !== userId) {
+      return res.status(403).json({ error: 'Not authorized to cancel this registration' });
+    }
+    
+    // Cancel the registration
+    const result = await controller.cancelRegistration(registrationId);
+    
+    res.json({ success: true, message: 'Registration cancelled successfully' });
+  } catch (error) {
+    console.error("ERROR cancelling registration:", error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Start server

@@ -9,7 +9,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken'); 
 const db = require('./db');
 const path = require('path'); 
-
 async function login(req, res) {
     const { email, password, remember } = req.body;
     try {
@@ -51,7 +50,6 @@ async function login(req, res) {
             contact_number: user.contact_number,
             profile_picture: user.profile_picture // Add this if it exists in your DB
         };
-
       console.log("The registration form(userForSession) is : ", JSON.stringify(userForSession)); 
         
         // Set the session
@@ -101,7 +99,6 @@ async function login(req, res) {
         }
     }
 }
-
 async function register(req, res) {
     try {
         const { 
@@ -201,7 +198,6 @@ async function register(req, res) {
         return res.redirect('/register?error=' + encodeURIComponent('An error occurred during registration: ' + error.message));
     }
 }
-
 async function updateProfile(req, res) {
     try {
         // Ensure the user is logged in
@@ -255,7 +251,6 @@ async function updateProfile(req, res) {
         return res.status(500).json({ message: 'An error occurred while updating your profile' });
     }
 }
-
 async function changePassword(req, res) {
     try {
         // Ensure user is logged in
@@ -302,7 +297,6 @@ async function changePassword(req, res) {
         return res.status(500).json({ message: 'An error occurred while changing your password' });
     }
 }
-
 async function createClub(req, res) {
     try {
         // Ensure user is logged in
@@ -362,7 +356,6 @@ async function createClub(req, res) {
         return res.status(500).json({ message: 'An error occurred while creating the club' });
     }
 }
-
 async function createEvent(req, res) {
   try {
     // Check if user is logged in
@@ -534,14 +527,12 @@ async function createEvent(req, res) {
     });
   }
 }
-
 async function getEvents() {
   try {
     // Query to get all events from the database
 //    const eventQueries = {
 //      getEvents: 'SELECT * FROM events'
 //    };
-
     // Execute the query and get the rows
     const [rows] = await db.query(eventQueries.getEvents);
     
@@ -566,99 +557,265 @@ async function getEvents() {
   }
 }
 
-//async function getEventById(eventId) {
-//  try {
-//    // Execute the query and get the rows
-//    const [rows] = await db.query(eventQueries.getEventById, [eventId]);
-//    
-//    // Transform the database fields to match frontend expectations
-//    return rows.map(event => ({
-//      id: event.id,
-//      title: event.name,
-//      description: event.description,
-//      event_date: event.start_date,
-//      location: event.address,
-//      banner_url: event.banner_image,
-//      registration_open_date: event.registration_start,
-//      registration_close_date: event.registration_end,
-//      sport_type: event.sport_type,
-//      organizer_id: event.organizer_id,
-//      status: event.status || 'active',
-//      created_at: event.created_at
-//    }));
-//  } catch (error) {
-//    console.error('Error in getEvents:', error);
-//    throw error;
-//  }
-//}
-//
-//async function getEventById(eventId) {
-//    try {
-//        const eventId = req.params.id;
-//      console.log("the event id: ", eventId); 
-//        
-//        // Validate that eventId is a number
-//        if (isNaN(parseInt(eventId))) {
-//            return res.status(400).render('error', { 
-//                message: 'Invalid event ID',
-//                error: { status: 400 }
-//            });
-//        }
-//        
-//        // Check if event exists (optional validation step)
-//        const eventCheck = await db.query(
-//            'SELECT id FROM events WHERE id = $1',
-//            [eventId]
-//        );
-//        
-//        if (eventCheck.rows.length === 0) {
-//            return res.status(404).render('error', { 
-//                message: 'Event not found',
-//                error: { status: 404 }
-//            });
-//        }
-//        
-//        // Render the event details page with the event ID
-//        res.render('event-details', {
-//            eventId: eventId,
-//            user: req.user || null, // Pass the user object if authenticated
-//            title: 'Event Details' // Page title
-//        });
-//    } catch (error) {
-//        console.error('Error in getEventDetails controller:', error);
-//        res.status(500).render('error', {
-//            message: 'Internal server error',
-//            error: { status: 500 }
-//        });
-//    }
-//}
+async function getEventDetailsPage(req, res) {
+  try {
+    const eventId = parseInt(req.params.id);
+    
+    if (isNaN(eventId)) {
+      return res.status(400).render('error', { 
+        message: 'Invalid event ID', 
+        error: { status: 400 },
+        user: req.session.user 
+      });
+    }
+    
+    // Fetch the event
+    const event = await getEventById(eventId);
+    
+    if (!event) {
+      return res.status(404).render('error', { 
+        message: 'Event not found', 
+        error: { status: 404 },
+        user: req.session.user 
+      });
+    }
+    
+    // Fetch categories if needed
+    // const [categories] = await db.query('SELECT * FROM categories WHERE event_id = ?', [eventId]);
+    
+    // Fetch timetable if needed
+    // const [timetable] = await db.query('SELECT * FROM timetable_entries WHERE event_id = ?', [eventId]);
+    
+    // Fetch user registrations if user is logged in
+    let userRegistrations = [];
+    if (req.session.user) {
+      const [registrations] = await db.query(
+        'SELECT r.*, c.event_id FROM registrations r JOIN categories c ON r.category_id = c.id WHERE r.user_id = ? AND c.event_id = ?',
+        [req.session.user.id, eventId]
+      );
+      userRegistrations = registrations;
+    }
+    
+    // Render the page with all data needed
+    res.render('eventDetails', {
+      eventId,
+      event,
+      // categories,
+      // timetable,
+      // userRegistrations,
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error('Error loading event details:', error);
+    res.status(500).render('error', { 
+      message: 'Internal server error', 
+      error: { status: 500 },
+      user: req.session.user 
+    });
+  }
+}
+
+async function registerForCategory(req, res) {
+  try {
+    const { categoryId } = req.body;
+    const userId = req.session.user.id;
+    
+    // Check if user is already registered
+    const [existingReg] = await db.query(
+      'SELECT * FROM registrations WHERE category_id = ? AND user_id = ?',
+      [categoryId, userId]
+    );
+    
+    if (existingReg.length > 0) {
+      return res.status(400).json({ error: 'Already registered for this category' });
+    }
+    
+    // Create registration
+    const [result] = await db.query(
+      'INSERT INTO registrations (category_id, user_id, status, registration_date) VALUES (?, ?, ?, ?)',
+      [categoryId, userId, 'pending', new Date()]
+    );
+    
+    // Get the new registration
+    const [newReg] = await db.query(
+      'SELECT * FROM registrations WHERE id = ?',
+      [result.insertId]
+    );
+    
+    res.status(201).json(newReg[0]);
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function cancelRegistration(req, res) {
+  try {
+    const { registrationId } = req.body;
+    
+    // Check if registration exists and belongs to user
+    const [regCheck] = await db.query(
+      'SELECT * FROM registrations WHERE id = ? AND user_id = ?',
+      [registrationId, req.session.user.id]
+    );
+    
+    if (regCheck.length === 0) {
+      return res.status(404).json({ error: 'Registration not found or unauthorized' });
+    }
+    
+    // Delete registration
+    await db.query('DELETE FROM registrations WHERE id = ?', [registrationId]);
+    
+    res.json({ success: true, message: 'Registration cancelled successfully' });
+  } catch (error) {
+    console.error('Cancellation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
 
 async function getEventById(eventId) {
-    try {
-        console.log("Fetching event with ID:", eventId);
-
-        // Validate eventId
-        if (isNaN(parseInt(eventId))) {
-            throw new Error("Invalid event ID");
-        }
-
-        // Fetch event from database
-        const [rows] = await db.query(
-            "SELECT * FROM events WHERE id = ?",
-            [eventId]
-        );
-
-        console.log("The event i have here: ", rows); 
-
-        if (rows.length === 0) {
-            return null; // No event found
-        }
-
-        return rows[0]; // Return event details
-    } catch (error) {
-        console.error("Error in getEventById:", error);
-        throw error;
+  try {
+    console.log("Fetching event with ID:", eventId);
+    // Validate eventId
+    if (isNaN(parseInt(eventId))) {
+      throw new Error("Invalid event ID");
     }
+    // Fetch event from database
+    const [rows] = await db.query(
+      "SELECT * FROM events WHERE id = ?",
+      [eventId]
+    );
+    console.log("The event i have here: ", rows);
+    if (rows.length === 0) {
+      return null; // No event found
+    }
+    return rows[0]; // Return event details
+  } catch (error) {
+    console.error("Error in getEventById:", error);
+    throw error;
+  }
+}
+
+// New functions for event details page
+async function getCategoriesByEventId(eventId) {
+  try {
+    // Validate eventId
+    if (isNaN(parseInt(eventId))) {
+      throw new Error("Invalid event ID");
+    }
+    
+    // Fetch categories from database
+    const [rows] = await db.query(
+      "SELECT * FROM categories WHERE event_id = ?",
+      [eventId]
+    );
+    
+    return rows; // Return all categories
+  } catch (error) {
+    console.error("Error in getCategoriesByEventId:", error);
+    throw error;
+  }
+}
+
+async function getTimetableByEventId(eventId) {
+  try {
+    // Validate eventId
+    if (isNaN(parseInt(eventId))) {
+      throw new Error("Invalid event ID");
+    }
+    
+    // Fetch timetable entries from database
+    const [rows] = await db.query(
+      "SELECT * FROM timetable_entries WHERE event_id = ?",
+      [eventId]
+    );
+    
+    return rows; // Return all timetable entries
+  } catch (error) {
+    console.error("Error in getTimetableByEventId:", error);
+    throw error;
+  }
+}
+
+async function getUserRegistrations(userId) {
+  try {
+    // Validate userId
+    if (isNaN(parseInt(userId))) {
+      throw new Error("Invalid user ID");
+    }
+    
+    // Fetch user registrations
+    const [rows] = await db.query(
+      "SELECT r.*, c.event_id FROM registrations r JOIN categories c ON r.category_id = c.id WHERE r.user_id = ?",
+      [userId]
+    );
+    
+    return rows; // Return all registrations
+  } catch (error) {
+    console.error("Error in getUserRegistrations:", error);
+    throw error;
+  }
+}
+
+async function registerUserForCategory(userId, categoryId) {
+  try {
+    // Validate inputs
+    if (isNaN(parseInt(userId)) || isNaN(parseInt(categoryId))) {
+      throw new Error("Invalid user ID or category ID");
+    }
+    
+    // Check if already registered
+    const [existingReg] = await db.query(
+      "SELECT * FROM registrations WHERE user_id = ? AND category_id = ?",
+      [userId, categoryId]
+    );
+    
+    if (existingReg.length > 0) {
+      throw new Error("Already registered for this category");
+    }
+    
+    // Create registration record
+    const currentDate = new Date();
+    const [result] = await db.query(
+      "INSERT INTO registrations (user_id, category_id, status, registration_date) VALUES (?, ?, ?, ?)",
+      [userId, categoryId, "pending", currentDate]
+    );
+    
+    // Get the newly created registration
+    const [newReg] = await db.query(
+      "SELECT * FROM registrations WHERE id = ?",
+      [result.insertId]
+    );
+    
+    return newReg[0]; // Return the new registration
+  } catch (error) {
+    console.error("Error in registerUserForCategory:", error);
+    throw error;
+  }
+}
+
+async function getRegistrationById(registrationId) {
+  try {
+    // Validate registrationId
+    if (isNaN(parseInt(registrationId))) {
+      throw new Error("Invalid registration ID");
+    }
+    
+    // Fetch registration
+    const [rows] = await db.query(
+      "SELECT * FROM registrations WHERE id = ?",
+      [registrationId]
+    );
+    
+    if (rows.length === 0) {
+      return null; // No registration found
+    }
+    
+    return rows[0]; // Return registration details
+  } catch (error) {
+    console.error("Error in getRegistrationById:", error);
+    throw error;
+  }
 }
 
 const controller = {
@@ -669,7 +826,15 @@ const controller = {
     createClub,
     createEvent,
     getEvents,
-    getEventById
+    getEventById,
+    getEventDetailsPage,
+    cancelRegistration,
+    registerForCategory,
+    // New functions for event details page
+    getCategoriesByEventId,
+    getTimetableByEventId,
+    getUserRegistrations,
+    registerUserForCategory,
+    getRegistrationById
 };
-
 module.exports = controller;

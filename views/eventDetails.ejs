@@ -8,9 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
   </head>
   <body>
-    <!-- Include the navigation header -->
-    <%- include('header', {currentPage: '', user: user}); %>
-
+    <!-- Include the navigation header, pass user which may be null -->
+    <%- include('header', {currentPage: '', user: user || null}); %>
     <div class="container my-5">
       <div id="event-details">
         <!-- This will be populated with JavaScript -->
@@ -20,7 +19,6 @@
           </div>
         </div>
       </div>
-
       <!-- Tabs for event details -->
       <ul class="nav nav-tabs mt-4" id="eventTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -33,7 +31,6 @@
           <button class="nav-link" id="location-tab" data-bs-toggle="tab" data-bs-target="#location" type="button" role="tab" aria-controls="location" aria-selected="false">Location</button>
         </li>
       </ul>
-
       <div class="tab-content p-3 border border-top-0 rounded-bottom" id="eventTabsContent">
         <!-- Categories Tab -->
         <div class="tab-pane fade show active" id="categories" role="tabpanel" aria-labelledby="categories-tab">
@@ -44,12 +41,10 @@
               </div>
             </div>
           </div>
-
           <div id="no-categories-message" class="alert alert-info text-center mt-4 d-none">
             No categories found for this event.
           </div>
         </div>
-
         <!-- Timetable Tab -->
         <div class="tab-pane fade" id="timetable" role="tabpanel" aria-labelledby="timetable-tab">
           <div id="timetable-container">
@@ -59,19 +54,21 @@
               </div>
             </div>
           </div>
-
           <div id="no-timetable-message" class="alert alert-info text-center mt-4 d-none">
-            No timetable entries found for this event.
+            No timetable available for this event yet.
           </div>
         </div>
-
         <!-- Location Tab -->
         <div class="tab-pane fade" id="location" role="tabpanel" aria-labelledby="location-tab">
           <div id="location-info">
+            <div class="text-center">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-
       <!-- Registration Section -->
       <div class="card mt-4" id="registration-section">
         <div class="card-header">
@@ -79,424 +76,659 @@
         </div>
         <div class="card-body" id="registration-body">
           <!-- This will be populated with JavaScript -->
+          <div class="text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-
     <!-- Footer -->
     <footer class="bg-light text-center py-3 mt-5">
       <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
       const eventId = <%= eventId %>;
       let eventData = null;
       let categories = [];
       let timetableEntries = [];
       let userRegistrations = [];
-
+      let isLoading = false;
+      // Check if user is logged in
+      const isLoggedIn = <%= typeof user !== 'undefined' && user ? 'true' : 'false' %>;
+      
       document.addEventListener('DOMContentLoaded', function() {
         // Fetch event details
         fetchEventDetails();
-
+        
         // Fetch categories
         fetchCategories();
-            
-            // Fetch timetable
-            fetchTimetable();
-            
-            // If user is logged in, fetch their registrations
-            <% if (user) { %>
-                fetchUserRegistrations();
-            <% } %>
+        
+        // Fetch timetable
+        fetchTimetable();
+        
+        // If user is logged in, fetch their registrations
+        if (isLoggedIn) {
+            fetchUserRegistrations();
+        }
+      });
+      
+      function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.innerHTML = `
+            <div class="text-center">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          `;
+        }
+      }
+      
+      function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.innerHTML = `
+            <div class="alert alert-danger">
+              ${message || 'An error occurred. Please try again.'}
+            </div>
+          `;
+        }
+      }
+      
+      function fetchEventDetails() {
+        fetch(`/eventDetails/${eventId}/data`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to load event details');
+            }
+            return response.json();
+          })
+          .then(event => {
+            eventData = event;
+            displayEventDetails(event);
+          })
+          .catch(error => {
+            console.error('Error fetching event details:', error);
+            showError('event-details', 'Failed to load event details. Please try refreshing the page.');
+          });
+      }
+      
+      function displayEventDetails(event) {
+        // Format dates
+        const startDate = new Date(event.start_date).toLocaleDateString();
+        const endDate = new Date(event.end_date).toLocaleDateString();
+        const registrationStartDate = new Date(event.registration_start).toLocaleDateString();
+        const registrationEndDate = new Date(event.registration_end).toLocaleDateString();
+        
+        const now = new Date();
+        const regStartDate = new Date(event.registration_start);
+        const regEndDate = new Date(event.registration_end);
+        
+        let registrationStatus = '';
+        if (now < regStartDate) {
+          registrationStatus = `<span class="badge bg-warning">Registration opens on ${registrationStartDate}</span>`;
+        } else if (now > regEndDate) {
+          registrationStatus = `<span class="badge bg-danger">Registration closed</span>`;
+        } else {
+          registrationStatus = `<span class="badge bg-success">Registration open</span>`;
+        }
+        
+        const eventDetails = `
+          <div class="row">
+            <div class="col-md-8">
+              <h1>${event.name}</h1>
+              <p class="lead">${event.description || 'No description provided'}</p>
+              <div class="d-flex flex-wrap gap-3 mb-3">
+                <div><strong>Dates:</strong> ${startDate} to ${endDate}</div>
+                <div><strong>Location:</strong> ${event.address || 'TBD'}</div>
+                <div>${registrationStatus}</div>
+              </div>
+              <div class="small text-muted">
+                Registration period: ${registrationStartDate} - ${registrationEndDate}
+              </div>
+              <div class="mt-3">
+                <span class="badge ${event.event_type === 'team' ? 'bg-primary' : 'bg-success'}">
+                  ${event.event_type === 'team' ? 'Team Event' : 'Free for All'}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <img src="${event.banner_image || '/images/default-event.jpg'}" class="img-fluid rounded" alt="${event.name}">
+              ${event.timetable_file ? `<div class="mt-2"><a href="${event.timetable_file}" class="btn btn-sm btn-outline-primary" target="_blank">Download Timetable</a></div>` : ''}
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('event-details').innerHTML = eventDetails;
+        
+        // Update location tab
+        document.getElementById('location-info').innerHTML = `
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Event Location</h5>
+              <p class="card-text">${event.address || 'Location information not provided'}</p>
+              ${event.address ? `
+                <div class="mt-3">
+                  <a href="https://maps.google.com/?q=${encodeURIComponent(event.address)}" class="btn btn-outline-primary" target="_blank">
+                    <i class="bi bi-geo-alt"></i> View on Google Maps
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        
+        // Update registration section after we have event data
+        updateRegistrationSection();
+      }
+      
+      function fetchCategories() {
+        fetch(`/eventDetails/${eventId}/categories`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to load categories');
+            }
+            return response.json();
+          })
+          .then(data => {
+            categories = data;
+            displayCategories(data);
+          })
+          .catch(error => {
+            console.error('Error fetching categories:', error);
+            showError('categories-container', 'Failed to load categories. Please try refreshing the page.');
+          });
+      }
+      
+      function displayCategories(categories) {
+        const container = document.getElementById('categories-container');
+        const noMessage = document.getElementById('no-categories-message');
+        
+        container.innerHTML = '';
+        
+        if (!categories || categories.length === 0) {
+          container.innerHTML = '';
+          noMessage.classList.remove('d-none');
+          return;
+        }
+        
+        noMessage.classList.add('d-none');
+        
+        let html = '<div class="list-group">';
+        
+        categories.forEach(category => {
+          // Determine age group label
+          const ageGroupLabels = {
+            'under_8': 'Under 8',
+            'under_12': 'Under 12',
+            'under_14': 'Under 14',
+            'under_16': 'Under 16 (Cadet)',
+            'under_18': 'Under 18 (Junior)',
+            'under_21': 'Under 21',
+            'senior': 'Senior'
+          };
+          
+          const ageGroup = ageGroupLabels[category.age_group] || category.age_group;
+          
+          // Determine gender label
+          const genderLabel = {
+            'male': 'Men',
+            'female': 'Women',
+            'mixed': 'Mixed'
+          }[category.gender] || category.gender;
+          
+          html += `
+            <div class="list-group-item">
+              <div class="d-flex w-100 justify-content-between align-items-center">
+                <h5 class="mb-1">${category.name}</h5>
+                <div>
+                  ${category.max_participants ? 
+                    `<span class="badge bg-secondary">Max: ${category.max_participants}</span>` : 
+                    '<span class="badge bg-secondary">No limit</span>'}
+                </div>
+              </div>
+              ${category.description ? `<p class="mb-2">${category.description}</p>` : ''}
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                <span class="badge bg-info">${genderLabel}</span>
+                <span class="badge bg-info">${ageGroup}</span>
+                ${category.weight_class ? `<span class="badge bg-info">Weight: ${category.weight_class}</span>` : ''}
+              </div>
+              <div class="mt-2" id="category-action-${category.id}">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          `;
         });
         
-        function fetchEventDetails() {
-            fetch(`/eventDetails/${eventId}`)
-                .then(response => response.json())
-                .then(text => {
-                  console.log("ras response: ", text);
-                  return JSON.parse(text); 
-                })
-                .then(event => {
-                    eventData = event;
-                    displayEventDetails(event);
-                })
-                .catch(error => {
-                    console.error('Error fetching event details:', error);
-                    document.getElementById('event-details').innerHTML = '<div class="alert alert-danger">Failed to load event details</div>';
-                });
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Update registration buttons
+        updateCategoryRegistrationButtons();
+      }
+      
+      function fetchTimetable() {
+        fetch(`/eventDetails/${eventId}/timetable`)
+          .then(response => {
+            if (!response.ok) {
+              // If 404, the timetable just doesn't exist yet
+              if (response.status === 404) {
+                return [];
+              }
+              throw new Error('Failed to load timetable');
+            }
+            return response.json();
+          })
+          .then(data => {
+            timetableEntries = data || [];
+            displayTimetable(timetableEntries);
+          })
+          .catch(error => {
+            console.error('Error fetching timetable:', error);
+            showError('timetable-container', 'Failed to load timetable. Please try refreshing the page.');
+          });
+      }
+      
+      function displayTimetable(entries) {
+        const container = document.getElementById('timetable-container');
+        const noMessage = document.getElementById('no-timetable-message');
+        
+        container.innerHTML = '';
+        
+        if (!entries || entries.length === 0) {
+          container.innerHTML = '';
+          noMessage.classList.remove('d-none');
+          return;
         }
         
-        function displayEventDetails(event) {
-            const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
-            const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
-            const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
-            
-            const now = new Date();
-            const regOpenDate = new Date(event.registration_open_date);
-            const regCloseDate = new Date(event.registration_close_date);
-            
-            let registrationStatus = '';
-            if (now < regOpenDate) {
-                registrationStatus = `<span class="badge bg-warning">Registration opens on ${registrationOpenDate}</span>`;
-            } else if (now > regCloseDate) {
-                registrationStatus = `<span class="badge bg-danger">Registration closed</span>`;
-            } else {
-                registrationStatus = `<span class="badge bg-success">Registration open</span>`;
+        noMessage.classList.add('d-none');
+        
+        // Sort entries by start time
+        entries.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+        
+        let html = `
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Title</th>
+                <th>Location</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        entries.forEach(entry => {
+          const startTime = new Date(entry.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const endTime = entry.end_time ? new Date(entry.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          const date = new Date(entry.start_time).toLocaleDateString();
+          
+          html += `
+            <tr>
+              <td>${date}<br>${startTime}${endTime ? ` - ${endTime}` : ''}</td>
+              <td>${entry.title}</td>
+              <td>${entry.location || 'TBD'}</td>
+              <td>${entry.description || ''}</td>
+            </tr>
+          `;
+        });
+        
+        html += `
+            </tbody>
+          </table>
+        `;
+        
+        container.innerHTML = html;
+      }
+      
+      function fetchUserRegistrations() {
+        if (!isLoggedIn) return;
+        
+        fetch(`/eventDetails/${eventId}/registrations`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to load registrations');
             }
+            return response.json();
+          })
+          .then(data => {
+            // Filter registrations for this event
+            userRegistrations = data.filter(reg => {
+              return reg.event_id === eventId || 
+                     (categories.some(c => c.id === reg.category_id && c.event_id === eventId));
+            });
             
-            const eventDetails = `
-                <div class="row">
-                    <div class="col-md-8">
-                        <h1>${event.title}</h1>
-                        <p class="lead">${event.description || 'No description provided'}</p>
-                        <div class="d-flex flex-wrap gap-3 mb-3">
-                            <div><strong>Date:</strong> ${eventDate}</div>
-                            <div><strong>Location:</strong> ${event.location || 'TBD'}</div>
-                            <div>${registrationStatus}</div>
-                        </div>
-                        <div class="small text-muted">
-                            Registration period: ${registrationOpenDate} - ${registrationCloseDate}
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <img src="${event.banner_url || '/images/default-event.jpg'}" class="img-fluid rounded" alt="${event.title}">
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('event-details').innerHTML = eventDetails;
-            
-            // Update location tab
-            document.getElementById('location-info').innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Event Location</h5>
-                        <p class="card-text">${event.location || 'Location information not provided'}</p>
-                    </div>
-                </div>
-            `;
-            
-            // Update registration section
+            updateCategoryRegistrationButtons();
             updateRegistrationSection();
-        }
+          })
+          .catch(error => {
+            console.error('Error fetching user registrations:', error);
+            // Don't show an error message for this, just silently fail
+          });
+      }
+      
+      function updateCategoryRegistrationButtons() {
+        if (!eventData) return;
         
-        function fetchCategories() {
-            fetch(`/event/${eventId}/categories`)
-                .then(response => response.json())
-                .then(data => {
-                    categories = data;
-                    displayCategories(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching categories:', error);
-                    document.getElementById('categories-container').innerHTML = '<div class="alert alert-danger">Failed to load categories</div>';
-                });
-        }
-        
-        function displayCategories(categories) {
-            const container = document.getElementById('categories-container');
-            const noMessage = document.getElementById('no-categories-message');
+        categories.forEach(category => {
+          const actionContainer = document.getElementById(`category-action-${category.id}`);
+          if (!actionContainer) return;
+          
+          if (isLoggedIn) {
+            const registration = userRegistrations.find(reg => reg.category_id === category.id);
             
-            container.innerHTML = '';
-            
-            if (categories.length === 0) {
-                container.innerHTML = '';
-                noMessage.classList.remove('d-none');
-                return;
-            }
-            
-            noMessage.classList.add('d-none');
-            
-            const categoryList = document.createElement('div');
-            categoryList.className = 'list-group';
-            
-            categories.forEach(category => {
-                const item = document.createElement('div');
-                item.className = 'list-group-item';
-                
-                item.innerHTML = `
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">${category.name}</h5>
-                        <div>
-                            <span class="badge bg-secondary">${category.max_participants ? `Max: ${category.max_participants}` : 'No limit'}</span>
-                        </div>
-                    </div>
-                    <p class="mb-1">${category.description || 'No description provided'}</p>
-                    <div class="mt-2" id="category-action-${category.id}">
-                    </div>
+            if (registration) {
+              // User is registered for this category
+              let statusBadge = '';
+              switch(registration.status) {
+                case 'pending':
+                  statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
+                  break;
+                case 'approved':
+                  statusBadge = '<span class="badge bg-success">Approved</span>';
+                  break;
+                case 'rejected':
+                  statusBadge = '<span class="badge bg-danger">Rejected</span>';
+                  break;
+                default:
+                  statusBadge = '<span class="badge bg-secondary">Unknown Status</span>';
+              }
+              
+              actionContainer.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    ${statusBadge} You are registered for this category
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">
+                    Cancel Registration
+                  </button>
+                </div>
+              `;
+            } else {
+              // User is not registered
+              const now = new Date();
+              const regStartDate = new Date(eventData.registration_start);
+              const regEndDate = new Date(eventData.registration_end);
+              
+              if (now >= regStartDate && now <= regEndDate) {
+                actionContainer.innerHTML = `
+                  <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">
+                    Register
+                  </button>
                 `;
-                
-                categoryList.appendChild(item);
-            });
-            
-            container.appendChild(categoryList);
-            
-            // Update registration buttons
-            if (userRegistrations.length > 0) {
-                updateCategoryRegistrationButtons();
+              } else if (now < regStartDate) {
+                actionContainer.innerHTML = `
+                  <button class="btn btn-secondary btn-sm" disabled>
+                    Registration Not Open Yet
+                  </button>
+                `;
+              } else {
+                actionContainer.innerHTML = `
+                  <button class="btn btn-secondary btn-sm" disabled>
+                    Registration Closed
+                  </button>
+                `;
+              }
             }
+          } else {
+            actionContainer.innerHTML = `
+              <a href="/login?redirect=/eventDetails/${eventId}" class="btn btn-outline-primary btn-sm">
+                Login to Register
+              </a>
+            `;
+          }
+        });
+      }
+      
+      function updateRegistrationSection() {
+        if (!eventData) return;
+        
+        const registrationBody = document.getElementById('registration-body');
+        const now = new Date();
+        const regStartDate = new Date(eventData.registration_start);
+        const regEndDate = new Date(eventData.registration_end);
+        
+        let html = '';
+        
+        if (now < regStartDate) {
+          html = `
+            <div class="alert alert-warning">
+              Registration for this event has not opened yet. Registration will open on ${regStartDate.toLocaleDateString()}.
+            </div>
+          `;
+        } else if (now > regEndDate) {
+          html = `
+            <div class="alert alert-danger">
+              Registration for this event is closed. Registration closed on ${regEndDate.toLocaleDateString()}.
+            </div>
+          `;
+        } else {
+          html = `
+            <div class="alert alert-success">
+              Registration is open! Select a category above to register.
+            </div>
+          `;
         }
         
-        function fetchTimetable() {
-            fetch(`/api/events/${eventId}/timetable`)
-                .then(response => response.json())
-                .then(data => {
-                    timetableEntries = data;
-                    displayTimetable(data);
-                })
-                .catch(error => {
-                    console.error('Error fetching timetable:', error);
-                    document.getElementById('timetable-container').innerHTML = '<div class="alert alert-danger">Failed to load timetable</div>';
-                });
-        }
-        
-        function displayTimetable(entries) {
-            const container = document.getElementById('timetable-container');
-            const noMessage = document.getElementById('no-timetable-message');
-            
-            container.innerHTML = '';
-            
-            if (entries.length === 0) {
-                container.innerHTML = '';
-                noMessage.classList.remove('d-none');
-                return;
-            }
-            
-            noMessage.classList.add('d-none');
-            
-            // Sort entries by start time
-            entries.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-            
-            const table = document.createElement('table');
-            table.className = 'table table-striped';
-            
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Title</th>
-                        <th>Location</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                </tbody>
+        // Add user registrations if logged in
+        if (isLoggedIn) {
+          if (userRegistrations && userRegistrations.length > 0) {
+            html += `
+              <h5 class="mt-3">Your Registrations</h5>
+              <ul class="list-group">
             `;
             
-            const tbody = table.querySelector('tbody');
-            
-            entries.forEach(entry => {
-                const startTime = new Date(entry.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const endTime = new Date(entry.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const date = new Date(entry.start_time).toLocaleDateString();
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${date}<br>${startTime} - ${endTime}</td>
-                    <td>${entry.title}</td>
-                    <td>${entry.location || 'TBD'}</td>
-                    <td>${entry.description || ''}</td>
-                `;
-                
-                tbody.appendChild(row);
+            userRegistrations.forEach(reg => {
+              const category = categories.find(c => c.id === reg.category_id);
+              let statusBadge = '';
+              
+              switch(reg.status) {
+                case 'pending':
+                  statusBadge = '<span class="badge bg-warning">Pending</span>';
+                  break;
+                case 'approved':
+                  statusBadge = '<span class="badge bg-success">Approved</span>';
+                  break;
+                case 'rejected':
+                  statusBadge = '<span class="badge bg-danger">Rejected</span>';
+                  break;
+                default:
+                  statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+              }
+              
+              html += `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  ${category ? category.name : 'Unknown Category'}
+                  <div>
+                    ${statusBadge}
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelRegistration(${reg.id})">
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              `;
             });
             
-            container.appendChild(table);
+            html += '</ul>';
+          }
+        } else {
+          html += `
+            <div class="alert alert-info mt-3">
+              Please <a href="/login?redirect=/eventDetails/${eventId}">log in</a> to register for this event.
+            </div>
+          `;
         }
         
-        function fetchUserRegistrations() {
-            fetch('/api/my-registrations')
-                .then(response => response.json())
-                .then(data => {
-                    userRegistrations = data.filter(reg => {
-                        const category = categories.find(c => c.id === reg.category_id);
-                        return category && category.event_id === eventId;
-                    });
-                    updateCategoryRegistrationButtons();
-                    updateRegistrationSection();
-                })
-                .catch(error => {
-                    console.error('Error fetching user registrations:', error);
-                });
+        registrationBody.innerHTML = html;
+      }
+      
+      function registerForCategory(categoryId) {
+        if (isLoading) return;
+        isLoading = true;
+        
+        if (!isLoggedIn) {
+          window.location.href = `/login?redirect=/eventDetails/${eventId}`;
+          return;
         }
         
-        function updateCategoryRegistrationButtons() {
-            categories.forEach(category => {
-                const actionContainer = document.getElementById(`category-action-${category.id}`);
-                if (!actionContainer) return;
-                
-                const registration = userRegistrations.find(reg => reg.category_id === category.id);
-                
-                if (registration) {
-                    // User is registered for this category
-                    let statusBadge = '';
-                    switch(registration.status) {
-                        case 'pending':
-                            statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
-                            break;
-                        case 'approved':
-                            statusBadge = '<span class="badge bg-success">Approved</span>';
-                            break;
-                        case 'rejected':
-                            statusBadge = '<span class="badge bg-danger">Rejected</span>';
-                            break;
-                    }
-                    
-                    actionContainer.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                ${statusBadge} You are registered for this category
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">Cancel Registration</button>
-                        </div>
-                    `;
-                } else {
-                    // User is not registered
-                    const now = new Date();
-                    const regOpenDate = new Date(eventData.registration_open_date);
-                    const regCloseDate = new Date(eventData.registration_close_date);
-                    
-                    if (now >= regOpenDate && now <= regCloseDate) {
-                        actionContainer.innerHTML = `
-                            <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">Register</button>
-                        `;
-                    } else if (now < regOpenDate) {
-                        actionContainer.innerHTML = `
-                            <button class="btn btn-secondary btn-sm" disabled>Registration Not Open Yet</button>
-                        `;
-                    } else {
-                        actionContainer.innerHTML = `
-                            <button class="btn btn-secondary btn-sm" disabled>Registration Closed</button>
-                        `;
-                    }
-                }
+        const actionButton = document.getElementById(`category-action-${categoryId}`);
+        if (actionButton) {
+          actionButton.innerHTML = `
+            <button class="btn btn-primary btn-sm" disabled>
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Registering...
+            </button>
+          `;
+        }
+        
+        fetch('/register-category', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            categoryId: categoryId
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || 'Failed to register');
             });
-        }
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Add the new registration to our list
+          userRegistrations.push(data);
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            Registration successful!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+          
+          // Update UI
+          updateCategoryRegistrationButtons();
+          updateRegistrationSection();
+          
+          // Auto dismiss alert after 5 seconds
+          setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 500);
+          }, 5000);
+        })
+        .catch(error => {
+          console.error('Registration error:', error);
+          
+          // Show error alert
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            ${error.message || 'Failed to register. Please try again.'}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+          
+          // Reset button
+          updateCategoryRegistrationButtons();
+        })
+        .finally(() => {
+          isLoading = false;
+        });
+      }
+      
+      function cancelRegistration(registrationId) {
+        if (isLoading) return;
+        isLoading = true;
         
-        function updateRegistrationSection() {
-            if (!eventData) return;
-            
-            const registrationBody = document.getElementById('registration-body');
-            const now = new Date();
-            const regOpenDate = new Date(eventData.registration_open_date);
-            const regCloseDate = new Date(eventData.registration_close_date);
-            
-            if (now < regOpenDate) {
-                registrationBody.innerHTML = `
-                    <div class="alert alert-warning">
-                        Registration for this event has not opened yet. Registration will open on ${regOpenDate.toLocaleDateString()}.
-                    </div>
-                `;
-            } else if (now > regCloseDate) {
-                registrationBody.innerHTML = `
-                    <div class="alert alert-danger">
-                        Registration for this event is closed. Registration closed on ${regCloseDate.toLocaleDateString()}.
-                    </div>
-                `;
-            } else {
-                registrationBody.innerHTML = `
-                    <div class="alert alert-success">
-                        Registration is open! Select a category above to register.
-                    </div>
-                `;
+        if (confirm('Are you sure you want to cancel this registration?')) {
+          // Find the registration to update UI buttons
+          const registration = userRegistrations.find(r => r.id === registrationId);
+          let categoryButton = null;
+          
+          if (registration) {
+            categoryButton = document.getElementById(`category-action-${registration.category_id}`);
+            if (categoryButton) {
+              categoryButton.innerHTML = `
+                <button class="btn btn-outline-danger btn-sm" disabled>
+                  <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Cancelling...
+                </button>
+              `;
             }
-            
-            // Add user registrations if logged in
-            <% if (user) { %>
-                if (userRegistrations.length > 0) {
-                    const userRegList = document.createElement('div');
-                    userRegList.innerHTML = `
-                        <h5 class="mt-3">Your Registrations</h5>
-                        <ul class="list-group">
-                            ${userRegistrations.map(reg => {
-                                const category = categories.find(c => c.id === reg.category_id);
-                                let statusBadge = '';
-                                switch(reg.status) {
-                                    case 'pending':
-                                        statusBadge = '<span class="badge bg-warning">Pending</span>';
-                                        break;
-                                    case 'approved':
-                                        statusBadge = '<span class="badge bg-success">Approved</span>';
-                                        break;
-                                    case 'rejected':
-                                        statusBadge = '<span class="badge bg-danger">Rejected</span>';
-                                        break;
-                                }
-                                return `
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        ${category ? category.name : 'Unknown Category'}
-                                        <div>
-                                            ${statusBadge}
-                                            <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelRegistration(${reg.id})">Cancel</button>
-                                        </div>
-                                    </li>
-                                `;
-                            }).join('')}
-                        </ul>
-                    `;
-                    registrationBody.appendChild(userRegList);
-                }
-            <% } else { %>
-                const loginPrompt = document.createElement('div');
-                loginPrompt.className = 'alert alert-info mt-3';
-                loginPrompt.innerHTML = 'Please <a href="/login">log in</a> to register for this event.';
-                registrationBody.appendChild(loginPrompt);
-            <% } %>
-        }
-        
-        function registerForCategory(categoryId) {
-            <% if (!user) { %>
-                window.location.href = '/login';
-                return;
-            <% } %>
-            
-            fetch('/api/registrations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    category_id: categoryId
-                })
+          }
+          
+          fetch('/cancel-registration', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              registrationId: registrationId
             })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(data => {
-                        throw new Error(data.message || 'Failed to register');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert('Registration successful!');
-                location.reload();
-            })
-            .catch(error => {
-                alert(error.message);
-            });
-        }
-        
-        function cancelRegistration(registrationId) {
-            if (confirm('Are you sure you want to cancel this registration?')) {
-                fetch(`/api/registrations/${registrationId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Failed to cancel registration');
-                    }
-                    alert('Registration cancelled successfully!');
-                    location.reload();
-                })
-                .catch(error => {
-                    alert(error.message);
-                });
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Failed to cancel registration');
             }
+            return response.json();
+          })
+          .then(data => {
+            // Remove from our registrations array
+            userRegistrations = userRegistrations.filter(r => r.id !== registrationId);
+            
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+              Registration cancelled successfully!
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+            
+            // Update UI
+            updateCategoryRegistrationButtons();
+            updateRegistrationSection();
+            
+            // Auto dismiss alert after 5 seconds
+            setTimeout(() => {
+              alertDiv.classList.remove('show');
+              setTimeout(() => alertDiv.remove(), 500);
+            }, 5000);
+          })
+          .catch(error => {
+            console.error('Cancellation error:', error);
+            
+            // Show error alert
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+              Failed to cancel registration. Please try again.
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+            
+            // Reset button
+            updateCategoryRegistrationButtons();
+          })
+          .finally(() => {
+            isLoading = false;
+          });
+        } else {
+          isLoading = false;
         }
+      }
     </script>
-</body>
+  </body>
 </html>
