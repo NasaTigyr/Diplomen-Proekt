@@ -1,14 +1,14 @@
-//import {queries}  from './users/queries.js';
 const queries = require('./src/users/queries'); 
 const clubQueries = require('./src/clubs/queries'); 
 const eventQueries = require('./src/events/queries'); 
 const categoryQueries = require('./src/categories/queries'); 
-//import bcrypt from 'bcrypt';
+
 const bcrypt = require('bcrypt'); 
-//import mysql from 'mysql2/promise';
+
 const jwt = require('jsonwebtoken'); 
 const db = require('./db');
 const path = require('path'); 
+
 async function login(req, res) {
     const { email, password, remember } = req.body;
     try {
@@ -356,6 +356,7 @@ async function createClub(req, res) {
         return res.status(500).json({ message: 'An error occurred while creating the club' });
     }
 }
+
 async function createEvent(req, res) {
   try {
     // Check if user is logged in
@@ -527,13 +528,9 @@ async function createEvent(req, res) {
     });
   }
 }
+
 async function getEvents() {
   try {
-    // Query to get all events from the database
-//    const eventQueries = {
-//      getEvents: 'SELECT * FROM events'
-//    };
-    // Execute the query and get the rows
     const [rows] = await db.query(eventQueries.getEvents);
     
     // Transform the database fields to match frontend expectations
@@ -725,10 +722,13 @@ async function getTimetableByEventId(eventId) {
     }
     
     // Fetch timetable entries from database
-    const [rows] = await db.query(
-      "SELECT * FROM timetable_entries WHERE event_id = ?",
-      [eventId]
-    );
+//    const [rows] = await db.query(
+//      "SELECT * FROM timetable_entries WHERE event_id = ?",
+//      [eventId]
+//    );
+    
+    const [rows] = await db.query(eventQueries.getTimetableFileFromEventId, [eventId]); 
+      
     
     return rows; // Return all timetable entries
   } catch (error) {
@@ -830,11 +830,7 @@ const controller = {
     getEventDetailsPage,
     cancelRegistration,
     registerForCategory,
-    // New functions for event details page
     getCategoriesByEventId,
-    getTimetableByEventId,
-    getUserRegistrations,
-    registerUserForCategory,
-    getRegistrationById
+    getTimetableByEventId
 };
 module.exports = controller;

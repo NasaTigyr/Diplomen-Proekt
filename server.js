@@ -9,16 +9,6 @@ const fs = require('fs');
 const controller = require('./controller.js');
 
 // Import routes
-const categoryRoutes = require('./src/categories/routes.js');
-const clubAthletesRoutes = require('./src/club_athletes/routes.js');
-const clubRoutes = require('./src/clubs/routes.js');
-const drawRoutes = require('./src/draws/routes.js');
-const eventsRoutes = require('./src/events/routes.js');
-const individualRegistrationRoutes = require('./src/individual_registration/routes.js');
-const teamRegistrationAthletesRoutes = require('./src/team_registration_athletes/routes.js');
-const teamRegistrationsRoutes = require('./src/team_registrations/routes.js');
-const userRoutes = require('./src/users/routes.js');
-
 // Initialize express app
 const app = express();
 const PORT = 3000;
@@ -135,30 +125,6 @@ app.get('/createClub', isAuthenticated, (req, res) => {
   res.render('createClub', { user: req.session.user });
 });
 
-//app.get('/eventDetails/:id', async (req, res) => {
-//  try {
-//    console.log("1. Route handler started");
-//    const eventId = req.params.id;
-//    console.log("2. Event ID:", eventId);
-//    
-//    const eventData = await controller.getEventById(eventId);
-//    console.log("3. Event data received");
-//    
-//    const event = Array.isArray(eventData) ? eventData[0] : eventData;
-//    console.log("4. Preparing to render");
-//    
-//    res.render('eventDetails', {
-//      event: event,
-//      eventId: parseInt(eventId),
-//      user: req.session.user || null
-//    });
-//    console.log("5. Render function called");
-//  } catch (error) {
-//    console.error("ERROR in event details route:", error);
-//    res.status(500).send("Error: " + error.message);
-//  }
-//});
-
 app.get('/events', async (req, res) => {
     try {
         const events = await controller.getEvents();
@@ -207,9 +173,7 @@ app.get('/eventDetails/:id', async (req, res) => {
     const eventId = req.params.id;
     console.log("2. Event ID:", eventId);
     
-    // Just render the template with the eventId
-    // The actual data will be fetched by the frontend via API endpoints
-    res.render('eventDetails', {
+   res.render('eventDetails', {
       eventId: parseInt(eventId),
       user: req.session.user || null
     });
@@ -255,6 +219,7 @@ app.get('/eventDetails/:id/categories', async (req, res) => {
 app.get('/eventDetails/:id/timetable', async (req, res) => {
   try {
     const eventId = req.params.id;
+    console.log('the eventId is: ', eventId); 
     const timetable = await controller.getTimetableByEventId(eventId);
     
     if (!timetable || timetable.length === 0) {

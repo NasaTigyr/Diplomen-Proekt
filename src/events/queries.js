@@ -9,6 +9,8 @@ const addEvent = `INSERT INTO events (name, description, banner_image, address, 
 const deleteEvent = 'DELETE FROM events WHERE id = ?';
 const updateEvent = 'Update events SET name = ?, description = ?, banner_image = ?, address = ?, start_date = ?, end_date = ?, registration_start = ?, registrtation_end = ?, event_type = ?, creator_id = ?, timetable_file = ?, created_at = ?, updated_at = ?  WHERE id = ?';
 
+const getTimetableFileFromEventId = 'SELECT timetable_file FROM events WHERE id = ?';
+
 const queries = { 
   getEvents,
   getEventsByRole, 
@@ -19,6 +21,7 @@ const queries = {
   addEvent,
   deleteEvent,
   updateEvent,
+  getTimetableFileFromEventId
 };
 
 module.exports = queries;
