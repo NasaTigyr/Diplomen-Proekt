@@ -617,11 +617,10 @@ async function registerForCategory(req, res) {
     const { categoryId } = req.body;
     const userId = req.session.user.id;
     
-    // Check if user is already registered
-    const [existingReg] = await db.query(
-      'SELECT * FROM registrations WHERE category_id = ? AND user_id = ?',
-      [categoryId, userId]
-    );
+ const [existingReg] = await db.query(
+  'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
+  [categoryId, userId] // Replaced user_id with athlete_id
+);   
     
     if (existingReg.length > 0) {
       return res.status(400).json({ error: 'Already registered for this category' });
@@ -652,7 +651,7 @@ async function cancelRegistration(req, res) {
     
     // Check if registration exists and belongs to user
     const [regCheck] = await db.query(
-      'SELECT * FROM registrations WHERE id = ? AND user_id = ?',
+      'SELECT * FROM individual_registrations WHERE id = ? AND athlete_id = ?',
       [registrationId, req.session.user.id]
     );
     
@@ -661,7 +660,7 @@ async function cancelRegistration(req, res) {
     }
     
     // Delete registration
-    await db.query('DELETE FROM registrations WHERE id = ?', [registrationId]);
+    await db.query('DELETE FROM individual_registrations WHERE id = ?', [registrationId]);
     
     res.json({ success: true, message: 'Registration cancelled successfully' });
   } catch (error) {
@@ -745,9 +744,10 @@ async function getUserRegistrations(userId) {
     }
     
     // Fetch user registrations
+
     const [rows] = await db.query(
-      "SELECT r.*, c.event_id FROM registrations r JOIN categories c ON r.category_id = c.id WHERE r.user_id = ?",
-      [userId]
+      "SELECT r.*, c.event_id FROM individual_registrations r JOIN categories c ON r.category_id = c.id WHERE r.athlete_id = ?",
+      [userId] // Make sure userId actually refers to the athlete's ID
     );
     
     return rows; // Return all registrations
@@ -766,7 +766,7 @@ async function registerUserForCategory(userId, categoryId) {
     
     // Check if already registered
     const [existingReg] = await db.query(
-      "SELECT * FROM registrations WHERE user_id = ? AND category_id = ?",
+      "SELECT * FROM registrations WHERE athlete_id = ? AND category_id = ?",
       [userId, categoryId]
     );
     
@@ -831,6 +831,7 @@ const controller = {
     cancelRegistration,
     registerForCategory,
     getCategoriesByEventId,
-    getTimetableByEventId
+    getTimetableByEventId,
+    getUserRegistrations
 };
 module.exports = controller;
