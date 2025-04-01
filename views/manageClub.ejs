@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Club - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'manageClub', user: user}); %>
+    
+    <div class="container my-5">
+        <!-- Alert message container (hidden by default) -->
+        <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+        
+        <div class="row">
+            <!-- Club Information Card -->
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Club Information</h5>
+                        <button id="edit-club-btn" class="btn btn-sm btn-outline-primary">Edit</button>
+                    </div>
+                    <div class="card-body text-center">
+                        <div id="club-logo-container" class="mb-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <h4 id="club-name" class="mb-3">Loading...</h4>
+                        <p id="club-description" class="mb-4">Loading club details...</p>
+                        
+                        <div class="text-start">
+                            <h6>Address:</h6>
+                            <p id="club-address">Loading...</p>
+                            
+                            <h6>Contact:</h6>
+                            <p id="club-phone">Loading...</p>
+                            <p id="club-email">Loading...</p>
+                            
+                            <div id="club-website-container">
+                                <h6>Website:</h6>
+                                <p id="club-website">Loading...</p>
+                            </div>
+                            
+                            <h6>Verification Status:</h6>
+                            <p><span id="verification-status-badge" class="badge bg-secondary">Pending</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Club Statistics Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Club Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h3 id="athlete-count">0</h3>
+                                <p>Athletes</p>
+                            </div>
+                            <div class="col-4">
+                                <h3 id="event-count">0</h3>
+                                <p>Events</p>
+                            </div>
+                            <div class="col-4">
+                                <h3 id="competition-count">0</h3>
+                                <p>Competitions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabs for different management functions -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" id="clubManagementTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="athletes-tab" data-bs-toggle="tab" data-bs-target="#athletes-content" type="button" role="tab" aria-controls="athletes-content" aria-selected="true">Club Athletes</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests-content" type="button" role="tab" aria-controls="requests-content" aria-selected="false">Join Requests</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="invitations-tab" data-bs-toggle="tab" data-bs-target="#invitations-content" type="button" role="tab" aria-controls="invitations-content" aria-selected="false">Invite Athletes</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="verification-tab" data-bs-toggle="tab" data-bs-target="#verification-content" type="button" role="tab" aria-controls="verification-content" aria-selected="false">Verification</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content" id="clubManagementTabContent">
+                            <!-- Athletes Tab -->
+                            <div class="tab-pane fade show active" id="athletes-content" role="tabpanel" aria-labelledby="athletes-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Club Athletes</h5>
+                                    <div class="input-group" style="max-width: 300px;">
+                                        <input type="text" id="athlete-search" class="form-control" placeholder="Search athletes...">
+                                        <button class="btn btn-outline-secondary" type="button" id="athlete-search-button">
+                                            <i class="bi bi-search"></i> Search
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div id="athletes-table-container" class="mb-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Age Group</th>
+                                                    <th>Gender</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="5" class="text-center">
+                                                        <div class="spinner-border" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p>Loading athletes...</p>
+                                                    </td>
+                                                </tr>
+                                                <!-- Sample data, will be populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div id="no-athletes-message" class="alert alert-info text-center d-none">
+                                    <p class="mb-0">You don't have any athletes in your club yet.</p>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button id="invite-athlete-button" class="btn btn-primary">
+                                        <i class="bi bi-person-plus"></i> Invite New Athlete
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Join Requests Tab -->
+                            <div class="tab-pane fade" id="requests-content" role="tabpanel" aria-labelledby="requests-tab">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Pending Join Requests</h5>
+                                </div>
+                                
+                                <div id="requests-table-container" class="mb-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Age Group</th>
+                                                    <th>Gender</th>
+                                                    <th>Requested</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="6" class="text-center">
+                                                        <div class="spinner-border" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p>Loading requests...</p>
+                                                    </td>
+                                                </tr>
+                                                <!-- Will be populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div id="no-requests-message" class="alert alert-info text-center d-none">
+                                    <p class="mb-0">You don't have any pending join requests at the moment.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Invite Athletes Tab -->
+                            <div class="tab-pane fade" id="invitations-content" role="tabpanel" aria-labelledby="invitations-tab">
+                                <h5 class="mb-3">Invite New Athletes</h5>
+                                
+                                <form id="invitation-form" class="mb-4">
+                                    <div class="mb-3">
+                                        <label for="invitation-email" class="form-label">Athlete Email</label>
+                                        <input type="email" class="form-control" id="invitation-email" required>
+                                        <div class="form-text">Enter the email address of the athlete you want to invite.</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="invitation-message" class="form-label">Invitation Message (Optional)</label>
+                                        <textarea class="form-control" id="invitation-message" rows="3"></textarea>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-primary">Send Invitation</button>
+                                </form>
+                                
+                                <h5 class="mb-3">Pending Invitations</h5>
+                                
+                                <div id="invitations-table-container" class="mb-3">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Email</th>
+                                                    <th>Sent Date</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="4" class="text-center">
+                                                        <div class="spinner-border" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <p>Loading invitations...</p>
+                                                    </td>
+                                                </tr>
+                                                <!-- Will be populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <div id="no-invitations-message" class="alert alert-info text-center d-none">
+                                    <p class="mb-0">You don't have any pending invitations at the moment.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Verification Tab -->
+                            <div class="tab-pane fade" id="verification-content" role="tabpanel" aria-labelledby="verification-tab">
+                                <h5 class="mb-3">Club Verification Status</h5>
+                                
+                                <div id="verification-status-container" class="mb-4">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Current Status</h6>
+                                            <div id="verification-status-message">
+                                                <div class="alert alert-info">
+                                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                                    Your club is not yet verified. Verification gives you access to additional features and increases trust for potential members.
+                                                </div>
+                                                <p>Submit your verification documents below to start the verification process.</p>
+                                            </div>
+                                            <div id="verification-progress-container"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="verification-form-container">
+                                    <h5 class="mb-3">Submit Verification Documents</h5>
+                                    
+                                    <form id="verification-form">
+                                        <div class="mb-3">
+                                            <label for="registration-document" class="form-label">Club Registration Document</label>
+                                            <input type="file" class="form-control" id="registration-document" name="registration-document" accept=".pdf,.jpg,.jpeg,.png">
+                                            <div class="form-text">Upload official club registration documents (PDF or image).</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="coach-certification" class="form-label">Coach Certification</label>
+                                            <input type="file" class="form-control" id="coach-certification" name="coach-certification" accept=".pdf,.jpg,.jpeg,.png">
+                                            <div class="form-text">Upload your coaching certification documents (PDF or image).</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="federation-document" class="form-label">Federation Affiliation Proof</label>
+                                            <input type="file" class="form-control" id="federation-document" name="federation-document" accept=".pdf,.jpg,.jpeg,.png">
+                                            <div class="form-text">Upload proof of affiliation with a recognized martial arts federation (if applicable).</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="additional-comments" class="form-label">Additional Comments</label>
+                                            <textarea class="form-control" id="additional-comments" name="additional-comments" rows="3"></textarea>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary">Submit for Verification</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Club Modal -->
+    <div class="modal fade" id="editClubModal" tabindex="-1" aria-labelledby="editClubModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editClubModalLabel">Edit Club Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-club-form">
+                        <div class="mb-3">
+                            <label for="edit-club-name" class="form-label">Club Name</label>
+                            <input type="text" class="form-control" id="edit-club-name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-club-description" class="form-label">Club Description</label>
+                            <textarea class="form-control" id="edit-club-description" name="description" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-club-address" class="form-label">Address</label>
+                            <textarea class="form-control" id="edit-club-address" name="address" rows="2" required></textarea>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="edit-club-phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="edit-club-phone" name="phone">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-club-email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="edit-club-email" name="email">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-club-website" class="form-label">Website</label>
+                            <input type="url" class="form-control" id="edit-club-website" name="website" placeholder="https://...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="edit-club-logo" class="form-label">Club Logo</label>
+                            <input type="file" class="form-control" id="edit-club-logo" name="logo">
+                            <div id="current-logo-preview" class="mt-2 d-none">
+                                <p>Current logo:</p>
+                                <img id="current-logo-img" src="" alt="Current club logo" style="max-height: 100px;">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-club-changes">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Athlete Details Modal -->
+    <div class="modal fade" id="athleteDetailsModal" tabindex="-1" aria-labelledby="athleteDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="athleteDetailsModalLabel">Athlete Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <div id="athlete-profile-image" class="mb-2">
+                            <!-- Profile image will be inserted here -->
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                                <span class="text-white display-6">JS</span>
+                            </div>
+                        </div>
+                        <h4 id="athlete-name">John Smith</h4>
+                        <p id="athlete-status-badge"><span class="badge bg-success">Active</span></p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> <span id="athlete-email">john@example.com</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Phone:</strong> <span id="athlete-phone">555-123-4567</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Gender:</strong> <span id="athlete-gender">Male</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Date of Birth:</strong> <span id="athlete-dob">01/15/2005</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Age Group:</strong> <span id="athlete-age-group">Under 18 (Junior)</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Joined:</strong> <span id="athlete-join-date">06/12/2024</span></p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div id="athlete-competitions-container">
+                        <h5 class="mb-2">Recent Competitions</h5>
+                        <div id="athlete-competitions-list">
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>National Championships</strong>
+                                        <br>
+                                        <small>Junior Male Sparring - 03/15/2024</small>
+                                    </div>
+                                    <span class="badge bg-success">Approved</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Regional Tournament</strong>
+                                        <br>
+                                        <small>Junior Male Forms - 02/10/2024</small>
+                                    </div>
+                                    <span class="badge bg-success">Approved</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-danger" id="remove-athlete-btn">Remove from Club</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let clubId;
+        let currentClub;
+        let currentAthleteId;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+            
+            // For demonstration purposes, we'll simulate loading data
+            // This would be replaced with actual API calls in a production environment
+            
+            // Set up event handlers for tabs
+            document.getElementById('requests-tab').addEventListener('click', function() {
+                console.log("Join requests tab clicked");
+                // In a real app, this would load data from an API
+            });
+            
+            document.getElementById('invitations-tab').addEventListener('click', function() {
+                console.log("Invitations tab clicked");
+                // In a real app, this would load data from an API
+            });
+            
+            document.getElementById('verification-tab').addEventListener('click', function() {
+                console.log("Verification tab clicked");
+                // In a real app, this would load verification status from an API
+            });
+            
+            // Set up search functionality
+            document.getElementById('athlete-search').addEventListener('input', function() {
+                console.log("Searching for: " + this.value);
+                // In a real app, this would filter athletes based on search term
+            });
+            
+            document.getElementById('athlete-search-button').addEventListener('click', function() {
+                const searchTerm = document.getElementById('athlete-search').value;
+                console.log("Search button clicked for: " + searchTerm);
+            });
+            
+            // Set up club edit form
+            document.getElementById('edit-club-btn').addEventListener('click', function() {
+                console.log("Edit club button clicked");
+                // In a real app, this would populate and show the edit modal
+                
+                // For demonstration, we'll show the modal with sample data
+                document.getElementById('edit-club-name').value = "Dragon Martial Arts";
+                document.getElementById('edit-club-description').value = "Premier martial arts training center focusing on traditional techniques and competitive excellence.";
+                document.getElementById('edit-club-address').value = "123 Main Street, Anytown, USA";
+                document.getElementById('edit-club-phone').value = "555-123-4567";
+                document.getElementById('edit-club-email').value = "info@dragonmartialarts.com";
+                document.getElementById('edit-club-website').value = "https://www.dragonmartialarts.com";
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('editClubModal'));
+                modal.show();
+            });
+            
+            document.getElementById('save-club-changes').addEventListener('click', function() {
+                console.log("Save club changes button clicked");
+                // In a real app, this would send the updated data to an API
+                
+                // For demonstration, we'll show a success message
+                showAlert('Club information updated successfully!', 'success');
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editClubModal'));
+                modal.hide();
+            });
+            
+            // Set up invitation form
+            document.getElementById('invitation-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('invitation-email').value;
+                const message = document.getElementById('invitation-message').value;
+                
+                console.log(`Invitation form submitted for ${email} with message: ${message}`);
+                // In a real app, this would send the invitation through an API
+                
+                // For demonstration, we'll show a success message
+                showAlert('Invitation sent successfully!', 'success');
+                
+                // Reset form
+                this.reset();
+            });
+            
+            document.getElementById('invite-athlete-button').addEventListener('click', function() {
+                // Switch to invitations tab
+                const invitationsTab = new bootstrap.Tab(document.getElementById('invitations-tab'));
+                invitationsTab.show();
+            });
+            
+            // Set up verification form
+            document.getElementById('verification-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log("Verification form submitted");
+                // In a real app, this would send the verification documents to an API
+                
+                // For demonstration, we'll show a success message
+                showAlert('Verification documents submitted successfully! Our team will review your application.', 'success');
+                
+                // Update verification status message
+                document.getElementById('verification-status-message').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        Your verification request is currently being reviewed by our team.
+                        <p class="mt-2 mb-0">Submitted: ${new Date().toLocaleDateString()}</p>
+                    </div>
+                `;
+                
+                document.getElementById('verification-progress-container').innerHTML = `
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="text-center mt-2"><small>Estimated review time: 1-3 business days</small></p>
+                `;
+                
+                // Hide the form
+                document.getElementById('verification-form-container').classList.add('d-none');
+                
+                // Reset form
+                this.reset();
+            });
+            
+            // Set up athlete detail view
+            document.querySelectorAll('.view-athlete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    console.log("View athlete button clicked");
+                    // In a real app, this would load athlete details from an API
+                    
+                    // For demonstration, we'll show the modal with sample data
+                    const modal = new bootstrap.Modal(document.getElementById('athleteDetailsModal'));
+                    modal.show();
+                });
+            });
+            
+            // Set up remove athlete confirmation
+            document.getElementById('remove-athlete-btn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to remove this athlete from your club? This action cannot be undone.')) {
+                    console.log("Remove athlete confirmed");
+                    // In a real app, this would send a delete request to an API
+                    
+                    // For demonstration, we'll show a success message
+                    showAlert('Athlete removed successfully!', 'success');
+                    
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('athleteDetailsModal'));
+                    modal.hide();
+                }
+            });
+            
+            // Set up approve/reject join request buttons
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('approve-request-btn')) {
+                    console.log("Approve request button clicked");
+                    // In a real app, this would send an approval request to an API
+                    
+                    // For demonstration, we'll show a success message
+                    showAlert('Join request approved successfully!', 'success');
+                    
+                    // Remove the row from the table
+                    e.target.closest('tr').remove();
+                }
+                
+                if (e.target.classList.contains('reject-request-btn')) {
+                    console.log("Reject request button clicked");
+                    // In a real app, this would send a rejection request to an API
+                    
+                    // For demonstration, we'll show a success message
+                    showAlert('Join request rejected!', 'success');
+                    
+                    // Remove the row from the table
+                    e.target.closest('tr').remove();
+                }
+            });
+            
+            // Load sample data for demonstration
+            loadSampleData();
+        });
+        
+        function loadSampleData() {
+            // Club info
+            document.getElementById('club-logo-container').innerHTML = `
+                <img src="https://via.placeholder.com/150" alt="Dragon Martial Arts" class="img-fluid rounded" style="max-height: 150px;">
+            `;
+            document.getElementById('club-name').textContent = "Dragon Martial Arts";
+            document.getElementById('club-description').textContent = "Premier martial arts training center focusing on traditional techniques and competitive excellence.";
+            document.getElementById('club-address').textContent = "123 Main Street, Anytown, USA";
+            document.getElementById('club-phone').textContent = "555-123-4567";
+            document.getElementById('club-email').textContent = "info@dragonmartialarts.com";
+            document.getElementById('club-website').innerHTML = `<a href="#" target="_blank">www.dragonmartialarts.com</a>`;
+            
+            // Display verification status
+            const verificationBadge = document.getElementById('verification-status-badge');
+            verificationBadge.className = 'badge bg-success';
+            verificationBadge.textContent = 'Verified';
+            
+            // Club statistics
+            document.getElementById('athlete-count').textContent = "24";
+            document.getElementById('event-count').textContent = "5";
+            document.getElementById('competition-count').textContent = "12";
+            
+            // Athletes table
+            document.getElementById('athletes-table-container').innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Age Group</th>
+                                <th>Gender</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <span class="text-white" style="font-size: 0.8rem;">JS</span>
+                                        </div>
+                                        John Smith
+                                    </div>
+                                </td>
+                                <td>Under 18 (Junior)</td>
+                                <td>Male</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary view-athlete-btn" data-athlete-id="1">View</button>
+                                        <button class="btn btn-outline-danger remove-athlete-btn" data-athlete-id="1">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <span class="text-white" style="font-size: 0.8rem;">EJ</span>
+                                        </div>
+                                        Emily Jones
+                                    </div>
+                                </td>
+                                <td>Under 16 (Cadet)</td>
+                                <td>Female</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary view-athlete-btn" data-athlete-id="2">View</button>
+                                        <button class="btn btn-outline-danger remove-athlete-btn" data-athlete-id="2">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <span class="text-white" style="font-size: 0.8rem;">MC</span>
+                                        </div>
+                                        Mike Chen
+                                    </div>
+                                </td>
+                                <td>Senior</td>
+                                <td>Male</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary view-athlete-btn" data-athlete-id="3">View</button>
+                                        <button class="btn btn-outline-danger remove-athlete-btn" data-athlete-id="3">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                            <span class="text-white" style="font-size: 0.8rem;">LP</span>
+                                        </div>
+                                        Lisa Park
+                                    </div>
+                                </td>
+                                <td>Under 21</td>
+                                <td>Female</td>
+                                <td><span class="badge bg-warning">Pending</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary view-athlete-btn" data-athlete-id="4">View</button>
+                                        <button class="btn btn-outline-danger remove-athlete-btn" data-athlete-id="4">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // Join requests table
+            document.getElementById('requests-tab').addEventListener('click', function() {
+                document.getElementById('requests-table-container').innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Age Group</th>
+                                    <th>Gender</th>
+                                    <th>Requested</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                <span class="text-white" style="font-size: 0.8rem;">RB</span>
+                                            </div>
+                                            Robert Brown
+                                        </div>
+                                    </td>
+                                    <td>robert@example.com</td>
+                                    <td>Under 16 (Cadet)</td>
+                                    <td>Male</td>
+                                    <td>03/28/2025</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-success approve-request-btn" data-request-id="1">Approve</button>
+                                            <button class="btn btn-danger reject-request-btn" data-request-id="1">Reject</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                <span class="text-white" style="font-size: 0.8rem;">SW</span>
+                                            </div>
+                                            Sarah Williams
+                                        </div>
+                                    </td>
+                                    <td>sarah@example.com</td>
+                                    <td>Under 14</td>
+                                    <td>Female</td>
+                                    <td>03/26/2025</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-success approve-request-btn" data-request-id="2">Approve</button>
+                                            <button class="btn btn-danger reject-request-btn" data-request-id="2">Reject</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                // Set up the approve/reject buttons
+                document.querySelectorAll('.approve-request-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const requestId = this.getAttribute('data-request-id');
+                        console.log(`Approving request ID: ${requestId}`);
+                        showAlert('Join request approved successfully!', 'success');
+                        this.closest('tr').remove();
+                    });
+                });
+                
+                document.querySelectorAll('.reject-request-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const requestId = this.getAttribute('data-request-id');
+                        console.log(`Rejecting request ID: ${requestId}`);
+                        showAlert('Join request rejected!', 'success');
+                        this.closest('tr').remove();
+                    });
+                });
+            });
+            
+            // Invitations table
+            document.getElementById('invitations-tab').addEventListener('click', function() {
+                document.getElementById('invitations-table-container').innerHTML = `
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Sent Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>david@example.com</td>
+                                    <td>03/25/2025</td>
+                                    <td><span class="badge bg-warning">Pending</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-secondary resend-invitation-btn" data-invitation-id="1">Resend</button>
+                                        <button class="btn btn-sm btn-outline-danger cancel-invitation-btn" data-invitation-id="1">Cancel</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>maria@example.com</td>
+                                    <td>03/23/2025</td>
+                                    <td><span class="badge bg-success">Accepted</span></td>
+                                    <td>
+                                        <span class="text-muted">No actions available</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>alex@example.com</td>
+                                    <td>03/18/2025</td>
+                                    <td><span class="badge bg-danger">Rejected</span></td>
+                                    <td>
+                                        <span class="text-muted">No actions available</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                // Set up the resend/cancel buttons
+                document.querySelectorAll('.resend-invitation-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const invitationId = this.getAttribute('data-invitation-id');
+                        console.log(`Resending invitation ID: ${invitationId}`);
+                        showAlert('Invitation resent successfully!', 'success');
+                    });
+                });
+                
+                document.querySelectorAll('.cancel-invitation-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const invitationId = this.getAttribute('data-invitation-id');
+                        if (confirm('Are you sure you want to cancel this invitation?')) {
+                            console.log(`Canceling invitation ID: ${invitationId}`);
+                            showAlert('Invitation cancelled successfully!', 'success');
+                            this.closest('tr').remove();
+                        }
+                    });
+                });
+            });
+            
+            // Set up athlete detail view
+            document.querySelectorAll('.view-athlete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const athleteId = this.getAttribute('data-athlete-id');
+                    console.log(`Viewing athlete ID: ${athleteId}`);
+                    
+                    // Populate athlete details based on ID (in a real app, this would fetch from API)
+                    let athleteName, athleteGender, athleteDob, athleteAgeGroup, athleteStatus, athleteEmail, athletePhone;
+                    
+                    switch(athleteId) {
+                        case "1":
+                            athleteName = "John Smith";
+                            athleteGender = "Male";
+                            athleteDob = "01/15/2005";
+                            athleteAgeGroup = "Under 18 (Junior)";
+                            athleteStatus = "Active";
+                            athleteEmail = "john@example.com";
+                            athletePhone = "555-123-4567";
+                            break;
+                        case "2":
+                            athleteName = "Emily Jones";
+                            athleteGender = "Female";
+                            athleteDob = "06/22/2008";
+                            athleteAgeGroup = "Under 16 (Cadet)";
+                            athleteStatus = "Active";
+                            athleteEmail = "emily@example.com";
+                            athletePhone = "555-234-5678";
+                            break;
+                        case "3":
+                            athleteName = "Mike Chen";
+                            athleteGender = "Male";
+                            athleteDob = "11/03/1995";
+                            athleteAgeGroup = "Senior";
+                            athleteStatus = "Active";
+                            athleteEmail = "mike@example.com";
+                            athletePhone = "555-345-6789";
+                            break;
+                        case "4":
+                            athleteName = "Lisa Park";
+                            athleteGender = "Female";
+                            athleteDob = "09/14/2002";
+                            athleteAgeGroup = "Under 21";
+                            athleteStatus = "Pending";
+                            athleteEmail = "lisa@example.com";
+                            athletePhone = "555-456-7890";
+                            break;
+                        default:
+                            athleteName = "Unknown Athlete";
+                            athleteGender = "Not specified";
+                            athleteDob = "Not provided";
+                            athleteAgeGroup = "Unknown";
+                            athleteStatus = "Unknown";
+                            athleteEmail = "Not provided";
+                            athletePhone = "Not provided";
+                    }
+                    
+                    // Set athlete information in the modal
+                    document.getElementById('athleteDetailsModalLabel').textContent = athleteName;
+                    
+                    // Profile image
+                    const initials = athleteName.split(' ').map(name => name.charAt(0)).join('');
+                    document.getElementById('athlete-profile-image').innerHTML = `
+                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                            <span class="text-white display-6">${initials}</span>
+                        </div>
+                    `;
+                    
+                    // Basic info
+                    document.getElementById('athlete-name').textContent = athleteName;
+                    
+                    // Status badge
+                    const statusBadgeContainer = document.getElementById('athlete-status-badge');
+                    if (athleteStatus === "Active") {
+                        statusBadgeContainer.innerHTML = '<span class="badge bg-success">Active</span>';
+                    } else if (athleteStatus === "Pending") {
+                        statusBadgeContainer.innerHTML = '<span class="badge bg-warning">Pending</span>';
+                    } else {
+                        statusBadgeContainer.innerHTML = '<span class="badge bg-secondary">Inactive</span>';
+                    }
+                    
+                    // Contact info
+                    document.getElementById('athlete-email').textContent = athleteEmail;
+                    document.getElementById('athlete-phone').textContent = athletePhone;
+                    
+                    // Personal info
+                    document.getElementById('athlete-gender').textContent = athleteGender;
+                    document.getElementById('athlete-dob').textContent = athleteDob;
+                    document.getElementById('athlete-age-group').textContent = athleteAgeGroup;
+                    document.getElementById('athlete-join-date').textContent = "03/15/2025";
+                    
+                    // Competitions (same for all in this example)
+                    document.getElementById('athlete-competitions-list').innerHTML = `
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>National Championships</strong>
+                                    <br>
+                                    <small>${athleteAgeGroup} ${athleteGender} Sparring - 03/15/2025</small>
+                                </div>
+                                <span class="badge bg-success">Approved</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Regional Tournament</strong>
+                                    <br>
+                                    <small>${athleteAgeGroup} ${athleteGender} Forms - 02/10/2025</small>
+                                </div>
+                                <span class="badge bg-success">Approved</span>
+                            </li>
+                        </ul>
+                    `;
+                    
+                    // Set up remove button
+                    document.getElementById('remove-athlete-btn').setAttribute('data-athlete-id', athleteId);
+                    
+                    // Show the modal
+                    const modal = new bootstrap.Modal(document.getElementById('athleteDetailsModal'));
+                    modal.show();
+                });
+            });
+            
+            // Set up remove athlete confirmation
+            document.querySelectorAll('.remove-athlete-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const athleteId = this.getAttribute('data-athlete-id');
+                    if (confirm('Are you sure you want to remove this athlete from your club? This action cannot be undone.')) {
+                        console.log(`Removing athlete ID: ${athleteId}`);
+                        showAlert('Athlete removed successfully!', 'success');
+                        this.closest('tr').remove();
+                    }
+                });
+            });
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.textContent = message;
+            alertContainer.className = `alert alert-${type} mb-4`;
+            
+            // Scroll to the top to make sure alert is visible
+            window.scrollTo(0, 0);
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertContainer.classList.add('d-none');
+                }, 5000);
+            }
+        }
+        
+        // Helper function to calculate age group from date of birth
+        function calculateAgeGroup(dateOfBirth) {
+            if (!dateOfBirth) return 'Unknown';
+            
+            const birthDate = new Date(dateOfBirth);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            
+            // Adjust age if birthday hasn't occurred yet this year
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            // Return age group based on age
+            if (age < 8) return 'Under 8';
+            if (age < 12) return 'Under 12';
+            if (age < 14) return 'Under 14';
+            if (age < 16) return 'Under 16 (Cadet)';
+            if (age < 18) return 'Under 18 (Junior)';
+            if (age < 21) return 'Under 21';
+            return 'Senior';
+        }
+        
+        function capitalizeFirstLetter(string) {
+            if (!string) return '';
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+</script>
+</html>

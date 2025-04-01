@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Profile - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'profile', user: user}); %>
+    
+    <div class="container my-5">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="card mb-4">
+                    <div class="card-body text-center">
+                        <% if(user.profile_picture) { %>
+                            <img src="<%= user.profile_picture %>" alt="Profile Picture" class="rounded-circle mb-3" style="width: 100px; height: 100px; object-fit: cover;">
+                        <% } else { %>
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+                                <span class="text-white fs-1"><%= user.first_name.charAt(0) %><%= user.last_name.charAt(0) %></span>
+                            </div>
+                        <% } %>
+                        <h5 class="card-title"><%= user.first_name %> <%= user.last_name %></h5>
+                        <p class="card-text text-muted"><%= user.email %></p>
+                        <span class="badge rounded-pill 
+                            <% if(user.user_type === 'coach') { %>
+                                bg-primary
+                            <% } else if(user.user_type === 'athlete') { %>
+                                bg-success
+                            <% } else { %>
+                                bg-secondary
+                            <% } %>">
+                            <%= user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) %>
+                        </span>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item active" id="profile-tab">Profile Information</li>
+                        <li class="list-group-item" id="change-password-tab">Change Password</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Main Content Area -->
+            <div class="col-md-9">
+                <!-- Alert message container (hidden by default) -->
+                <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+                
+                <!-- Profile Information Section -->
+                <div id="profile-section" class="content-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Profile Information</h4>
+                            <button id="edit-profile-btn" class="btn btn-sm btn-outline-primary">Edit</button>
+                        </div>
+                        <div class="card-body">
+                            <form id="profile-form">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="first_name" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="first_name" value="<%= user.first_name %>" disabled>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="last_name" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="last_name" value="<%= user.last_name %>" disabled>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" value="<%= user.email %>" disabled>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                        <input type="date" class="form-control" id="date_of_birth" value="<%= user.date_of_birth ? (typeof user.date_of_birth === 'string' ? user.date_of_birth.split('T')[0] : new Date(user.date_of_birth).toISOString().split('T')[0]) : '' %>" disabled>
+                                        <small class="form-text text-muted">Used for age category assignments</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="gender" class="form-label">Gender</label>
+                                        <select class="form-select" id="gender" disabled>
+                                            <option value="male" <%= user.gender === 'male' ? 'selected' : '' %>>Male</option>
+                                            <option value="female" <%= user.gender === 'female' ? 'selected' : '' %>>Female</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="contact_number" class="form-label">Contact Number</label>
+                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>" placeholder="<%= user.contact_numbe ? user.contact_number : 'No number provided' %>" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="profile_picture" class="form-label">Profile Picture</label>
+                                    <input type="file" class="form-control" id="profile_picture" disabled>
+                                    <% if (user.profile_picture) { %>
+                                        <div class="mt-2">
+                                            <img src="<%= user.profile_picture %>" alt="Current profile picture" class="img-thumbnail" style="max-height: 100px;">
+                                        </div>
+                                    <% } %>
+                                </div>
+                                <div class="d-grid d-md-flex justify-content-md-end">
+                                    <button type="submit" id="save-profile-btn" class="btn btn-primary" disabled>Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Change Password Section -->
+                <div id="change-password-section" class="content-section d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="mb-0">Change Password</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="password-form">
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" required>
+                                    <div class="form-text">Password must be at least 8 characters long.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" required>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">Change Password</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab navigation
+            document.getElementById('profile-tab').addEventListener('click', showProfileSection);
+            document.getElementById('change-password-tab').addEventListener('click', showChangePasswordSection);
+            
+            // Edit profile
+            document.getElementById('edit-profile-btn').addEventListener('click', toggleProfileEdit);
+            document.getElementById('profile-form').addEventListener('submit', updateProfile);
+            
+            // Password form
+            document.getElementById('password-form').addEventListener('submit', changePassword);
+            
+            // Check URL for success or error messages
+            checkUrlParams();
+        });
+        
+        function showProfileSection() {
+            setActiveTab('profile-tab');
+            showSection('profile-section');
+        }
+        
+        function showChangePasswordSection() {
+            setActiveTab('change-password-tab');
+            showSection('change-password-section');
+        }
+        
+        function setActiveTab(tabId) {
+            document.querySelectorAll('.list-group-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        function showSection(sectionId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.add('d-none');
+            });
+            document.getElementById(sectionId).classList.remove('d-none');
+        }
+        
+        function toggleProfileEdit() {
+            const editButton = document.getElementById('edit-profile-btn');
+            const saveButton = document.getElementById('save-profile-btn');
+            const inputs = document.querySelectorAll('#profile-form input, #profile-form select');
+            
+            const isEditing = editButton.textContent === 'Cancel';
+            
+            if (isEditing) {
+                // Cancel editing
+                editButton.textContent = 'Edit';
+                editButton.classList.remove('btn-outline-danger');
+                editButton.classList.add('btn-outline-primary');
+                saveButton.disabled = true;
+                
+                // Reset form values
+                document.getElementById('first_name').value = '<%= user.first_name %>';
+                document.getElementById('last_name').value = '<%= user.last_name %>';
+                document.getElementById('email').value = '<%= user.email %>';
+                document.getElementById('contact_number').value = '<%= user.contact_number || "" %>';
+                
+                // Disable inputs
+                inputs.forEach(input => {
+                    input.disabled = true;
+                });
+            } else {
+                // Start editing
+                editButton.textContent = 'Cancel';
+                editButton.classList.remove('btn-outline-primary');
+                editButton.classList.add('btn-outline-danger');
+                saveButton.disabled = false;
+                
+                // Enable inputs (keep certain fields disabled)
+                inputs.forEach(input => {
+                    if (input.id !== 'date_of_birth' && input.id !== 'gender') {
+                        input.disabled = false;
+                    }
+                });
+            }
+        }
+        
+        function updateProfile(e) {
+            e.preventDefault();
+            
+            const data = {
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                email: document.getElementById('email').value,
+                contact_number: document.getElementById('contact_number').value
+            };
+            
+            const profilePicture = document.getElementById('profile_picture').files[0];
+            
+            // Create FormData for file upload
+            const formData = new FormData();
+            formData.append('first_name', data.first_name);
+            formData.append('last_name', data.last_name);
+            formData.append('email', data.email);
+            formData.append('contact_number', data.contact_number);
+            
+            if (profilePicture) {
+                formData.append('profile_picture', profilePicture);
+            }
+            
+            fetch('/user/profile', {
+                method: 'PUT',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to update profile');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Profile updated successfully!', 'success');
+                toggleProfileEdit(); // Reset form to view mode
+                
+                // Update the displayed name in the sidebar
+                const nameElement = document.querySelector('.card-title');
+                if (nameElement) {
+                    nameElement.textContent = `${data.user.first_name} ${data.user.last_name}`;
+                }
+                
+                // Reload page after a short delay to refresh all user data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function changePassword(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Validate passwords
+            if (newPassword !== confirmPassword) {
+                showAlert('New passwords do not match', 'danger');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                showAlert('Password must be at least 8 characters long', 'danger');
+                return;
+            }
+            
+            const data = {
+                current_password: currentPassword,
+                new_password: newPassword,
+                confirm_password: confirmPassword
+            };
+            
+            fetch('/user/password', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to change password');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Password changed successfully!', 'success');
+                document.getElementById('password-form').reset();
+            })
+            .catch(error => {
+                showAlert(error.message, 'danger');
+            });
+        }
+        
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.textContent = message;
+            alertContainer.className = `alert alert-${type} mb-4`;
+            
+            // Scroll to the top to make sure alert is visible
+            window.scrollTo(0, 0);
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertContainer.classList.add('d-none');
+                }, 5000);
+            }
+        }
+        
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const success = urlParams.get('success');
+            const error = urlParams.get('error');
+            
+            if (success) {
+                showAlert(decodeURIComponent(success), 'success');
+            }
+            
+            if (error) {
+                showAlert(decodeURIComponent(error), 'danger');
+            }
+        }
+    </script>
+</body>
+</html>
