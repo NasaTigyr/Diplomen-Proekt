@@ -588,7 +588,7 @@ async function getEventDetailsPage(req, res) {
     let userRegistrations = [];
     if (req.session.user) {
       const [registrations] = await db.query(
-        'SELECT r.*, c.event_id FROM registrations r JOIN categories c ON r.category_id = c.id WHERE r.user_id = ? AND c.event_id = ?',
+        'SELECT r.*, c.event_id FROM individual_registrations r JOIN categories c ON r.category_id = c.id WHERE r.user_id = ? AND c.event_id = ?',
         [req.session.user.id, eventId]
       );
       userRegistrations = registrations;
@@ -629,13 +629,13 @@ async function registerForCategory(req, res) {
     
     // Create registration
     const [result] = await db.query(
-      'INSERT INTO registrations (category_id, user_id, status, registration_date) VALUES (?, ?, ?, ?)',
+      'INSERT INTO individual_registrations (category_id, athlete_id, status, registration_date) VALUES (?, ?, ?, ?)',
       [categoryId, userId, 'pending', new Date()]
     );
     
     // Get the new registration
     const [newReg] = await db.query(
-      'SELECT * FROM registrations WHERE id = ?',
+      'SELECT * FROM individual_registrations WHERE id = ?',
       [result.insertId]
     );
     
@@ -767,7 +767,7 @@ async function registerUserForCategory(userId, categoryId) {
     
     // Check if already registered
     const [existingReg] = await db.query(
-      "SELECT * FROM registrations WHERE athlete_id = ? AND category_id = ?",
+      "SELECT * FROM individual_registrations WHERE athlete_id = ? AND category_id = ?",
       [userId, categoryId]
     );
     
@@ -778,13 +778,13 @@ async function registerUserForCategory(userId, categoryId) {
     // Create registration record
     const currentDate = new Date();
     const [result] = await db.query(
-      "INSERT INTO registrations (user_id, category_id, status, registration_date) VALUES (?, ?, ?, ?)",
+      "INSERT INTO individual_registrations (user_id, category_id, status, registration_date) VALUES (?, ?, ?, ?)",
       [userId, categoryId, "pending", currentDate]
     );
     
     // Get the newly created registration
     const [newReg] = await db.query(
-      "SELECT * FROM registrations WHERE id = ?",
+      "SELECT * FROM individual_registrations WHERE id = ?",
       [result.insertId]
     );
     
@@ -804,7 +804,7 @@ async function getRegistrationById(registrationId) {
     
     // Fetch registration
     const [rows] = await db.query(
-      "SELECT * FROM registrations WHERE id = ?",
+      "SELECT * FROM individual_registrations WHERE id = ?",
       [registrationId]
     );
     
@@ -864,7 +864,8 @@ const controller = {
     getCategoriesByEventId,
     getTimetableByEventId,
     getUserRegistrations,
-    cleanupPastEvents
-
+    cleanupPastEvents,
+    getRegistrationById,
+    registerUserForCategory
 };
 module.exports = controller;
