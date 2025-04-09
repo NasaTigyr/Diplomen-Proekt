@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Category - Martial Arts Competitions</title>
+  <link rel="stylesheet" href="/styleIndex.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <%- include('header', {currentPage: 'events', user: user}); %>
+  
+  <div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Edit Category</h1>
+      <a href="/manageCategories/<%= event.id %>" class="btn btn-outline-secondary">Back to Categories</a>
+    </div>
+    
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Edit Category: <%= category.name %></h5>
+      </div>
+      <div class="card-body">
+        <form action="/updateCategory/<%= category.id %>" method="POST">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="name" class="form-label">Category Name</label>
+              <input type="text" class="form-control" id="name" name="name" value="<%= category.name %>" required>
+            </div>
+            <div class="col-md-6">
+              <label for="max_participants" class="form-label">Max Participants (leave empty for no limit)</label>
+              <input type="number" class="form-control" id="max_participants" name="max_participants" min="1" value="<%= category.max_participants || '' %>">
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="age_group" class="form-label">Age Group</label>
+              <select class="form-select" id="age_group" name="age_group" required>
+                <option value="under_8" <%= category.age_group === 'under_8' ? 'selected' : '' %>>Under 8</option>
+                <option value="under_12" <%= category.age_group === 'under_12' ? 'selected' : '' %>>Under 12</option>
+                <option value="under_14" <%= category.age_group === 'under_14' ? 'selected' : '' %>>Under 14</option>
+                <option value="under_16" <%= category.age_group === 'under_16' ? 'selected' : '' %>>Under 16 (Cadet)</option>
+                <option value="under_18" <%= category.age_group === 'under_18' ? 'selected' : '' %>>Under 18 (Junior)</option>
+                <option value="under_21" <%= category.age_group === 'under_21' ? 'selected' : '' %>>Under 21</option>
+                <option value="senior" <%= category.age_group === 'senior' ? 'selected' : '' %>>Senior</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="gender" class="form-label">Gender</label>
+              <select class="form-select" id="gender" name="gender" required>
+                <option value="male" <%= category.gender === 'male' ? 'selected' : '' %>>Men</option>
+                <option value="female" <%= category.gender === 'female' ? 'selected' : '' %>>Women</option>
+                <option value="mixed" <%= category.gender === 'mixed' ? 'selected' : '' %>>Mixed</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3"><%= category.description || '' %></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Update Category</button>
+          <a href="/manageCategories/<%= event.id %>" class="btn btn-secondary ms-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

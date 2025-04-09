@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Event - Martial Arts Competitions</title>
+  <link rel="stylesheet" href="/styleIndex.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <%- include('header', {currentPage: 'events', user: user}); %>
+  
+  <div class="container my-5">
+    <h1>Edit Event</h1>
+    
+    <% if (event) { %>
+      <form action="/updateEvent/<%= event.id %>" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="name" class="form-label">Event Name</label>
+          <input type="text" class="form-control" id="name" name="name" value="<%= event.name %>" required>
+        </div>
+        
+        <div class="mb-3">
+          <label for="description" class="form-label">Description</label>
+          <textarea class="form-control" id="description" name="description" rows="3"><%= event.description || '' %></textarea>
+        </div>
+        
+        <div class="mb-3">
+          <label for="address" class="form-label">Location/Address</label>
+          <input type="text" class="form-control" id="address" name="address" value="<%= event.address %>" required>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="datetime-local" class="form-control" id="start_date" name="start_date" 
+                   value="<%= new Date(event.start_date).toISOString().slice(0, 16) %>" required>
+          </div>
+          <div class="col">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="datetime-local" class="form-control" id="end_date" name="end_date" 
+                   value="<%= new Date(event.end_date).toISOString().slice(0, 16) %>" required>
+          </div>
+        </div>
+        
+        <div class="row mb-3">
+          <div class="col">
+            <label for="registration_start" class="form-label">Registration Start</label>
+            <input type="datetime-local" class="form-control" id="registration_start" name="registration_start" 
+                   value="<%= new Date(event.registration_start).toISOString().slice(0, 16) %>" required>
+          </div>
+          <div class="col">
+            <label for="registration_end" class="form-label">Registration End</label>
+            <input type="datetime-local" class="form-control" id="registration_end" name="registration_end" 
+                   value="<%= new Date(event.registration_end).toISOString().slice(0, 16) %>" required>
+          </div>
+        </div>
+        
+        <div class="mb-3">
+          <label for="event_type" class="form-label">Event Type</label>
+          <select class="form-select" id="event_type" name="event_type" required>
+            <option value="team" <%= event.event_type === 'team' ? 'selected' : '' %>>Team Event</option>
+            <option value="free_for_all" <%= event.event_type === 'free_for_all' ? 'selected' : '' %>>Free for All</option>
+          </select>
+        </div>
+        
+        <div class="mb-3">
+          <label for="banner_image_file" class="form-label">Banner Image (leave empty to keep current)</label>
+          <input type="file" class="form-control" id="banner_image_file" name="banner_image_file">
+          <% if (event.banner_image) { %>
+            <div class="mt-2">
+              <img src="<%= event.banner_image %>" alt="Current banner" style="max-height: 100px">
+            </div>
+          <% } %>
+        </div>
+        
+        <div class="mb-3">
+          <label for="timetable_file" class="form-label">Timetable File (leave empty to keep current)</label>
+          <input type="file" class="form-control" id="timetable_file" name="timetable_file">
+          <% if (event.timetable_file) { %>
+            <div class="mt-2">
+              <a href="<%= event.timetable_file %>" target="_blank">View current timetable</a>
+            </div>
+          <% } %>
+        </div>
+        
+        <div class="mt-4">
+          <button type="submit" class="btn btn-primary">Update Event</button>
+          <a href="/eventDetails/<%= event.id %>" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+      </form>
+    <% } else { %>
+      <div class="alert alert-danger">Event not found</div>
+    <% } %>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

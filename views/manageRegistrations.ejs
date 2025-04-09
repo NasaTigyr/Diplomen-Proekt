@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Registrations - Martial Arts Competitions</title>
+  <link rel="stylesheet" href="/styleIndex.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <%- include('header', {currentPage: 'events', user: user}); %>
+  
+  <div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Manage Registrations: <%= event.name %></h1>
+      <a href="/eventDetails/<%= event.id %>" class="btn btn-outline-secondary">Back to Event</a>
+    </div>
+    
+    <ul class="nav nav-tabs" id="registrationTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="individual-tab" data-bs-toggle="tab" data-bs-target="#individual" type="button" role="tab" aria-controls="individual" aria-selected="true">Individual Registrations</button>
+      </li>
+      <% if (event.event_type === 'team') { %>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="team-tab" data-bs-toggle="tab" data-bs-target="#team" type="button" role="tab" aria-controls="team" aria-selected="false">Team Registrations</button>
+        </li>
+      <% } %>
+    </ul>
+    
+    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="registrationTabsContent">
+      <!-- Individual Registrations Tab -->
+      <div class="tab-pane fade show active" id="individual" role="tabpanel" aria-labelledby="individual-tab">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3>Individual Registrations</h3>
+          
+          <div class="input-group" style="max-width: 300px;">
+            <input type="text" class="form-control" id="individualSearch" placeholder="Search registrations">
+            <button class="btn btn-outline-secondary" type="button" id="individualSearchBtn">Search</button>
+          </div>
+        </div>
+        
+        <% if (registrations && registrations.individual && registrations.individual.length > 0) { %>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Athlete</th>
+                  <th>Category</th>
+                  <th>Registration Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% registrations.individual.forEach(reg => { %>
+                  <tr>
+                    <td><%= reg.id %></td>
+                    <td>
+                      <%= reg.first_name %> <%= reg.last_name %><br>
+                      <small class="text-muted"><%= reg.email %></small>
+                    </td>
+                    <td><%= reg.category_name %></td>
+                    <td><%= new Date(reg.registration_date).toLocaleString() %></td>
+                    <td>
+                      <span class="badge <%= reg.status === 'approved' ? 'bg-success' : (reg.status === 'rejected' ? 'bg-danger' : 'bg-warning') %>">
+                        <%= reg.status.charAt(0).toUpperCase() + reg.status.slice(1) %>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <% if (reg.status !== 'approved') { %>
+                          <button class="btn btn-outline-success" onclick="changeRegistrationStatus(<%= reg.id %>, 'approved')">Approve</button>
+                        <% } %>
+                        <% if (reg.status !== 'rejected') { %>
+                          <button class="btn btn-outline-danger" onclick="changeRegistrationStatus(<%= reg.id %>, 'rejected')">Reject</button>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="alert alert-info">No individual registrations found.</div>
+        <% } %>
+      </div>
+      
+      <% if (event.event_type === 'team') { %>
+        <!-- Team Registrations Tab -->
+        <div class="tab-pane fade" id="team" role="tabpanel" aria-labelledby="team-tab">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Team Registrations</h3>
+            
+            <div class="input-group" style="max-width: 300px;">
+              <input type="text" class="form-control" id="teamSearch" placeholder="Search registrations">
+              <button class="btn btn-outline-secondary" type="button" id="teamSearchBtn">Search</button>
+            </div>
+          </div>
+          
+          <% if (registrations && registrations.team && registrations.team.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Club</th>
+                    <th>Coach</th>
+                    <th>Category</th>
+                    <th>Registration Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% registrations.team.forEach(reg => { %>
+                    <tr>
+                      <td><%= reg.id %></td>
+                      <td><%= reg.club_name %></td>
+                      <td><%= reg.coach_first_name %> <%= reg.coach_last_name %></td>
+                      <td><%= reg.category_name %></td>
+                      <td><%= new Date(reg.registration_date).toLocaleString() %></td>
+                      <td>
+                        <span class="badge <%= reg.status === 'approved' ? 'bg-success' : (reg.status === 'rejected' ? 'bg-danger' : 'bg-warning') %>">
+                          <%= reg.status.charAt(0).toUpperCase() + reg.status.slice(1) %>
+                        </span>
+                      </td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary" onclick="viewTeamMembers(<%= reg.id %>)">View Team</button>
+                          <% if (reg.status !== 'approved') { %>
+                            <button class="btn btn-outline-success" onclick="changeTeamRegistrationStatus(<%= reg.id %>, 'approved')">Approve</button>
+                          <% } %>
+                          <% if (reg.status !== 'rejected') { %>
+                            <button class="btn btn-outline-danger" onclick="changeTeamRegistrationStatus(<%= reg.id %>, 'rejected')">Reject</button>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="alert alert-info">No team registrations found.</div>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+  
+  <!-- Modal for Team Members -->
+  <div class="modal fade" id="teamMembersModal" tabindex="-1" aria-labelledby="teamMembersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="teamMembersModalLabel">Team Members</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="teamMembersModalBody">
+          <div class="text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Change individual registration status
+    function changeRegistrationStatus(registrationId, status) {
+      if (confirm(`Are you sure you want to ${status} this registration?`)) {
+        fetch('/updateRegistrationStatus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            registrationId,
+            status
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to update status');
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert('Registration status updated successfully');
+          window.location.reload();
+        })
+        .catch(error => {
+          alert('Error: ' + error.message);
+        });
+      }
+    }
+    
+    // Change team registration status
+    function changeTeamRegistrationStatus(registrationId, status) {
+      if (confirm(`Are you sure you want to ${status} this team registration?`)) {
+        fetch('/updateTeamRegistrationStatus', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            registrationId,
+            status
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to update status');
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert('Team registration status updated successfully');
+          window.location.reload();
+        })
+        .catch(error => {
+          alert('Error: ' + error.message);
+        });
+      }
+    }
+    
+    // View team members
+    function viewTeamMembers(teamRegistrationId) {
+      const modal = new bootstrap.Modal(document.getElementById('teamMembersModal'));
+      modal.show();
+      
+      fetch(`/getTeamMembers/${teamRegistrationId}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to fetch team members');
+          }
+          return response.json();
+        })
+        .then(data => {
+          const modalBody = document.getElementById('teamMembersModalBody');
+          
+          if (data.length === 0) {
+            modalBody.innerHTML = '<div class="alert alert-info">No team members found.</div>';
+            return;
+          }
+          
+          let html = '<div class="table-responsive"><table class="table">';
+          html += '<thead><tr><th>Name</th><th>Email</th><th>Contact</th></tr></thead><tbody>';
+          
+          data.forEach(member => {
+            html += `<tr>
+              <td>${member.first_name} ${member.last_name}</td>
+              <td>${member.email}</td>
+              <td>${member.contact_number || 'N/A'}</td>
+            </tr>`;
+          });
+          
+          html += '</tbody></table></div>';
+          modalBody.innerHTML = html;
+        })
+        .catch(error => {
+          document.getElementById('teamMembersModalBody').innerHTML = 
+            `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        });
+    }
+    
+    // Search functionality
+    document.getElementById('individualSearchBtn').addEventListener('click', function() {
+      const searchText = document.getElementById('individualSearch').value.toLowerCase();
+      const rows = document.querySelectorAll('#individual table tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchText) ? '' : 'none';
+      });
+    });
+    
+    if (document.getElementById('teamSearchBtn')) {
+      document.getElementById('teamSearchBtn').addEventListener('click', function() {
+        const searchText = document.getElementById('teamSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('#team table tbody tr');
+        
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</body>
+</html>

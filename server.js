@@ -31,7 +31,7 @@ app.use(session({
 // Add this near the top of your main server file
 const uploadDir = path.join(__dirname, 'public/uploads');
 if (!fs.existsSync(uploadDir)){
-    fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Configure multer for file uploads
@@ -127,11 +127,11 @@ app.get('/createClub', isAuthenticated, (req, res) => {
 
 app.get('/events', async (req, res) => {
     try {
-        const events = await controller.getEvents();
+        const events = await controller.getEvents();  // Changed to getEvents (capital E)
         
         // Check if the request wants JSON (likely an AJAX request)
         // or HTML (direct browser navigation)
-        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {  // Changed indexof to indexOf
             // If it's an AJAX request or specifically requesting JSON, return JSON data
             return res.json(events);
         }
@@ -139,21 +139,25 @@ app.get('/events', async (req, res) => {
         // Otherwise render the page with the events data included
         res.render('events', { 
             user: req.session.user,
-            initialEvents: JSON.stringify(events)
+            userId: req.session.user ? req.session.user.id : null,  // Changed userid to userId
+            initialEvents: JSON.stringify(events)  // Changed initialevents to initialEvents
         });
     } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Error fetching events:', error);  // Changed error to Error
         
         // Similar handling for errors
-        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-            return res.status(500).json({ error: 'Failed to load events' });
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {  // Changed indexof to indexOf
+            return res.status(500).json({ error: 'Failed to load events' });  // Changed failed to Failed
         }
         
+      console.log('the userId is this: ', req.session.user.id); 
         res.render('events', { 
             user: req.session.user,
-            initialEvents: '[]',
-            error: 'Failed to load events' 
+            userId: req.session.user ? req.session.user.id : null,  // Changed userid to userId
+            initialEvents: '[]',  // Changed initialevents to initialEvents
+            error: 'Failed to load events'  // Changed failed to Failed
         });
+
     }
 });
 
@@ -313,6 +317,35 @@ app.post('/cancel-registration', async (req, res) => {
 
 app.get('/manageClub', isAuthenticated, (req, res) => {
   res.render('manageClub', { user: req.session.user });
+});
+
+// Add this route to server.js
+app.get('/manageEvent/:id', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    
+    // Get the event to check if user is the creator
+    const event = await controller.getEventById(eventId);
+    
+    // If event doesn't exist or user is not the creator, redirect to event details
+    if (!event || event.creator_id !== userId) {
+      return res.redirect(`/eventDetails/${eventId}`);
+    }
+    
+    // User is the creator, render the manage page
+    res.render('manageEvent', { 
+      eventId: parseInt(eventId),
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error("Error in manageEvent route:", error);
+    res.status(500).render('error', { 
+      message: 'Error loading event management page', 
+      error: { status: 500 },
+      user: req.session.user 
+    });
+  }
 });
 
 // Start server

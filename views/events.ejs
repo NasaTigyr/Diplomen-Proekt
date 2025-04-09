@@ -109,49 +109,94 @@
                     container.innerHTML = '<div class="col-12 text-center"><p>Failed to load events</p></div>';
                 });
         }
-        
+
         function displayEvents(events) {
-            const container = document.getElementById('eventsList');
-            const noEventsMessage = document.getElementById('no-events-message');
-            
-            // Clear loading spinner
-            container.innerHTML = '';
-            
-            if (events.length === 0) {
-                container.innerHTML = '';
-                noEventsMessage.classList.remove('d-none');
-                return;
-            }
-            
-            noEventsMessage.classList.add('d-none');
-            
-            // Create event cards
-            events.forEach(event => {
-                const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
-                const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
-                const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
-                
-                const card = `
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            <img src="${event.banner_url || '/images/default-event.jpg'}" class="card-img-top" alt="${event.title}">
-                            <div class="card-body">
-                                <h5 class="card-title">${event.title}</h5>
-                                <p class="card-text">${event.description ? (event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description) : 'No description'}</p>
-                                <p><strong>Date:</strong> ${eventDate}</p>
-                                <p><strong>Location:</strong> ${event.location || 'TBD'}</p>
-                                <p><small class="text-muted">Registration: ${registrationOpenDate} - ${registrationCloseDate}</small></p>
-                            </div>
-                            <div class="card-footer">
-                                <a href="/eventDetails/${event.id}" class="btn btn-primary">View Details</a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += card;
-            });
-        }
+    const container = document.getElementById('eventsList');
+    const noEventsMessage = document.getElementById('no-events-message');
+    
+    // Get the current user ID (from the server-side)
+    const currentUserId = <%= userId ? userId : 'null' %>;
+    console.log('Current user ID:', currentUserId);
+    
+    // Log the first event to see its structure
+    if (events.length > 0) {
+        console.log('First event:', events[0]);
+        console.log('First event creator_id:', events[0].creator_id);
+        // Try alternative field names that might contain the creator's ID
+        console.log('Alternative fields:', {
+            organizer_id: events[0].organizer_id,
+            organizer: events[0].organizer,
+            creator: events[0].creator
+        });
+    }
+    
+    // Clear loading spinner
+    container.innerHTML = '';
+    
+    if (events.length === 0) {
+        container.innerHTML = '';
+        noEventsMessage.classList.remove('d-none');
+        return;
+    }
+    
+    noEventsMessage.classList.add('d-none');
+    
+    // Create event cards
+    events.forEach(event => {
+        // Debug this specific event
+        console.log(`Event ${event.id} (${event.title}):`, {
+            creator_id: event.creator_id,
+            currentUserId: currentUserId,
+            isCreator: event.creator_id === currentUserId
+        });
         
+        const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
+        const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
+        const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
+        
+        // Check your database field name - it might not be creator_id
+        // Let's try possible alternatives
+        const isCreator = currentUserId && (
+            event.creator_id == currentUserId ||  // Use loose equality to handle string/number differences
+            event.organizer_id == currentUserId || 
+            event.creator == currentUserId
+        );
+        
+        console.log(`Is user ${currentUserId} the creator of event ${event.id}?`, isCreator);
+        
+        // Determine the correct link based on whether user is creator
+        const detailsLink = isCreator 
+            ? `/manageEvent/${event.id}`
+            : `/eventDetails/${event.id}`;
+        
+        // Determine the button text
+        const buttonText = isCreator
+            ? "Manage Event"
+            : "View Details";
+        
+        console.log(`Link for event ${event.id}:`, detailsLink);
+        
+        const card = `
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="${event.banner_url || '/images/default-event.jpg'}" class="card-img-top" alt="${event.title}">
+                    <div class="card-body">
+                        <h5 class="card-title">${event.title}</h5>
+                        <p class="card-text">${event.description ? (event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description) : 'No description'}</p>
+                        <p><strong>Date:</strong> ${eventDate}</p>
+                        <p><strong>Location:</strong> ${event.location || 'TBD'}</p>
+                        <p><small class="text-muted">Registration: ${registrationOpenDate} - ${registrationCloseDate}</small></p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="${detailsLink}" class="btn btn-primary">${buttonText}</a>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.innerHTML += card;
+    });
+}
+
         function filterEvents() {
             const searchTerm = document.getElementById('searchBar').value.toLowerCase();
             const sortOption = document.getElementById('sort-select').value;
@@ -181,6 +226,7 @@
             
             displayEvents(filteredEvents);
         }
+
     </script>
 </body>
 </html>

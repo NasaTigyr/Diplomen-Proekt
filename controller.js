@@ -817,7 +817,37 @@ async function getRegistrationById(registrationId) {
     throw error;
   }
 }
-
+// You can add this to your controller.js for automatically checking and handling past events
+async function cleanupPastEvents() {
+  try {
+    const currentDate = new Date();
+    
+    // Find all events that have ended
+    const [pastEvents] = await db.query(
+      "SELECT id FROM events WHERE end_date < ?", 
+      [currentDate]
+    );
+    
+    if (pastEvents.length > 0) {
+      console.log(`Found ${pastEvents.length} past events to clean up`);
+      
+      // Delete or archive the events as needed
+      // await db.query("DELETE FROM events WHERE id IN (?)", 
+      //   [pastEvents.map(e => e.id)]
+      // );
+      
+      // Or mark them as archived instead of deleting
+      await db.query(
+        "UPDATE events SET status = 'archived' WHERE id IN (?)", 
+        [pastEvents.map(e => e.id)]
+      );
+      
+      console.log(`Archived ${pastEvents.length} past events`);
+    }
+  } catch (error) {
+    console.error("Error cleaning up past events:", error);
+  }
+}
 const controller = {
     login,
     register,
@@ -832,6 +862,8 @@ const controller = {
     registerForCategory,
     getCategoriesByEventId,
     getTimetableByEventId,
-    getUserRegistrations
+    getUserRegistrations,
+    cleanupPastEvents
+
 };
 module.exports = controller;
