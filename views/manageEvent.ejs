@@ -8,7 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<%- include('header.ejs') %>
+    <%- include('header', {currentPage: 'profile', user: user}); %>
 
 <div class="container mt-5">
   <!-- Event header -->
@@ -265,6 +265,9 @@
   </div>
 </div>
 
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const eventId = <%= eventId %>;
@@ -655,8 +658,5 @@
     window.location.href = `/eventDetails/${eventId}`;
   });
 </script>
-
-<%- include('footer.ejs') %>
-
 </body>
 </html>
