@@ -613,24 +613,70 @@ async function getEventDetailsPage(req, res) {
   }
 }
 
-async function registerForCategory(req, res) {
+//async function registerForCategory(req, res) {
+//  try {
+//    const { categoryId } = req.body;
+//    const userId = req.session.user.id;
+//    
+// const [existingReg] = await db.query(
+//  'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
+//  [categoryId, userId] // Replaced user_id with athlete_id
+//);   
+//    
+//    if (existingReg.length > 0) {
+//      return res.status(400).json({ error: 'Already registered for this category' });
+//    }
+//    
+//    // Create registration
+//    const [result] = await db.query(
+//      'INSERT INTO individual_registrations (category_id, athlete_id, status, registration_date) VALUES (?, ?, ?, ?)',
+//      [categoryId, userId, 'pending', new Date()]
+//    );
+//    
+//    // Get the new registration
+//    const [newReg] = await db.query(
+//      'SELECT * FROM individual_registrations WHERE id = ?',
+//      [result.insertId]
+//    );
+//    
+//    res.status(201).json(newReg[0]);
+//  } catch (error) {
+//    console.error('Registration error:', error);
+//    res.status(500).json({ error: error.message });
+//  }
+//}
+
+  async function registerForCategory(req, res) {
   try {
     const { categoryId } = req.body;
     const userId = req.session.user.id;
     
- const [existingReg] = await db.query(
-  'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
-  [categoryId, userId] // Replaced user_id with athlete_id
-);   
+    // First, get the event_id from the category
+    const [categoryData] = await db.query(
+      'SELECT event_id FROM categories WHERE id = ?',
+      [categoryId]
+    );
+    
+    if (!categoryData || categoryData.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    const eventId = categoryData[0].event_id;
+    
+    // Check if already registered
+    const [existingReg] = await db.query(
+      'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
+      [categoryId, userId]
+    );
     
     if (existingReg.length > 0) {
       return res.status(400).json({ error: 'Already registered for this category' });
     }
     
-    // Create registration
+    // Create registration with event_id
     const [result] = await db.query(
-      'INSERT INTO individual_registrations (category_id, athlete_id, status, registration_date) VALUES (?, ?, ?, ?)',
-      [categoryId, userId, 'pending', new Date()]
+      'INSERT INTO individual_registrations (event_id, category_id, athlete_id, status, registration_date) VALUES (?, ?, ?, ?, ?)',
+      [eventId, categoryId, userId, 'pending', new Date()]
     );
     
     // Get the new registration
@@ -669,7 +715,6 @@ async function cancelRegistration(req, res) {
     res.status(500).json({ error: error.message });
   }
 }
-
 async function getEventById(eventId) {
   try {
     console.log("Fetching event with ID:", eventId);

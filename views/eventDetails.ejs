@@ -568,85 +568,89 @@
         
         registrationBody.innerHTML = html;
       }
-      
       function registerForCategory(categoryId) {
-        if (isLoading) return;
-        isLoading = true;
-        
-        if (!isLoggedIn) {
-          window.location.href = `/login?redirect=/eventDetails/${eventId}`;
-          return;
-        }
-        
-        const actionButton = document.getElementById(`category-action-${categoryId}`);
-        if (actionButton) {
-          actionButton.innerHTML = `
-            <button class="btn btn-primary btn-sm" disabled>
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              Registering...
-            </button>
-          `;
-        }
-        
-        fetch('/register-category', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            categoryId: categoryId
-          })
-        })
-        .then(response => {
-          if (!response.ok) {
-            return response.json().then(data => {
-              throw new Error(data.error || 'Failed to register');
-            });
-          }
-          return response.json();
-        })
-        .then(data => {
-          // Add the new registration to our list
-          userRegistrations.push(data);
-          
-          // Show success message
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'alert alert-success alert-dismissible fade show';
-          alertDiv.innerHTML = `
-            Registration successful!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          `;
-          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
-          
-          // Update UI
-          updateCategoryRegistrationButtons();
-          updateRegistrationSection();
-          
-          // Auto dismiss alert after 5 seconds
-          setTimeout(() => {
-            alertDiv.classList.remove('show');
-            setTimeout(() => alertDiv.remove(), 500);
-          }, 5000);
-        })
-        .catch(error => {
-          console.error('Registration error:', error);
-          
-          // Show error alert
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-          alertDiv.innerHTML = `
-            ${error.message || 'Failed to register. Please try again.'}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          `;
-          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
-          
-          // Reset button
-          updateCategoryRegistrationButtons();
-        })
-        .finally(() => {
-          isLoading = false;
-        });
-      }
+  if (isLoading) return;
+  isLoading = true;
+  
+  if (!isLoggedIn) {
+    window.location.href = `/login?redirect=/eventDetails/${eventId}`;
+    return;
+  }
+  
+  const actionButton = document.getElementById(`category-action-${categoryId}`);
+  if (actionButton) {
+    actionButton.innerHTML = `
+      <button class="btn btn-primary btn-sm" disabled>
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Registering...
+      </button>
+    `;
+  }
+  
+  fetch('/register-category', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      categoryId: categoryId,
+      // We don't need to pass eventId here since our backend will get it from the category
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.json().then(data => {
+        throw new Error(data.error || 'Failed to register');
+      });
+    }
+    return response.json();
+  })
+  .then(data => {
+    // Add the new registration to our list
+    // Make sure the event_id is included if it's not in the response
+    if (!data.event_id && eventData) {
+      data.event_id = eventId; // Use the eventId from the page
+    }
+    userRegistrations.push(data);
+    
+    // Show success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+      Registration successful!
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+    
+    // Update UI
+    updateCategoryRegistrationButtons();
+    updateRegistrationSection();
+    
+    // Auto dismiss alert after 5 seconds
+    setTimeout(() => {
+      alertDiv.classList.remove('show');
+      setTimeout(() => alertDiv.remove(), 500);
+    }, 5000);
+  })
+  .catch(error => {
+    console.error('Registration error:', error);
+    
+    // Show error alert
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.innerHTML = `
+      ${error.message || 'Failed to register. Please try again.'}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+    
+    // Reset button
+    updateCategoryRegistrationButtons();
+  })
+  .finally(() => {
+    isLoading = false;
+  });
+}
       
       function cancelRegistration(registrationId) {
         if (isLoading) return;
