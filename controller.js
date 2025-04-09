@@ -544,6 +544,7 @@ async function getEvents() {
       registration_open_date: event.registration_start,
       registration_close_date: event.registration_end,
       sport_type: event.sport_type,
+      creator_id: event.creator_id,
       organizer_id: event.organizer_id,
       status: event.status || 'active',
       created_at: event.created_at

@@ -110,25 +110,14 @@
                 });
         }
 
-        function displayEvents(events) {
+ function displayEvents(events) {
     const container = document.getElementById('eventsList');
     const noEventsMessage = document.getElementById('no-events-message');
     
     // Get the current user ID (from the server-side)
     const currentUserId = <%= userId ? userId : 'null' %>;
     console.log('Current user ID:', currentUserId);
-    
-    // Log the first event to see its structure
-    if (events.length > 0) {
-        console.log('First event:', events[0]);
-        console.log('First event creator_id:', events[0].creator_id);
-        // Try alternative field names that might contain the creator's ID
-        console.log('Alternative fields:', {
-            organizer_id: events[0].organizer_id,
-            organizer: events[0].organizer,
-            creator: events[0].creator
-        });
-    }
+    console.log('Current user ID type:', typeof currentUserId);
     
     // Clear loading spinner
     container.innerHTML = '';
@@ -143,38 +132,43 @@
     
     // Create event cards
     events.forEach(event => {
-        // Debug this specific event
-        console.log(`Event ${event.id} (${event.title}):`, {
+        // More detailed debugging information
+        console.log(`Event ${event.id} data:`, event);
+        console.log(`Event creator fields:`, {
             creator_id: event.creator_id,
-            currentUserId: currentUserId,
-            isCreator: event.creator_id === currentUserId
+            creator_id_type: typeof event.creator_id,
+            organizer_id: event.organizer_id,
+            organizer_id_type: typeof event.organizer_id
         });
+        
+        // Also check for any other field that might contain the creator ID
+        const possibleCreatorFields = {};
+        for (const key in event) {
+            if (key.toLowerCase().includes('creator') || 
+                key.toLowerCase().includes('organizer') ||
+                key.toLowerCase().includes('owner') ||
+                key.toLowerCase().includes('user')) {
+                possibleCreatorFields[key] = event[key];
+            }
+        }
+        console.log("All possible creator fields:", possibleCreatorFields);
         
         const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
         const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
         const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
         
-        // Check your database field name - it might not be creator_id
-        // Let's try possible alternatives
+        // Try all possible fields that might contain the creator ID
         const isCreator = currentUserId && (
-            event.creator_id == currentUserId ||  // Use loose equality to handle string/number differences
-            event.organizer_id == currentUserId || 
-            event.creator == currentUserId
+            (event.creator_id && parseInt(event.creator_id) === parseInt(currentUserId)) ||
+            (event.organizer_id && parseInt(event.organizer_id) === parseInt(currentUserId))
         );
         
+        console.log(`Comparison values:`, {
+            currentUserId: parseInt(currentUserId),
+            creator_id: event.creator_id ? parseInt(event.creator_id) : null,
+            organizer_id: event.organizer_id ? parseInt(event.organizer_id) : null
+        });
         console.log(`Is user ${currentUserId} the creator of event ${event.id}?`, isCreator);
-        
-        // Determine the correct link based on whether user is creator
-        const detailsLink = isCreator 
-            ? `/manageEvent/${event.id}`
-            : `/eventDetails/${event.id}`;
-        
-        // Determine the button text
-        const buttonText = isCreator
-            ? "Manage Event"
-            : "View Details";
-        
-        console.log(`Link for event ${event.id}:`, detailsLink);
         
         const card = `
             <div class="col-md-4 mb-4">
@@ -188,14 +182,17 @@
                         <p><small class="text-muted">Registration: ${registrationOpenDate} - ${registrationCloseDate}</small></p>
                     </div>
                     <div class="card-footer">
-                        <a href="${detailsLink}" class="btn btn-primary">${buttonText}</a>
+                        <a href="${isCreator ? `/manageEvent/${event.id}` : `/eventDetails/${event.id}`}" 
+                           class="btn btn-primary">
+                            ${isCreator ? "Manage Event" : "View Details"}
+                        </a>
                     </div>
                 </div>
             </div>
         `;
         container.innerHTML += card;
     });
-}
+}      
 
         function filterEvents() {
             const searchTerm = document.getElementById('searchBar').value.toLowerCase();
