@@ -319,21 +319,43 @@ app.get('/manageClub', isAuthenticated, (req, res) => {
   res.render('manageClub', { user: req.session.user });
 });
 
-// Add this route to server.js
+/// Add this route to server.js
 app.get('/manageEvent/:id', isAuthenticated, async (req, res) => {
   try {
     const eventId = req.params.id;
     const userId = req.session.user.id;
     
+    console.log(`ManageEvent route: User ${userId} is attempting to manage event ${eventId}`);
+    
     // Get the event to check if user is the creator
     const event = await controller.getEventById(eventId);
     
-    // If event doesn't exist or user is not the creator, redirect to event details
-    if (!event || event.creator_id !== userId) {
+    // Debug log the event data
+    console.log("Event data:", event);
+    
+    // If event doesn't exist, return 404
+    if (!event) {
+      console.log(`Event ${eventId} not found`);
+      return res.status(404).render('error', {
+        message: 'Event not found',
+        error: { status: 404 },
+        user: req.session.user
+      });
+    }
+    
+    // Check if user is the creator (using loose equality to handle type differences)
+    const isCreator = parseInt(event.creator_id) === parseInt(userId);
+    console.log(`User ${userId} is creator of event ${eventId}? ${isCreator}`);
+    console.log(`Comparison values: event.creator_id=${event.creator_id} (${typeof event.creator_id}), userId=${userId} (${typeof userId})`);
+    
+    // If user is not the creator, redirect to event details
+    if (!isCreator) {
+      console.log(`User ${userId} is not the creator of event ${eventId}, redirecting to details`);
       return res.redirect(`/eventDetails/${eventId}`);
     }
     
     // User is the creator, render the manage page
+    console.log(`User ${userId} is the creator of event ${eventId}, rendering manage page`);
     res.render('manageEvent', { 
       eventId: parseInt(eventId),
       user: req.session.user
