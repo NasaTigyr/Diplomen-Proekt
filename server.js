@@ -434,6 +434,78 @@ app.post('/registration/:id/update-status', isAuthenticated, async (req, res) =>
     res.redirect(`/event/${req.body.eventId}/registrations?error=${error.message}`);
   }
 });
+// Route to display the edit event page
+app.get('/editEvent/:id', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    
+    // Get the event to check if user is the creator
+    const event = await controller.getEventById(eventId);
+    
+    // If event doesn't exist, return 404
+    if (!event) {
+      return res.status(404).render('error', {
+        message: 'Event not found',
+        error: { status: 404 },
+        user: req.session.user
+      });
+    }
+    
+    // Check if user is the creator
+    const isCreator = parseInt(event.creator_id) === parseInt(userId);
+    
+    // If user is not the creator, redirect to event details
+    if (!isCreator) {
+      return res.redirect(`/eventDetails/${eventId}`);
+    }
+    
+    // User is the creator, render the edit page
+    res.render('editEvent', { 
+      eventId: parseInt(eventId),
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error("Error in editEvent route:", error);
+    res.status(500).render('error', { 
+      message: 'Error loading event edit page', 
+      error: { status: 500 },
+      user: req.session.user 
+    });
+  }
+});
+
+// Route to handle the form submission for updating an event
+app.post('/updateEvent/:id', isAuthenticated, eventUpload, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    
+    // Call controller function to update event
+    const result = await controller.updateEvent(eventId, userId, req.body, req.files);
+    
+    // Check if this is an AJAX request
+    if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+      return res.json(result);
+    }
+    
+    // For non-AJAX requests, redirect back to manage event page
+    res.redirect(`/manageEvent/${eventId}?success=Event updated successfully`);
+  } catch (error) {
+    console.error("Error updating event:", error);
+    
+    // Check if this is an AJAX request
+    if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+      return res.status(500).json({ 
+        success: false, 
+        message: error.message || 'An error occurred while updating the event' 
+      });
+    }
+    
+    // For non-AJAX requests, redirect with error
+    res.redirect(`/editEvent/${req.params.id}?error=${encodeURIComponent(error.message || 'An error occurred while updating the event')}`);
+  }
+});
 
 // Start server
 app.listen(PORT, () => {
