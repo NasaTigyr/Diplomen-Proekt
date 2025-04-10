@@ -369,6 +369,71 @@ app.get('/manageEvent/:id', isAuthenticated, async (req, res) => {
     });
   }
 });
+// Add these routes to your server.js file
+
+// Route to view event registrations
+app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.session.user.id;
+    
+    // Get the event to check if user is the creator
+    const event = await controller.getEventById(eventId);
+    
+    // If event doesn't exist, return 404
+    if (!event) {
+      return res.status(404).render('error', {
+        message: 'Event not found',
+        error: { status: 404 },
+        user: req.session.user
+      });
+    }
+    
+    // Check if user is the creator
+    const isCreator = parseInt(event.creator_id) === parseInt(userId);
+    
+    // If user is not the creator, redirect to event details
+    if (!isCreator) {
+      return res.redirect(`/eventDetails/${eventId}`);
+    }
+    
+    // Get all registrations for this event
+    const registrations = await controller.getEventRegistrations(eventId, userId);
+    
+    // Render the registrations page
+    res.render('eventRegistrations', { 
+      eventId: parseInt(eventId),
+      eventName: event.name,
+      registrations: registrations,
+      user: req.session.user
+    });
+  } catch (error) {
+    console.error("Error loading event registrations:", error);
+    res.status(500).render('error', { 
+      message: 'Error loading registrations: ' + error.message, 
+      error: { status: 500 },
+      user: req.session.user 
+    });
+  }
+});
+
+// Route to update registration status (form submission)
+app.post('/registration/:id/update-status', isAuthenticated, async (req, res) => {
+  try {
+    const registrationId = req.params.id;
+    const { status, eventId } = req.body;
+    const userId = req.session.user.id;
+    
+    // Update the registration status
+    await controller.updateRegistrationStatus(registrationId, status, userId);
+    
+    // Redirect back to the registrations page with success message
+    res.redirect(`/event/${eventId}/registrations?success=Status updated successfully`);
+  } catch (error) {
+    console.error("Error updating registration status:", error);
+    res.redirect(`/event/${req.body.eventId}/registrations?error=${error.message}`);
+  }
+});
 
 // Start server
 app.listen(PORT, () => {

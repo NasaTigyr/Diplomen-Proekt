@@ -894,6 +894,69 @@ async function cleanupPastEvents() {
     console.error("Error cleaning up past events:", error);
   }
 }
+// Add these functions to your controller.js file
+
+async function getEventRegistrations(eventId, userId) {
+  try {
+    // Verify user is the event creator
+    const event = await getEventById(eventId);
+    if (!event || event.creator_id != userId) {
+      throw new Error('Not authorized to view these registrations');
+    }
+    
+    // Get all registrations for the event with user details
+    const [registrations] = await db.query(`
+      SELECT r.*, c.name as category_name, u.first_name, u.last_name, u.email 
+      FROM individual_registrations r
+      JOIN categories c ON r.category_id = c.id
+      JOIN users u ON r.athlete_id = u.id
+      WHERE r.event_id = ?
+      ORDER BY r.registration_date DESC
+    `, [eventId]);
+    
+    return registrations;
+  } catch (error) {
+    console.error('Error fetching registrations:', error);
+    throw error;
+  }
+}
+
+async function updateRegistrationStatus(registrationId, status, userId) {
+  try {
+    // Validate status
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      throw new Error('Invalid status value');
+    }
+    
+    // Get registration details first to check permissions
+    const [registrationDetails] = await db.query(`
+      SELECT r.*, e.creator_id 
+      FROM individual_registrations r
+      JOIN events e ON r.event_id = e.id
+      WHERE r.id = ?
+    `, [registrationId]);
+    
+    if (!registrationDetails || registrationDetails.length === 0) {
+      throw new Error('Registration not found');
+    }
+    
+    // Verify user is the event creator
+    if (registrationDetails[0].creator_id != userId) {
+      throw new Error('Not authorized to update this registration');
+    }
+    
+    // Update the registration status
+    await db.query('UPDATE individual_registrations SET status = ? WHERE id = ?', 
+      [status, registrationId]
+    );
+    
+    return { success: true, message: 'Registration status updated' };
+  } catch (error) {
+    console.error('Error updating registration status:', error);
+    throw error;
+  }
+}
+
 const controller = {
     login,
     register,
@@ -911,6 +974,8 @@ const controller = {
     getUserRegistrations,
     cleanupPastEvents,
     getRegistrationById,
-    registerUserForCategory
+    registerUserForCategory,
+    getEventRegistrations,
+    updateRegistrationStatus
 };
 module.exports = controller;
