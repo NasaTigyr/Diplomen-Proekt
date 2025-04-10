@@ -523,6 +523,17 @@ app.get('/eventDetails/:id/categoryStats', async (req, res) => {
   }
 });
 
+// Add this to your server.js file, near the other API endpoints
+app.get('/categories/stats/:eventId', async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    const stats = await controller.getCategoryStats(eventId);
+    res.json({ categoryStats: stats });
+  } catch (error) {
+    console.error("ERROR fetching category statistics:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

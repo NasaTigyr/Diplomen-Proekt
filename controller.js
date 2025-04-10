@@ -1099,8 +1099,35 @@ async function updateEvent(eventId, userId, eventData, files) {
   }
 }
 
-// Add the function to the controller module exports
-// Update the controller object at the bottom of your file:
+async function getCategoryStats(eventId) {
+  try {
+    // Validate eventId
+    if (isNaN(parseInt(eventId))) {
+      throw new Error("Invalid event ID");
+    }
+    
+    // Fetch categories with registration counts
+    const [rows] = await db.query(`
+      SELECT 
+        c.id as category_id, 
+        COUNT(ir.id) as participant_count 
+      FROM 
+        categories c 
+      LEFT JOIN 
+        individual_registrations ir ON c.id = ir.category_id 
+      WHERE 
+        c.event_id = ? 
+      GROUP BY 
+        c.id
+    `, [eventId]);
+    
+    return rows; // Return all category stats
+  } catch (error) {
+    console.error("Error in getCategoryStats:", error);
+    throw error;
+  }
+}
+
 const controller = {
     login,
     register,
@@ -1121,7 +1148,8 @@ const controller = {
     registerUserForCategory,
     getEventRegistrations,
     updateRegistrationStatus,
-    updateEvent // Add this new function
+    updateEvent ,// Add this new function,
+    getCategoryStats
 };
 
 module.exports = controller; 
