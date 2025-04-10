@@ -496,6 +496,32 @@ app.post('/updateEvent/:id', isAuthenticated, eventUpload, async (req, res) => {
     });
   }
 });
+// Add this to your server.js file, near the other API endpoints
+app.get('/eventDetails/:id/categoryStats', async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    
+    // Query to get the count of registrations for each category in this event
+    const [results] = await db.query(`
+      SELECT 
+        c.id as category_id, 
+        COUNT(ir.id) as participant_count 
+      FROM 
+        categories c 
+      LEFT JOIN 
+        individual_registrations ir ON c.id = ir.category_id 
+      WHERE 
+        c.event_id = ? 
+      GROUP BY 
+        c.id
+    `, [eventId]);
+    
+    res.json(results);
+  } catch (error) {
+    console.error("ERROR fetching category statistics:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Start server
 app.listen(PORT, () => {

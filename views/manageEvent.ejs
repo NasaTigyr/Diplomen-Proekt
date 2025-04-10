@@ -271,8 +271,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// This code should replace the existing script section in manageEvent.ejs
-
 document.addEventListener('DOMContentLoaded', function() {
   const eventId = <%= eventId %>;
   
@@ -358,6 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Load categories function
   function loadCategories() {
+    // First fetch categories
     fetch(`/eventDetails/${eventId}/categories`)
       .then(response => {
         if (!response.ok && response.status !== 404) {
@@ -366,86 +365,128 @@ document.addEventListener('DOMContentLoaded', function() {
         return response.json();
       })
       .then(categories => {
-        const tbody = document.getElementById('categoriesTableBody');
-        const noCategories = document.getElementById('noCategoriesMessage');
-        
-        // Clear existing data
-        tbody.innerHTML = '';
-        
         if (!categories || categories.length === 0) {
-          noCategories.classList.remove('d-none');
+          document.getElementById('noCategoriesMessage').classList.remove('d-none');
           return;
         }
         
-        noCategories.classList.add('d-none');
-        
-        // Add each category to table
-        categories.forEach(category => {
-          const row = document.createElement('tr');
-          
-          // Format age group
-          let ageGroup = category.age_group || 'N/A';
-          ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          
-          // Format gender
-          let gender = category.gender || 'N/A';
-          gender = gender.charAt(0).toUpperCase() + gender.slice(1);
-          
-          row.innerHTML = `
-            <td>${category.name}</td>
-            <td>${ageGroup}</td>
-            <td>${gender}</td>
-            <td><span class="badge bg-primary">0</span></td>
-            <td>${category.max_participants || 'Unlimited'}</td>
-            <td>
-              <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          `;
-          
-          tbody.appendChild(row);
-        });
-        
-        // Add click handlers to buttons
-        document.querySelectorAll('.edit-category').forEach(button => {
-          button.addEventListener('click', function() {
-            const categoryId = this.getAttribute('data-id');
-            editCategory(categoryId, categories);
+        // Next, fetch category statistics (participant counts)
+        fetch(`/categories/stats/${eventId}`)
+          .then(response => {
+            if (!response.ok) {
+              console.error('Failed to load participant counts, will display 0');
+              return { categoryStats: [] };
+            }
+            return response.json();
+          })
+          .then(data => {
+            // Create a map of category_id -> participant_count for easy lookup
+            const statsMap = new Map();
+            if (data.categoryStats) {
+              data.categoryStats.forEach(stat => {
+                statsMap.set(stat.category_id, stat.participant_count);
+              });
+            }
+            
+            // Now display the categories with the correct participant count
+            displayCategories(categories, statsMap);
+          })
+          .catch(error => {
+            console.error('Error loading participant counts:', error);
+            // Still display the categories but with 0 participants
+            displayCategories(categories, new Map());
           });
-        });
-        
-        document.querySelectorAll('.delete-category').forEach(button => {
-          button.addEventListener('click', function() {
-            const categoryId = this.getAttribute('data-id');
-            confirmDeleteCategory(categoryId);
-          });
-        });
-        
-        // Also populate the filter dropdown
-        const filterSelect = document.getElementById('filterCategory');
-        
-        // Clear existing options except first one
-        while (filterSelect.options.length > 1) {
-          filterSelect.remove(1);
-        }
-        
-        // Add options for each category
-        categories.forEach(category => {
-          const option = document.createElement('option');
-          option.value = category.id;
-          option.textContent = category.name;
-          filterSelect.appendChild(option);
-        });
       })
       .catch(error => {
         console.error('Error loading categories:', error);
         document.getElementById('noCategoriesMessage').classList.remove('d-none');
         document.getElementById('noCategoriesMessage').textContent = 'Failed to load categories. Please try again later.';
       });
+  }
+  
+  // Display categories with participant counts
+  function displayCategories(categories, statsMap) {
+    const tbody = document.getElementById('categoriesTableBody');
+    const noCategories = document.getElementById('noCategoriesMessage');
+    
+    // Clear existing data
+    tbody.innerHTML = '';
+    noCategories.classList.add('d-none');
+    
+    // Add each category to table
+    categories.forEach(category => {
+      const row = document.createElement('tr');
+      
+      // Format age group
+      let ageGroup = category.age_group || 'N/A';
+      ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      
+      // Format gender
+      let gender = category.gender || 'N/A';
+      gender = gender.charAt(0).toUpperCase() + gender.slice(1);
+      
+      // Get participant count from stats map or default to 0
+      const participantCount = statsMap.get(category.id) || 0;
+      
+      // Determine badge color based on registration status
+      let badgeClass = 'bg-primary';
+      if (category.max_participants) {
+        if (participantCount >= category.max_participants) {
+          badgeClass = 'bg-danger'; // Full
+        } else if (participantCount >= category.max_participants * 0.75) {
+          badgeClass = 'bg-warning'; // Nearly full
+        }
+      }
+      
+      row.innerHTML = `
+        <td>${category.name}</td>
+        <td>${ageGroup}</td>
+        <td>${gender}</td>
+        <td><span class="badge ${badgeClass}">${participantCount}</span></td>
+        <td>${category.max_participants || 'Unlimited'}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+    });
+    
+    // Add click handlers to buttons
+    document.querySelectorAll('.edit-category').forEach(button => {
+      button.addEventListener('click', function() {
+        const categoryId = this.getAttribute('data-id');
+        editCategory(categoryId, categories);
+      });
+    });
+    
+    document.querySelectorAll('.delete-category').forEach(button => {
+      button.addEventListener('click', function() {
+        const categoryId = this.getAttribute('data-id');
+        confirmDeleteCategory(categoryId);
+      });
+    });
+    
+    // Also populate the filter dropdown
+    const filterSelect = document.getElementById('filterCategory');
+    
+    // Clear existing options except first one
+    while (filterSelect.options.length > 1) {
+      filterSelect.remove(1);
+    }
+    
+    // Add options for each category
+    categories.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category.id;
+      option.textContent = category.name;
+      filterSelect.appendChild(option);
+    });
   }
   
   // Load timetable function
