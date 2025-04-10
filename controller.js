@@ -1094,7 +1094,8 @@ async function updateEvent(eventId, userId, eventData, files) {
     };
   } catch (error) {
     console.error('Error updating event:', error);
-    throw error; // Rethrow to be caught by route handler
+
+    throw new Error(error.message || 'Falied to update the event'); 
   }
 }
 

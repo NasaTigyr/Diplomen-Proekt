@@ -484,26 +484,16 @@ app.post('/updateEvent/:id', isAuthenticated, eventUpload, async (req, res) => {
     // Call controller function to update event
     const result = await controller.updateEvent(eventId, userId, req.body, req.files);
     
-    // Check if this is an AJAX request
-    if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-      return res.json(result);
-    }
-    
-    // For non-AJAX requests, redirect back to manage event page
-    res.redirect(`/manageEvent/${eventId}?success=Event updated successfully`);
+    // Always send JSON response
+    return res.json(result);
   } catch (error) {
     console.error("Error updating event:", error);
     
-    // Check if this is an AJAX request
-    if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
-      return res.status(500).json({ 
-        success: false, 
-        message: error.message || 'An error occurred while updating the event' 
-      });
-    }
-    
-    // For non-AJAX requests, redirect with error
-    res.redirect(`/editEvent/${req.params.id}?error=${encodeURIComponent(error.message || 'An error occurred while updating the event')}`);
+    // Always send JSON error response
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message || 'An error occurred while updating the event' 
+    });
   }
 });
 
