@@ -217,7 +217,6 @@
         // Log the raw response status and headers for debugging
         console.log('Response status:', response.status);
         console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
         // Check if the response is OK
         if (!response.ok) {
           // Try to get error text even if response is not OK
@@ -225,7 +224,6 @@
             throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
           });
         }
-
         // Check content type before parsing
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
@@ -233,7 +231,6 @@
             throw new Error(`Expected JSON, but received: ${text}`);
           });
         }
-
         // Parse JSON
         return response.json();
       })
@@ -283,6 +280,8 @@
         submitButton.disabled = false;
         submitButton.innerHTML = originalButtonText;
       });
+    }
+  }); // Added closing bracket and parenthesis here
 </script>
 </body>
 </html>
