@@ -957,6 +957,149 @@ async function updateRegistrationStatus(registrationId, status, userId) {
   }
 }
 
+async function updateEvent(eventId, userId, eventData, files) {
+  try {
+    // Validate input
+    if (!eventId || isNaN(parseInt(eventId))) {
+      throw new Error('Invalid event ID');
+    }
+    
+    // Check if user is the creator of the event
+    const event = await getEventById(eventId);
+    
+    if (!event) {
+      throw new Error('Event not found');
+    }
+    
+    // Convert IDs to integers for reliable comparison
+    const eventCreatorId = parseInt(event.creator_id);
+    const currentUserId = parseInt(userId);
+    
+    // Verify user is authorized to update this event
+    if (eventCreatorId !== currentUserId) {
+      throw new Error('Not authorized to update this event');
+    }
+    
+    // Process updated fields
+    const {
+      name,
+      description,
+      address,
+      event_type,
+      start_date,
+      end_date,
+      registration_start,
+      registration_end,
+      current_banner_image,
+      current_timetable_file
+    } = eventData;
+    
+    // Validate required fields
+    if (!name || !address || !start_date || !end_date || !registration_start || !registration_end) {
+      throw new Error('Missing required fields');
+    }
+    
+    // Handle file uploads
+    let banner_image = current_banner_image;
+    let timetable_file = current_timetable_file;
+    
+    if (files) {
+      // Process banner image if uploaded
+      if (files.banner_image_file && files.banner_image_file.length > 0) {
+        banner_image = '/uploads/' + files.banner_image_file[0].filename;
+        console.log('New banner image saved at:', banner_image);
+        
+        // Delete old banner image if it exists
+        if (current_banner_image && current_banner_image !== banner_image) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const oldImagePath = path.join(__dirname, 'public', current_banner_image);
+            
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+              console.log('Deleted old banner image:', current_banner_image);
+            }
+          } catch (e) {
+            console.error('Error deleting old banner image:', e);
+            // Continue with update even if delete fails
+          }
+        }
+      }
+      
+      // Process timetable file if uploaded
+      if (files.timetable_file && files.timetable_file.length > 0) {
+        timetable_file = '/uploads/' + files.timetable_file[0].filename;
+        console.log('New timetable file saved at:', timetable_file);
+        
+        // Delete old timetable file if it exists
+        if (current_timetable_file && current_timetable_file !== timetable_file) {
+          try {
+            const fs = require('fs');
+            const path = require('path');
+            const oldFilePath = path.join(__dirname, 'public', current_timetable_file);
+            
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+              console.log('Deleted old timetable file:', current_timetable_file);
+            }
+          } catch (e) {
+            console.error('Error deleting old timetable file:', e);
+            // Continue with update even if delete fails
+          }
+        }
+      }
+    }
+    
+    // Update the event in the database
+    const query = `
+      UPDATE events 
+      SET 
+        name = ?, 
+        description = ?, 
+        banner_image = ?, 
+        address = ?, 
+        start_date = ?, 
+        end_date = ?, 
+        registration_start = ?, 
+        registration_end = ?, 
+        event_type = ?,
+        timetable_file = ?,
+        updated_at = ?
+      WHERE id = ?
+    `;
+    
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    await db.query(query, [
+      name,
+      description,
+      banner_image,
+      address,
+      start_date,
+      end_date,
+      registration_start,
+      registration_end,
+      event_type,
+      timetable_file,
+      currentDate,
+      eventId
+    ]);
+    
+    // Return success response
+    return {
+      success: true,
+      message: 'Event updated successfully',
+      id: eventId
+    };
+  } catch (error) {
+    console.error('Error updating event:', error);
+    throw error; // Rethrow to be caught by route handler
+  }
+}
+
+// Add the function to the controller module exports
+// Update the controller object at the bottom of your file:
 const controller = {
     login,
     register,
@@ -976,6 +1119,8 @@ const controller = {
     getRegistrationById,
     registerUserForCategory,
     getEventRegistrations,
-    updateRegistrationStatus
+    updateRegistrationStatus,
+    updateEvent // Add this new function
 };
-module.exports = controller;
+
+module.exports = controller; 

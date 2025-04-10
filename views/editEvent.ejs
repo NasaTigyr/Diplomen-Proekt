@@ -6,94 +6,267 @@
   <title>Edit Event - Martial Arts Competitions</title>
   <link rel="stylesheet" href="/styleIndex.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <%- include('header', {currentPage: 'events', user: user}); %>
-  
-  <div class="container my-5">
-    <h1>Edit Event</h1>
-    
-    <% if (event) { %>
-      <form action="/updateEvent/<%= event.id %>" method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label for="name" class="form-label">Event Name</label>
-          <input type="text" class="form-control" id="name" name="name" value="<%= event.name %>" required>
-        </div>
-        
-        <div class="mb-3">
-          <label for="description" class="form-label">Description</label>
-          <textarea class="form-control" id="description" name="description" rows="3"><%= event.description || '' %></textarea>
-        </div>
-        
-        <div class="mb-3">
-          <label for="address" class="form-label">Location/Address</label>
-          <input type="text" class="form-control" id="address" name="address" value="<%= event.address %>" required>
-        </div>
-        
-        <div class="row mb-3">
-          <div class="col">
-            <label for="start_date" class="form-label">Start Date</label>
-            <input type="datetime-local" class="form-control" id="start_date" name="start_date" 
-                   value="<%= new Date(event.start_date).toISOString().slice(0, 16) %>" required>
-          </div>
-          <div class="col">
-            <label for="end_date" class="form-label">End Date</label>
-            <input type="datetime-local" class="form-control" id="end_date" name="end_date" 
-                   value="<%= new Date(event.end_date).toISOString().slice(0, 16) %>" required>
-          </div>
-        </div>
-        
-        <div class="row mb-3">
-          <div class="col">
-            <label for="registration_start" class="form-label">Registration Start</label>
-            <input type="datetime-local" class="form-control" id="registration_start" name="registration_start" 
-                   value="<%= new Date(event.registration_start).toISOString().slice(0, 16) %>" required>
-          </div>
-          <div class="col">
-            <label for="registration_end" class="form-label">Registration End</label>
-            <input type="datetime-local" class="form-control" id="registration_end" name="registration_end" 
-                   value="<%= new Date(event.registration_end).toISOString().slice(0, 16) %>" required>
-          </div>
-        </div>
-        
-        <div class="mb-3">
-          <label for="event_type" class="form-label">Event Type</label>
-          <select class="form-select" id="event_type" name="event_type" required>
-            <option value="team" <%= event.event_type === 'team' ? 'selected' : '' %>>Team Event</option>
-            <option value="free_for_all" <%= event.event_type === 'free_for_all' ? 'selected' : '' %>>Free for All</option>
-          </select>
-        </div>
-        
-        <div class="mb-3">
-          <label for="banner_image_file" class="form-label">Banner Image (leave empty to keep current)</label>
-          <input type="file" class="form-control" id="banner_image_file" name="banner_image_file">
-          <% if (event.banner_image) { %>
-            <div class="mt-2">
-              <img src="<%= event.banner_image %>" alt="Current banner" style="max-height: 100px">
+  <%- include('header', {currentPage: 'profile', user: user}); %>
+
+  <div class="container mt-5">
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h1>Edit Event</h1>
+      </div>
+      <div class="col-md-4 text-end">
+        <a href="/manageEvent/<%= eventId %>" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left"></i> Back to Event Management
+        </a>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Event Details</h5>
+      </div>
+      <div class="card-body">
+        <form id="editEventForm" enctype="multipart/form-data">
+          <input type="hidden" id="eventId" name="eventId" value="<%= eventId %>">
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="eventName" class="form-label">Event Name *</label>
+              <input type="text" class="form-control" id="eventName" name="name" required>
             </div>
-          <% } %>
-        </div>
-        
-        <div class="mb-3">
-          <label for="timetable_file" class="form-label">Timetable File (leave empty to keep current)</label>
-          <input type="file" class="form-control" id="timetable_file" name="timetable_file">
-          <% if (event.timetable_file) { %>
-            <div class="mt-2">
-              <a href="<%= event.timetable_file %>" target="_blank">View current timetable</a>
+            <div class="col-md-6">
+              <label for="eventType" class="form-label">Event Type *</label>
+              <select class="form-select" id="eventType" name="event_type" required>
+                <option value="free_for_all">Individual Competition</option>
+                <option value="team">Team Competition</option>
+              </select>
             </div>
-          <% } %>
-        </div>
-        
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">Update Event</button>
-          <a href="/eventDetails/<%= event.id %>" class="btn btn-secondary ms-2">Cancel</a>
-        </div>
-      </form>
-    <% } else { %>
-      <div class="alert alert-danger">Event not found</div>
-    <% } %>
+          </div>
+          
+          <div class="mb-3">
+            <label for="eventDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="eventDescription" name="description" rows="4"></textarea>
+          </div>
+          
+          <div class="mb-3">
+            <label for="eventAddress" class="form-label">Location/Address *</label>
+            <textarea class="form-control" id="eventAddress" name="address" rows="2" required></textarea>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="startDate" class="form-label">Start Date *</label>
+              <input type="datetime-local" class="form-control" id="startDate" name="start_date" required>
+            </div>
+            <div class="col-md-6">
+              <label for="endDate" class="form-label">End Date *</label>
+              <input type="datetime-local" class="form-control" id="endDate" name="end_date" required>
+            </div>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="registrationStart" class="form-label">Registration Open Date *</label>
+              <input type="datetime-local" class="form-control" id="registrationStart" name="registration_start" required>
+            </div>
+            <div class="col-md-6">
+              <label for="registrationEnd" class="form-label">Registration Close Date *</label>
+              <input type="datetime-local" class="form-control" id="registrationEnd" name="registration_end" required>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Current Banner Image</label>
+            <div id="currentBannerContainer" class="mb-2">
+              <div class="text-center text-muted p-3 border rounded">No banner image uploaded</div>
+            </div>
+            <label for="bannerImage" class="form-label">Update Banner Image</label>
+            <input type="file" class="form-control" id="bannerImage" name="banner_image_file" accept="image/*">
+            <div class="form-text">Upload a new image to replace the current banner. Leave empty to keep the current image.</div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Current Timetable Document</label>
+            <div id="currentTimetableContainer" class="mb-2">
+              <div class="text-center text-muted p-3 border rounded">No timetable document uploaded</div>
+            </div>
+            <label for="timetableFile" class="form-label">Update Timetable Document</label>
+            <input type="file" class="form-control" id="timetableFile" name="timetable_file" accept=".pdf,.doc,.docx,.xls,.xlsx">
+            <div class="form-text">Upload a new file to replace the current timetable. Leave empty to keep the current file.</div>
+          </div>
+          
+          <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+            <button type="button" class="btn btn-secondary me-md-2" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <footer class="bg-light text-center py-3 mt-5">
+    <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+  </footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const eventId = <%= eventId %>;
+    
+    // Load event data
+    loadEventData();
+    
+    // Form submission handler
+    document.getElementById('editEventForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      updateEvent();
+    });
+    
+    // Cancel button handler
+    document.getElementById('cancelBtn').addEventListener('click', function() {
+      window.location.href = `/manageEvent/${eventId}`;
+    });
+    
+    // Load event details function
+    function loadEventData() {
+      fetch(`/eventDetails/${eventId}/data`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load event');
+          }
+          return response.json();
+        })
+        .then(event => {
+          // Populate form fields with event data
+          document.getElementById('eventName').value = event.name || '';
+          document.getElementById('eventDescription').value = event.description || '';
+          document.getElementById('eventAddress').value = event.address || '';
+          document.getElementById('eventType').value = event.event_type || 'free_for_all';
+          
+          // Format dates for datetime-local inputs
+          if (event.start_date) {
+            document.getElementById('startDate').value = formatDateForInput(new Date(event.start_date));
+          }
+          if (event.end_date) {
+            document.getElementById('endDate').value = formatDateForInput(new Date(event.end_date));
+          }
+          if (event.registration_start) {
+            document.getElementById('registrationStart').value = formatDateForInput(new Date(event.registration_start));
+          }
+          if (event.registration_end) {
+            document.getElementById('registrationEnd').value = formatDateForInput(new Date(event.registration_end));
+          }
+          
+          // Display current banner image if it exists
+          if (event.banner_image) {
+            document.getElementById('currentBannerContainer').innerHTML = `
+              <img src="${event.banner_image}" alt="Event banner" class="img-fluid rounded" style="max-height: 200px;">
+              <input type="hidden" name="current_banner_image" value="${event.banner_image}">
+            `;
+          }
+          
+          // Display current timetable file if it exists
+          if (event.timetable_file) {
+            document.getElementById('currentTimetableContainer').innerHTML = `
+              <div class="alert alert-info">
+                <i class="fas fa-file-alt me-2"></i> 
+                Current timetable document: 
+                <a href="${event.timetable_file}" target="_blank">View</a>
+                <input type="hidden" name="current_timetable_file" value="${event.timetable_file}">
+              </div>
+            `;
+          }
+        })
+        .catch(error => {
+          console.error('Error loading event data:', error);
+          alert('Failed to load event details. Please try again later.');
+        });
+    }
+    
+    // Helper function to format date for datetime-local input
+    function formatDateForInput(date) {
+      if (!date || !(date instanceof Date) || isNaN(date)) return '';
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    // Update event function
+    function updateEvent() {
+      const form = document.getElementById('editEventForm');
+      const formData = new FormData(form);
+      
+      // Show loading state
+      const submitButton = form.querySelector('button[type="submit"]');
+      const originalButtonText = submitButton.innerHTML;
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+      
+      // Make API call to update the event
+      fetch(`/updateEvent/${eventId}`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to update event');
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          // Show success message and redirect
+          const successMessage = document.createElement('div');
+          successMessage.className = 'alert alert-success alert-dismissible fade show';
+          successMessage.innerHTML = `
+            <strong>Success!</strong> ${data.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          form.prepend(successMessage);
+          
+          // Redirect after a short delay to show the success message
+          setTimeout(() => {
+            window.location.href = `/manageEvent/${eventId}`;
+          }, 1500);
+        } else {
+          // Show error message
+          const errorMessage = document.createElement('div');
+          errorMessage.className = 'alert alert-danger alert-dismissible fade show';
+          errorMessage.innerHTML = `
+            <strong>Error!</strong> ${data.message || 'Failed to update event'}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          form.prepend(errorMessage);
+          
+          // Reset button
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
+        }
+      })
+      .catch(error => {
+        console.error('Error updating event:', error);
+        
+        // Show error message
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'alert alert-danger alert-dismissible fade show';
+        errorMessage.innerHTML = `
+          <strong>Error!</strong> ${error.message || 'Failed to update event. Please try again later.'}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        form.prepend(errorMessage);
+        
+        // Reset button
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonText;
+      });
+    }
+  });
+</script>
 </body>
 </html>
