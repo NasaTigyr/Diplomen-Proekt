@@ -269,394 +269,397 @@
         <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const eventId = <%= eventId %>;
-    
-    // Load event data
-    loadEventData();
-    
-    // Load event details function
-    function loadEventData() {
-      // Fetch event details
-      fetch(`/eventDetails/${eventId}/data`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('Failed to load event');
-          }
-          return response.json();
-        })
-        .then(event => {
-          // Update page with event details
-          document.getElementById('eventTitle').textContent = event.name || 'Unnamed Event';
-          
-          // Format dates
-          if (event.start_date) {
-            const startDate = new Date(event.start_date);
-            let dateText = startDate.toLocaleDateString();
-            
-            if (event.end_date) {
-              const endDate = new Date(event.end_date);
-              dateText += ` - ${endDate.toLocaleDateString()}`;
-            }
-            
-            document.getElementById('eventDates').textContent = dateText;
-          }
-          
-          // Update other fields
-          document.getElementById('eventDescription').textContent = event.description || 'No description provided';
-          document.getElementById('eventLocation').textContent = event.address || 'No location specified';
-          
-          // Registration period
-          if (event.registration_start && event.registration_end) {
-            const regStart = new Date(event.registration_start);
-            const regEnd = new Date(event.registration_end);
-            document.getElementById('registrationPeriod').textContent = 
-              `${regStart.toLocaleDateString()} - ${regEnd.toLocaleDateString()}`;
-          } else {
-            document.getElementById('registrationPeriod').textContent = 'Not specified';
-          }
-          
-          // Event type
-          document.getElementById('eventType').textContent = 
-            event.event_type === 'team' ? 'Team Competition' : 'Individual Competition';
-          
-          // Banner image
-          if (event.banner_image) {
-            const img = document.createElement('img');
-            img.src = event.banner_image;
-            img.alt = 'Event banner';
-            img.className = 'img-fluid rounded';
-            document.getElementById('eventBanner').appendChild(img);
-          } else {
-            document.getElementById('eventBanner').innerHTML = 
-              '<div class="text-center text-muted p-3 border rounded">No banner image</div>';
-          }
-          
-          // Check if event has passed
-          checkEventDate(event.end_date);
-        })
-        .catch(error => {
-          console.error('Error loading event:', error);
-          alert('Failed to load event details. Please try again later.');
-        });
-      
-      // Load categories
-      loadCategories();
-      
-      // Load timetable
-      loadTimetable();
-    }
-    
-    // Load categories function
-    function loadCategories() {
-      fetch(`/eventDetails/${eventId}/categories`)
-        .then(response => {
-          if (!response.ok && response.status !== 404) {
-            throw new Error('Failed to load categories');
-          }
-          return response.json();
-        })
-        .then(categories => {
-          const tbody = document.getElementById('categoriesTableBody');
-          const noCategories = document.getElementById('noCategoriesMessage');
-          
-          // Clear existing data
-          tbody.innerHTML = '';
-          
-          if (!categories || categories.length === 0) {
-            noCategories.classList.remove('d-none');
-            return;
-          }
-          
-          noCategories.classList.add('d-none');
-          
-          // Add each category to table
-          categories.forEach(category => {
-            const row = document.createElement('tr');
-            
-            // Format age group
-            let ageGroup = category.age_group || 'N/A';
-            ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            
-            // Format gender
-            let gender = category.gender || 'N/A';
-            gender = gender.charAt(0).toUpperCase() + gender.slice(1);
-            
-            row.innerHTML = `
-              <td>${category.name}</td>
-              <td>${ageGroup}</td>
-              <td>${gender}</td>
-              <td><span class="badge bg-primary">0</span></td>
-              <td>${category.max_participants || 'Unlimited'}</td>
-              <td>
-                <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            `;
-            
-            tbody.appendChild(row);
-          });
-          
-          // Add click handlers to buttons
-          document.querySelectorAll('.edit-category').forEach(button => {
-            button.addEventListener('click', function() {
-              const categoryId = this.getAttribute('data-id');
-              editCategory(categoryId, categories);
-            });
-          });
-          
-          document.querySelectorAll('.delete-category').forEach(button => {
-            button.addEventListener('click', function() {
-              const categoryId = this.getAttribute('data-id');
-              confirmDeleteCategory(categoryId);
-            });
-          });
-          
-          // Also populate the filter dropdown
-          const filterSelect = document.getElementById('filterCategory');
-          
-          // Clear existing options except first one
-          while (filterSelect.options.length > 1) {
-            filterSelect.remove(1);
-          }
-          
-          // Add options for each category
-          categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            filterSelect.appendChild(option);
-          });
-        })
-        .catch(error => {
-          console.error('Error loading categories:', error);
-          document.getElementById('noCategoriesMessage').classList.remove('d-none');
-          document.getElementById('noCategoriesMessage').textContent = 'Failed to load categories. Please try again later.';
-        });
-    }
-    
-    // Load timetable function
-    function loadTimetable() {
-      fetch(`/eventDetails/${eventId}/timetable`)
-        .then(response => {
-          if (!response.ok && response.status !== 404) {
-            throw new Error('Failed to load timetable');
-          }
-          return response.json();
-        })
-        .then(timetable => {
-          const timetableContent = document.getElementById('timetableContent');
-          const noTimetable = document.getElementById('noTimetableMessage');
-          
-          if (!timetable || timetable.length === 0 || !timetable[0].timetable_file) {
-            noTimetable.classList.remove('d-none');
-            return;
-          }
-          
-          noTimetable.classList.add('d-none');
-          
-          // Display the timetable file
-          timetableContent.innerHTML = `
-            <div class="card">
-              <div class="card-body text-center">
-                <h5 class="card-title">Timetable Document</h5>
-                <p class="card-text">The timetable for this event has been uploaded.</p>
-                <a href="${timetable[0].timetable_file}" class="btn btn-primary" target="_blank">
-                  <i class="fas fa-download"></i> Download Timetable
-                </a>
-              </div>
-            </div>
-          `;
-        })
-        .catch(error => {
-          console.error('Error loading timetable:', error);
-          document.getElementById('noTimetableMessage').classList.remove('d-none');
-          document.getElementById('noTimetableMessage').textContent = 'Failed to load timetable. Please try again later.';
-        });
-    }
-    
-    // Check if event date has passed
-    function checkEventDate(endDate) {
-      if (!endDate) return;
-      
-      const eventEndDate = new Date(endDate);
-      const currentDate = new Date();
-      
-      if (eventEndDate < currentDate) {
-        // Add warning banner for past events
-        const warningDiv = document.createElement('div');
-        warningDiv.className = 'alert alert-warning alert-dismissible fade show mb-4';
-        warningDiv.innerHTML = `
-          <strong>This event has ended!</strong> 
-          It ended on ${eventEndDate.toLocaleDateString()}.
-          <button class="btn btn-sm btn-danger ms-3" id="archiveEventBtn">
-            Archive Event
-          </button>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // Insert after header
-        const headerRow = document.querySelector('.container .row');
-        headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling);
-        
-        // Add event listener to archive button
-        document.getElementById('archiveEventBtn').addEventListener('click', function() {
-          confirmArchiveEvent();
-        });
-      }
-    }
-    
-    // Edit category function
-    function editCategory(categoryId, categories) {
-      const category = categories.find(c => c.id == categoryId);
-      if (!category) return;
-      
-      // Populate modal form
-      document.getElementById('categoryId').value = category.id;
-      document.getElementById('categoryName').value = category.name;
-      document.getElementById('ageGroup').value = category.age_group;
-      document.getElementById('gender').value = category.gender;
-      document.getElementById('maxParticipants').value = category.max_participants || '';
-      document.getElementById('categoryDescription').value = category.description || '';
-      
-      // Set modal title
-      document.getElementById('categoryModalLabel').textContent = 'Edit Category';
-      
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-      modal.show();
-    }
-    
-    // Confirmation functions
-    function confirmDeleteCategory(categoryId) {
-      document.getElementById('confirmModalLabel').textContent = 'Delete Category';
-      document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this category? This will also remove all registrations for this category.';
-      
-      // Store action data
-      document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-category');
-      document.getElementById('confirmActionBtn').setAttribute('data-id', categoryId);
-      
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-      modal.show();
-    }
-    
-    function confirmArchiveEvent() {
-      document.getElementById('confirmModalLabel').textContent = 'Archive Event';
-      document.getElementById('confirmMessage').textContent = 'Are you sure you want to archive this event? This will remove it from active listings.';
-      
-      // Store action data
-      document.getElementById('confirmActionBtn').setAttribute('data-action', 'archive-event');
-      document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
-      
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-      modal.show();
-    }
-    
-    // Button event listeners
-    document.getElementById('addCategoryBtn').addEventListener('click', function() {
-      // Clear form
-      document.getElementById('categoryForm').reset();
-      document.getElementById('categoryId').value = '';
-      
-      // Set modal title
-      document.getElementById('categoryModalLabel').textContent = 'Add Category';
-      
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-      modal.show();
-    });
-    
-    document.getElementById('uploadTimetableBtn').addEventListener('click', function() {
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('timetableModal'));
-      modal.show();
-    });
-    
-    document.getElementById('editEventBtn').addEventListener('click', function() {
-      // Redirect to edit page (you'll need to create this route)
-      window.location.href = `/editEvent/${eventId}`;
-    });
-    
-    document.getElementById('deleteEventBtn').addEventListener('click', function() {
-      document.getElementById('confirmModalLabel').textContent = 'Delete Event';
-      document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this event? This will permanently remove all event data, categories, and registrations.';
-      
-      // Store action data
-      document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-event');
-      document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
-      
-      // Show modal
-      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-      modal.show();
-    });
-    
-    // Form submission handlers
-    document.getElementById('saveCategoryBtn').addEventListener('click', function() {
-      // This would be implemented with actual form submission
-      // For now, just close the modal and reload categories
-      const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
-      modal.hide();
-      
-      // Show success message
-      alert('Category saved successfully! (Note: this is just a placeholder, backend implementation needed)');
-      loadCategories();
-    });
-    
-    document.getElementById('uploadTimetableSubmitBtn').addEventListener('click', function() {
-      // This would be implemented with actual file upload
-      // For now, just close the modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
-      modal.hide();
-      
-      // Show success message
-      alert('Timetable uploaded successfully! (Note: this is just a placeholder, backend implementation needed)');
-      loadTimetable();
-    });
-    
-    // Confirmation action handler
-    document.getElementById('confirmActionBtn').addEventListener('click', function() {
-      const action = this.getAttribute('data-action');
-      const id = this.getAttribute('data-id');
-      
-      // Close modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-      modal.hide();
-      
-      // For now, just show an alert
-      // These would be actual API calls in a real implementation
-      switch(action) {
-        case 'delete-category':
-          alert(`Category deletion API call would happen here for ID: ${id}`);
-          loadCategories();
-          break;
-        case 'delete-event':
-          alert(`Event deletion API call would happen here for ID: ${id}`);
-          // Redirect back to events page after deletion
-          window.location.href = '/events';
-          break;
-        case 'archive-event':
-          alert(`Event archiving API call would happen here for ID: ${id}`);
-          window.location.reload();
-          break;
-      }
-    });
-    
-    // Filters functionality
-    document.getElementById('applyFiltersBtn').addEventListener('click', function() {
-      // This would filter the registrations table in a real implementation
-      alert('Filtering functionality would happen here with the backend implementation');
-    });
-  });
+// This code should replace the existing script section in manageEvent.ejs
 
+document.addEventListener('DOMContentLoaded', function() {
+  const eventId = <%= eventId %>;
+  
+  // Load event data
+  loadEventData();
+  
+  // Register click event for "View as Participant" button
   document.getElementById('viewAsParticipantBtn').addEventListener('click', function() {
     window.location.href = `/eventDetails/${eventId}`;
   });
+  
+  // Load event details function
+  function loadEventData() {
+    // Fetch event details
+    fetch(`/eventDetails/${eventId}/data`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to load event');
+        }
+        return response.json();
+      })
+      .then(event => {
+        // Update page with event details
+        document.getElementById('eventTitle').textContent = event.name || 'Unnamed Event';
+        
+        // Format dates
+        if (event.start_date) {
+          const startDate = new Date(event.start_date);
+          let dateText = startDate.toLocaleDateString();
+          
+          if (event.end_date) {
+            const endDate = new Date(event.end_date);
+            dateText += ` - ${endDate.toLocaleDateString()}`;
+          }
+          
+          document.getElementById('eventDates').textContent = dateText;
+        }
+        
+        // Update other fields
+        document.getElementById('eventDescription').textContent = event.description || 'No description provided';
+        document.getElementById('eventLocation').textContent = event.address || 'No location specified';
+        
+        // Registration period
+        if (event.registration_start && event.registration_end) {
+          const regStart = new Date(event.registration_start);
+          const regEnd = new Date(event.registration_end);
+          document.getElementById('registrationPeriod').textContent = 
+            `${regStart.toLocaleDateString()} - ${regEnd.toLocaleDateString()}`;
+        } else {
+          document.getElementById('registrationPeriod').textContent = 'Not specified';
+        }
+        
+        // Event type
+        document.getElementById('eventType').textContent = 
+          event.event_type === 'team' ? 'Team Competition' : 'Individual Competition';
+        
+        // Banner image
+        if (event.banner_image) {
+          const img = document.createElement('img');
+          img.src = event.banner_image;
+          img.alt = 'Event banner';
+          img.className = 'img-fluid rounded';
+          document.getElementById('eventBanner').appendChild(img);
+        } else {
+          document.getElementById('eventBanner').innerHTML = 
+            '<div class="text-center text-muted p-3 border rounded">No banner image</div>';
+        }
+        
+        // Check if event has passed
+        checkEventDate(event.end_date);
+      })
+      .catch(error => {
+        console.error('Error loading event:', error);
+        alert('Failed to load event details. Please try again later.');
+      });
+    
+    // Load categories
+    loadCategories();
+    
+    // Load timetable
+    loadTimetable();
+  }
+  
+  // Load categories function
+  function loadCategories() {
+    fetch(`/eventDetails/${eventId}/categories`)
+      .then(response => {
+        if (!response.ok && response.status !== 404) {
+          throw new Error('Failed to load categories');
+        }
+        return response.json();
+      })
+      .then(categories => {
+        const tbody = document.getElementById('categoriesTableBody');
+        const noCategories = document.getElementById('noCategoriesMessage');
+        
+        // Clear existing data
+        tbody.innerHTML = '';
+        
+        if (!categories || categories.length === 0) {
+          noCategories.classList.remove('d-none');
+          return;
+        }
+        
+        noCategories.classList.add('d-none');
+        
+        // Add each category to table
+        categories.forEach(category => {
+          const row = document.createElement('tr');
+          
+          // Format age group
+          let ageGroup = category.age_group || 'N/A';
+          ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          
+          // Format gender
+          let gender = category.gender || 'N/A';
+          gender = gender.charAt(0).toUpperCase() + gender.slice(1);
+          
+          row.innerHTML = `
+            <td>${category.name}</td>
+            <td>${ageGroup}</td>
+            <td>${gender}</td>
+            <td><span class="badge bg-primary">0</span></td>
+            <td>${category.max_participants || 'Unlimited'}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+        
+        // Add click handlers to buttons
+        document.querySelectorAll('.edit-category').forEach(button => {
+          button.addEventListener('click', function() {
+            const categoryId = this.getAttribute('data-id');
+            editCategory(categoryId, categories);
+          });
+        });
+        
+        document.querySelectorAll('.delete-category').forEach(button => {
+          button.addEventListener('click', function() {
+            const categoryId = this.getAttribute('data-id');
+            confirmDeleteCategory(categoryId);
+          });
+        });
+        
+        // Also populate the filter dropdown
+        const filterSelect = document.getElementById('filterCategory');
+        
+        // Clear existing options except first one
+        while (filterSelect.options.length > 1) {
+          filterSelect.remove(1);
+        }
+        
+        // Add options for each category
+        categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category.id;
+          option.textContent = category.name;
+          filterSelect.appendChild(option);
+        });
+      })
+      .catch(error => {
+        console.error('Error loading categories:', error);
+        document.getElementById('noCategoriesMessage').classList.remove('d-none');
+        document.getElementById('noCategoriesMessage').textContent = 'Failed to load categories. Please try again later.';
+      });
+  }
+  
+  // Load timetable function
+  function loadTimetable() {
+    fetch(`/eventDetails/${eventId}/timetable`)
+      .then(response => {
+        if (!response.ok && response.status !== 404) {
+          throw new Error('Failed to load timetable');
+        }
+        return response.json();
+      })
+      .then(timetable => {
+        const timetableContent = document.getElementById('timetableContent');
+        const noTimetable = document.getElementById('noTimetableMessage');
+        
+        if (!timetable || timetable.length === 0 || !timetable[0].timetable_file) {
+          noTimetable.classList.remove('d-none');
+          return;
+        }
+        
+        noTimetable.classList.add('d-none');
+        
+        // Display the timetable file
+        timetableContent.innerHTML = `
+          <div class="card">
+            <div class="card-body text-center">
+              <h5 class="card-title">Timetable Document</h5>
+              <p class="card-text">The timetable for this event has been uploaded.</p>
+              <a href="${timetable[0].timetable_file}" class="btn btn-primary" target="_blank">
+                <i class="fas fa-download"></i> Download Timetable
+              </a>
+            </div>
+          </div>
+        `;
+      })
+      .catch(error => {
+        console.error('Error loading timetable:', error);
+        document.getElementById('noTimetableMessage').classList.remove('d-none');
+        document.getElementById('noTimetableMessage').textContent = 'Failed to load timetable. Please try again later.';
+      });
+  }
+  
+  // Check if event date has passed
+  function checkEventDate(endDate) {
+    if (!endDate) return;
+    
+    const eventEndDate = new Date(endDate);
+    const currentDate = new Date();
+    
+    if (eventEndDate < currentDate) {
+      // Add warning banner for past events
+      const warningDiv = document.createElement('div');
+      warningDiv.className = 'alert alert-warning alert-dismissible fade show mb-4';
+      warningDiv.innerHTML = `
+        <strong>This event has ended!</strong> 
+        It ended on ${eventEndDate.toLocaleDateString()}.
+        <button class="btn btn-sm btn-danger ms-3" id="archiveEventBtn">
+          Archive Event
+        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      
+      // Insert after header
+      const headerRow = document.querySelector('.container .row');
+      headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling);
+      
+      // Add event listener to archive button
+      document.getElementById('archiveEventBtn').addEventListener('click', function() {
+        confirmArchiveEvent();
+      });
+    }
+  }
+  
+  // Edit category function
+  function editCategory(categoryId, categories) {
+    const category = categories.find(c => c.id == categoryId);
+    if (!category) return;
+    
+    // Populate modal form
+    document.getElementById('categoryId').value = category.id;
+    document.getElementById('categoryName').value = category.name;
+    document.getElementById('ageGroup').value = category.age_group;
+    document.getElementById('gender').value = category.gender;
+    document.getElementById('maxParticipants').value = category.max_participants || '';
+    document.getElementById('categoryDescription').value = category.description || '';
+    
+    // Set modal title
+    document.getElementById('categoryModalLabel').textContent = 'Edit Category';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    modal.show();
+  }
+  
+  // Confirmation functions
+  function confirmDeleteCategory(categoryId) {
+    document.getElementById('confirmModalLabel').textContent = 'Delete Category';
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this category? This will also remove all registrations for this category.';
+    
+    // Store action data
+    document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-category');
+    document.getElementById('confirmActionBtn').setAttribute('data-id', categoryId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+  }
+  
+  function confirmArchiveEvent() {
+    document.getElementById('confirmModalLabel').textContent = 'Archive Event';
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to archive this event? This will remove it from active listings.';
+    
+    // Store action data
+    document.getElementById('confirmActionBtn').setAttribute('data-action', 'archive-event');
+    document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+  }
+  
+  // Button event listeners
+  document.getElementById('addCategoryBtn').addEventListener('click', function() {
+    // Clear form
+    document.getElementById('categoryForm').reset();
+    document.getElementById('categoryId').value = '';
+    
+    // Set modal title
+    document.getElementById('categoryModalLabel').textContent = 'Add Category';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+    modal.show();
+  });
+  
+  document.getElementById('uploadTimetableBtn').addEventListener('click', function() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('timetableModal'));
+    modal.show();
+  });
+  
+  document.getElementById('editEventBtn').addEventListener('click', function() {
+    // Redirect to edit page (you'll need to create this route)
+    window.location.href = `/editEvent/${eventId}`;
+  });
+  
+  document.getElementById('deleteEventBtn').addEventListener('click', function() {
+    document.getElementById('confirmModalLabel').textContent = 'Delete Event';
+    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this event? This will permanently remove all event data, categories, and registrations.';
+    
+    // Store action data
+    document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-event');
+    document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+  });
+  
+  // Form submission handlers
+  document.getElementById('saveCategoryBtn').addEventListener('click', function() {
+    // This would be implemented with actual form submission
+    // For now, just close the modal and reload categories
+    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+    modal.hide();
+    
+    // Show success message
+    alert('Category saved successfully! (Note: this is just a placeholder, backend implementation needed)');
+    loadCategories();
+  });
+  
+  document.getElementById('uploadTimetableSubmitBtn').addEventListener('click', function() {
+    // This would be implemented with actual file upload
+    // For now, just close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
+    modal.hide();
+    
+    // Show success message
+    alert('Timetable uploaded successfully! (Note: this is just a placeholder, backend implementation needed)');
+    loadTimetable();
+  });
+  
+  // Confirmation action handler
+  document.getElementById('confirmActionBtn').addEventListener('click', function() {
+    const action = this.getAttribute('data-action');
+    const id = this.getAttribute('data-id');
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+    modal.hide();
+    
+    // For now, just show an alert
+    // These would be actual API calls in a real implementation
+    switch(action) {
+      case 'delete-category':
+        alert(`Category deletion API call would happen here for ID: ${id}`);
+        loadCategories();
+        break;
+      case 'delete-event':
+        alert(`Event deletion API call would happen here for ID: ${id}`);
+        // Redirect back to events page after deletion
+        window.location.href = '/events';
+        break;
+      case 'archive-event':
+        alert(`Event archiving API call would happen here for ID: ${id}`);
+        window.location.reload();
+        break;
+    }
+  });
+  
+  // Filters functionality
+  document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+    // This would filter the registrations table in a real implementation
+    alert('Filtering functionality would happen here with the backend implementation');
+  });
+});
 </script>
 </body>
 </html>
