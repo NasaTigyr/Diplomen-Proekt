@@ -244,6 +244,21 @@
           });
       }
       
+      function fetchCategoryStats() {
+        return fetch(`/categories/stats/${eventId}`)
+          .then(response => {
+            if (!response.ok) {
+              console.error('Failed to load participant counts');
+              return { categoryStats: [] };
+            }
+            return response.json();
+          })
+          .catch(error => {
+            console.error('Error loading participant counts:', error);
+            return { categoryStats: [] };
+          });
+      }
+
       function displayCategories(categories) {
         const container = document.getElementById('categories-container');
         const noMessage = document.getElementById('no-categories-message');
@@ -256,61 +271,88 @@
           return;
         }
         
-        noMessage.classList.add('d-none');
-        
-        let html = '<div class="list-group">';
-        
-        categories.forEach(category => {
-          // Determine age group label
-          const ageGroupLabels = {
-            'under_8': 'Under 8',
-            'under_12': 'Under 12',
-            'under_14': 'Under 14',
-            'under_16': 'Under 16 (Cadet)',
-            'under_18': 'Under 18 (Junior)',
-            'under_21': 'Under 21',
-            'senior': 'Senior'
-          };
+        // First, fetch category statistics
+        fetchCategoryStats().then(data => {
+          // Create a map of category_id -> participant_count for easy lookup
+          const statsMap = new Map();
+          if (data.categoryStats) {
+            data.categoryStats.forEach(stat => {
+              statsMap.set(stat.category_id, stat.participant_count);
+            });
+          }
           
-          const ageGroup = ageGroupLabels[category.age_group] || category.age_group;
+          noMessage.classList.add('d-none');
           
-          // Determine gender label
-          const genderLabel = {
-            'male': 'Men',
-            'female': 'Women',
-            'mixed': 'Mixed'
-          }[category.gender] || category.gender;
+          let html = '<div class="list-group">';
           
-          html += `
-            <div class="list-group-item">
-              <div class="d-flex w-100 justify-content-between align-items-center">
-                <h5 class="mb-1">${category.name}</h5>
-                <div>
-                  ${category.max_participants ? 
-                    `<span class="badge bg-secondary">Max: ${category.max_participants}</span>` : 
-                    '<span class="badge bg-secondary">No limit</span>'}
+          categories.forEach(category => {
+            // Determine age group label
+            const ageGroupLabels = {
+              'under_8': 'Under 8',
+              'under_12': 'Under 12',
+              'under_14': 'Under 14',
+              'under_16': 'Under 16 (Cadet)',
+              'under_18': 'Under 18 (Junior)',
+              'under_21': 'Under 21',
+              'senior': 'Senior'
+            };
+            
+            const ageGroup = ageGroupLabels[category.age_group] || category.age_group;
+            
+            // Determine gender label
+            const genderLabel = {
+              'male': 'Men',
+              'female': 'Women',
+              'mixed': 'Mixed'
+            }[category.gender] || category.gender;
+            
+            // Get participant count from stats map or default to 0
+            const participantCount = statsMap.get(category.id) || 0;
+            
+            // Determine badge color based on registration status
+            let badgeClass = 'bg-primary';
+            if (category.max_participants) {
+              if (participantCount >= category.max_participants) {
+                badgeClass = 'bg-danger'; // Full
+              } else if (participantCount >= category.max_participants * 0.75) {
+                badgeClass = 'bg-warning'; // Nearly full
+              }
+            }
+            
+            html += `
+              <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                  <h5 class="mb-1">${category.name}</h5>
+                  <div>
+                    <span class="badge ${badgeClass} me-2">
+                      ${participantCount} ${category.max_participants ? 'of ' + category.max_participants : ''} participants
+                    </span>
+                    ${category.max_participants ? 
+                      `<span class="badge bg-secondary">Max: ${category.max_participants}</span>` : 
+                      '<span class="badge bg-secondary">No limit</span>'}
+                  </div>
+                </div>
+                ${category.description ? `<p class="mb-2">${category.description}</p>` : ''}
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  <span class="badge bg-info">${genderLabel}</span>
+                  <span class="badge bg-info">${ageGroup}</span>
+                  ${category.weight_class ? `<span class="badge bg-info">Weight: ${category.weight_class}</span>` : ''}
+                </div>
+                <div class="mt-2" id="category-action-${category.id}">
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
                 </div>
               </div>
-              ${category.description ? `<p class="mb-2">${category.description}</p>` : ''}
-              <div class="d-flex flex-wrap gap-2 mb-2">
-                <span class="badge bg-info">${genderLabel}</span>
-                <span class="badge bg-info">${ageGroup}</span>
-                ${category.weight_class ? `<span class="badge bg-info">Weight: ${category.weight_class}</span>` : ''}
-              </div>
-              <div class="mt-2" id="category-action-${category.id}">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-            </div>
-          `;
+            `;
+          });
+          
+          html += '</div>';
+          container.innerHTML = html;
+          
+          // Update registration buttons
+          updateCategoryRegistrationButtons();
         });
-        
-        html += '</div>';
-        container.innerHTML = html;
-        
-        // Update registration buttons
-        updateCategoryRegistrationButtons();
       }
       
       function fetchTimetable() {
@@ -568,89 +610,90 @@
         
         registrationBody.innerHTML = html;
       }
+      
       function registerForCategory(categoryId) {
-  if (isLoading) return;
-  isLoading = true;
-  
-  if (!isLoggedIn) {
-    window.location.href = `/login?redirect=/eventDetails/${eventId}`;
-    return;
-  }
-  
-  const actionButton = document.getElementById(`category-action-${categoryId}`);
-  if (actionButton) {
-    actionButton.innerHTML = `
-      <button class="btn btn-primary btn-sm" disabled>
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        Registering...
-      </button>
-    `;
-  }
-  
-  fetch('/register-category', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      categoryId: categoryId,
-      // We don't need to pass eventId here since our backend will get it from the category
-    })
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(data => {
-        throw new Error(data.error || 'Failed to register');
-      });
-    }
-    return response.json();
-  })
-  .then(data => {
-    // Add the new registration to our list
-    // Make sure the event_id is included if it's not in the response
-    if (!data.event_id && eventData) {
-      data.event_id = eventId; // Use the eventId from the page
-    }
-    userRegistrations.push(data);
-    
-    // Show success message
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-success alert-dismissible fade show';
-    alertDiv.innerHTML = `
-      Registration successful!
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
-    
-    // Update UI
-    updateCategoryRegistrationButtons();
-    updateRegistrationSection();
-    
-    // Auto dismiss alert after 5 seconds
-    setTimeout(() => {
-      alertDiv.classList.remove('show');
-      setTimeout(() => alertDiv.remove(), 500);
-    }, 5000);
-  })
-  .catch(error => {
-    console.error('Registration error:', error);
-    
-    // Show error alert
-    const alertDiv = document.createElement('div');
-    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-    alertDiv.innerHTML = `
-      ${error.message || 'Failed to register. Please try again.'}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
-    
-    // Reset button
-    updateCategoryRegistrationButtons();
-  })
-  .finally(() => {
-    isLoading = false;
-  });
-}
+        if (isLoading) return;
+        isLoading = true;
+        
+        if (!isLoggedIn) {
+          window.location.href = `/login?redirect=/eventDetails/${eventId}`;
+          return;
+        }
+        
+        const actionButton = document.getElementById(`category-action-${categoryId}`);
+        if (actionButton) {
+          actionButton.innerHTML = `
+            <button class="btn btn-primary btn-sm" disabled>
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Registering...
+            </button>
+          `;
+        }
+        
+        fetch('/register-category', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            categoryId: categoryId,
+            // We don't need to pass eventId here since our backend will get it from the category
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.error || 'Failed to register');
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Add the new registration to our list
+          // Make sure the event_id is included if it's not in the response
+          if (!data.event_id && eventData) {
+            data.event_id = eventId; // Use the eventId from the page
+          }
+          userRegistrations.push(data);
+          
+          // Show success message
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            Registration successful!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+          
+          // Update UI
+          updateCategoryRegistrationButtons();
+          updateRegistrationSection();
+          
+          // Auto dismiss alert after 5 seconds
+          setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 500);
+          }, 5000);
+        })
+        .catch(error => {
+          console.error('Registration error:', error);
+          
+          // Show error alert
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+          alertDiv.innerHTML = `
+            ${error.message || 'Failed to register. Please try again.'}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+          
+          // Reset button
+          updateCategoryRegistrationButtons();
+        })
+        .finally(() => {
+          isLoading = false;
+        });
+      }
       
       function cancelRegistration(registrationId) {
         if (isLoading) return;
