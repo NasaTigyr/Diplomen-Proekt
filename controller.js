@@ -1128,6 +1128,176 @@ async function getCategoryStats(eventId) {
   }
 }
 
+async function sendClubInvitation(userId, clubId, invitationData) {
+    try {
+        const { email, message } = invitationData;
+        
+        // Check if user is the club coach
+        const [clubCheck] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, userId]
+        );
+        
+        if (!clubCheck || clubCheck.length === 0) {
+            throw new Error('Not authorized to send invitations');
+        }
+        
+        // Check if email already exists in users table
+        const [existingUser] = await db.query(
+            "SELECT * FROM users WHERE email = ?",
+            [email]
+        );
+        
+        if (!existingUser || existingUser.length === 0) {
+            throw new Error('No user found with this email');
+        }
+        
+        const targetUserId = existingUser[0].id;
+        
+        // Check if user is already in the club
+        const [existingMembership] = await db.query(
+            "SELECT * FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+            [clubId, targetUserId]
+        );
+        
+        if (existingMembership.length > 0) {
+            throw new Error('User is already a member of this club');
+        }
+        
+        // Check for existing pending invitations
+        const [existingInvitation] = await db.query(
+            "SELECT * FROM club_invitations WHERE club_id = ? AND athlete_id = ? AND status = 'pending'",
+            [clubId, targetUserId]
+        );
+        
+        if (existingInvitation.length > 0) {
+            throw new Error('An invitation is already pending for this user');
+        }
+        
+        // Create invitation
+        await db.query(
+            "INSERT INTO club_invitations (club_id, athlete_id, message, status, sent_date) VALUES (?, ?, ?, 'pending', CURRENT_TIMESTAMP)",
+            [clubId, targetUserId, message || null]
+        );
+        
+        return { success: true, message: 'Invitation sent successfully' };
+    } catch (error) {
+        console.error('Error sending club invitation:', error);
+        throw error;
+    }
+}
+
+async function getClubAthletes(clubId) {
+    try {
+        const [athletes] = await db.query(`
+            SELECT u.id, u.first_name, u.last_name, u.email, u.date_of_birth, 
+                   u.gender, u.profile_picture, u.contact_number, 
+                   ca.status, ca.join_date 
+            FROM club_athletes ca 
+            JOIN users u ON ca.athlete_id = u.id 
+            WHERE ca.club_id = ? AND ca.status = 'active'
+        `, [clubId]);
+        
+        return athletes;
+    } catch (error) {
+        console.error('Error fetching club athletes:', error);
+        throw error;
+    }
+}
+
+async function removeAthleteFromClub(clubId, athleteId, coachId) {
+    try {
+        // Verify the coach owns the club
+        const [clubCheck] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, coachId]
+        );
+        
+        if (!clubCheck || clubCheck.length === 0) {
+            throw new Error('Not authorized to remove athletes');
+        }
+        
+        // Remove athlete from club
+        await db.query(
+            "DELETE FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+            [clubId, athleteId]
+        );
+        
+        return { success: true, message: 'Athlete removed from club successfully' };
+    } catch (error) {
+        console.error('Error removing athlete from club:', error);
+        throw error;
+    }
+}
+
+async function getClubJoinRequests(clubId) {
+    try {
+        const [requests] = await db.query(`
+            SELECT u.id as athlete_id, u.first_name, u.last_name, u.email, 
+                   u.date_of_birth, u.gender, 
+                   ca.id as request_id, ca.join_date as request_date 
+            FROM club_athletes ca 
+            JOIN users u ON ca.athlete_id = u.id 
+            WHERE ca.club_id = ? AND ca.status = 'pending'
+        `, [clubId]);
+        
+        return requests;
+    } catch (error) {
+        console.error('Error fetching join requests:', error);
+        throw error;
+    }
+}
+
+async function approveJoinRequest(clubId, requestId, coachId) {
+    try {
+        // Verify the coach owns the club
+        const [clubCheck] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, coachId]
+        );
+        
+        if (!clubCheck || clubCheck.length === 0) {
+            throw new Error('Not authorized to approve join requests');
+        }
+        
+        // Update request status to active
+        await db.query(
+            "UPDATE club_athletes SET status = 'active' WHERE id = ? AND club_id = ?",
+            [requestId, clubId]
+        );
+        
+        return { success: true, message: 'Join request approved successfully' };
+    } catch (error) {
+        console.error('Error approving join request:', error);
+        throw error;
+    }
+}
+
+async function rejectJoinRequest(clubId, requestId, coachId) {
+    try {
+        // Verify the coach owns the club
+        const [clubCheck] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, coachId]
+        );
+        
+        if (!clubCheck || clubCheck.length === 0) {
+            throw new Error('Not authorized to reject join requests');
+        }
+        
+        // Delete the join request
+        await db.query(
+            "DELETE FROM club_athletes WHERE id = ? AND club_id = ?",
+            [requestId, clubId]
+        );
+        
+        return { success: true, message: 'Join request rejected successfully' };
+    } catch (error) {
+        console.error('Error rejecting join request:', error);
+        throw error;
+    }
+}
+
 const controller = {
     login,
     register,
@@ -1149,7 +1319,14 @@ const controller = {
     getEventRegistrations,
     updateRegistrationStatus,
     updateEvent ,// Add this new function,
-    getCategoryStats
+    getCategoryStats,
+    sendClubInvitation,
+    getClubAthletes,
+    removeAthleteFromClub,
+    getClubJoinRequests,
+    approveJoinRequest,
+    rejectJoinRequest
+
 };
 
 module.exports = controller; 
