@@ -895,7 +895,6 @@ async function cleanupPastEvents() {
   }
 }
 // Add these functions to your controller.js file
-
 async function getEventRegistrations(eventId, userId) {
   try {
     // Verify user is the event creator
@@ -906,12 +905,27 @@ async function getEventRegistrations(eventId, userId) {
     
     // Get all registrations for the event with user details
     const [registrations] = await db.query(`
-      SELECT r.*, c.name as category_name, u.first_name, u.last_name, u.email 
+      SELECT 
+        r.id, 
+        r.event_id,
+        r.category_id,
+        r.athlete_id,
+        r.status, 
+        r.registration_date,
+        c.name as category_name, 
+        c.age_group,
+        c.gender,
+        u.first_name, 
+        u.last_name, 
+        u.email 
       FROM individual_registrations r
       JOIN categories c ON r.category_id = c.id
       JOIN users u ON r.athlete_id = u.id
       WHERE r.event_id = ?
-      ORDER BY r.registration_date DESC
+      ORDER BY 
+        c.name ASC,
+        FIELD(r.status, 'approved', 'pending', 'rejected'),
+        r.registration_date ASC
     `, [eventId]);
     
     return registrations;

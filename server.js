@@ -483,6 +483,7 @@ app.get('/manageEvent/:id', isAuthenticated, async (req, res) => {
 // Add these routes to your server.js file
 
 // Route to view event registrations
+
 app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -508,7 +509,7 @@ app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
       return res.redirect(`/eventDetails/${eventId}`);
     }
     
-    // Get all registrations for this event
+    // Get all registrations for this event, sorted by the controller function
     const registrations = await controller.getEventRegistrations(eventId, userId);
     
     // Render the registrations page
@@ -516,7 +517,9 @@ app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
       eventId: parseInt(eventId),
       eventName: event.name,
       registrations: registrations,
-      user: req.session.user
+      user: req.session.user,
+      success: req.query.success, // Pass query string parameters to the template
+      error: req.query.error
     });
   } catch (error) {
     console.error("Error loading event registrations:", error);
@@ -527,7 +530,6 @@ app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
     });
   }
 });
-
 // Route to update registration status (form submission)
 app.post('/registration/:id/update-status', isAuthenticated, async (req, res) => {
   try {

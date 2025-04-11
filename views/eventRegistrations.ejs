@@ -6,6 +6,7 @@
   <title>Event Registrations - Martial Arts Competitions</title>
   <link rel="stylesheet" href="/styleIndex.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
 </head>
 <body>
   <%- include('header', {currentPage: 'profile', user: user}); %>
@@ -18,23 +19,23 @@
       </div>
       <div>
         <a href="/manageEvent/<%= eventId %>" class="btn btn-primary">
-          <i class="fas fa-arrow-left"></i> Back to Event Management
+          <i class="bi bi-arrow-left"></i> Back to Event Management
         </a>
       </div>
     </div>
 
     <!-- Success message -->
-    <% if (typeof req !== 'undefined' && req.query && req.query.success) { %>
+    <% if (locals.success) { %>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= req.query.success %>
+        <%= success %>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <% } %>
 
     <!-- Error message -->
-    <% if (typeof req !== 'undefined' && req.query && req.query.error) { %>
+    <% if (locals.error) { %>
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= req.query.error %>
+        <%= error %>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <% } %>
@@ -45,99 +46,38 @@
         <h5 class="mb-0">Filter Registrations</h5>
       </div>
       <div class="card-body">
-        <form method="get" action="/event/<%= eventId %>/registrations">
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Status</label>
-              <select class="form-select" name="status">
-                <option value="" selected>All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label">Sort By</label>
-              <select class="form-select" name="sort">
-                <option value="date_desc" selected>Registration Date (Newest First)</option>
-                <option value="date_asc">Registration Date (Oldest First)</option>
-                <option value="name_asc">Athlete Name (A-Z)</option>
-                <option value="name_desc">Athlete Name (Z-A)</option>
-              </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-              <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
-            </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="categoryFilter">
+              <option value="all" selected>All Categories</option>
+              <!-- Will be populated by JavaScript -->
+            </select>
           </div>
-        </form>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="statusFilter">
+              <option value="all" selected>All Statuses</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Waiting List</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="button" id="applyFiltersBtn" class="btn btn-primary w-100">Apply Filters</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Registrations Table -->
-    <div class="card">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Registrations (<%= registrations.length %>)</h5>
-      </div>
-      <div class="card-body">
-        <% if (registrations.length === 0) { %>
-          <div class="alert alert-info">No registrations found for this event.</div>
-        <% } else { %>
-          <div class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>Athlete</th>
-                  <th>Category</th>
-                  <th>Registration Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% registrations.forEach(registration => { %>
-                  <tr>
-                    <td><%= registration.id %></td>
-                    <td>
-                      <strong><%= registration.first_name %> <%= registration.last_name %></strong><br>
-                      <small class="text-muted"><%= registration.email %></small>
-                    </td>
-                    <td><%= registration.category_name %></td>
-                    <td><%= new Date(registration.registration_date).toLocaleString() %></td>
-                    <td>
-                      <% if (registration.status === 'pending') { %>
-                        <span class="badge bg-warning text-dark">Pending</span>
-                      <% } else if (registration.status === 'approved') { %>
-                        <span class="badge bg-success">Approved</span>
-                      <% } else if (registration.status === 'rejected') { %>
-                        <span class="badge bg-danger">Rejected</span>
-                      <% } %>
-                    </td>
-                    <td>
-                      <div class="btn-group">
-                        <form method="post" action="/registration/<%= registration.id %>/update-status" class="me-1">
-                          <input type="hidden" name="eventId" value="<%= eventId %>">
-                          <input type="hidden" name="status" value="approved">
-                          <button type="submit" class="btn btn-sm btn-success" <%= registration.status === 'approved' ? 'disabled' : '' %>>
-                            Approve
-                          </button>
-                        </form>
-                        <form method="post" action="/registration/<%= registration.id %>/update-status">
-                          <input type="hidden" name="eventId" value="<%= eventId %>">
-                          <input type="hidden" name="status" value="rejected">
-                          <button type="submit" class="btn btn-sm btn-danger" <%= registration.status === 'rejected' ? 'disabled' : '' %>>
-                            Reject
-                          </button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                <% }); %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
+    <!-- No registrations message -->
+    <div id="noRegistrationsMessage" class="alert alert-info <%= registrations && registrations.length > 0 ? 'd-none' : '' %>">
+      No registrations found for this event.
+    </div>
+
+    <!-- Categorized Registrations -->
+    <div id="categorizedRegistrations">
+      <!-- This will be populated by JavaScript -->
     </div>
   </div>
 
@@ -146,5 +86,362 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get the registrations data passed from the server
+    const registrationsData = <%- JSON.stringify(registrations || []) %>;
+    const eventId = <%= eventId %>;
+    
+    // Process registrations
+    processRegistrations(registrationsData);
+    
+    // Set up filter change handlers
+    document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+      filterRegistrations();
+    });
+    
+    /**
+     * Process and display registrations grouped by category
+     */
+    function processRegistrations(registrations) {
+      if (!registrations || registrations.length === 0) {
+        document.getElementById('noRegistrationsMessage').classList.remove('d-none');
+        return;
+      }
+      
+      document.getElementById('noRegistrationsMessage').classList.add('d-none');
+      
+      // Group registrations by category
+      const categoriesMap = new Map();
+      const categoryNames = new Set();
+      
+      // First pass - group by category
+      registrations.forEach(registration => {
+        const categoryId = registration.category_id;
+        const categoryName = registration.category_name;
+        
+        categoryNames.add(categoryName);
+        
+        if (!categoriesMap.has(categoryId)) {
+          categoriesMap.set(categoryId, {
+            id: categoryId,
+            name: categoryName,
+            approved: [],
+            pending: [],
+            rejected: []
+          });
+        }
+        
+        // Add to the appropriate status list
+        const category = categoriesMap.get(categoryId);
+        switch(registration.status) {
+          case 'approved':
+            category.approved.push(registration);
+            break;
+          case 'pending':
+            category.pending.push(registration);
+            break;
+          case 'rejected':
+            category.rejected.push(registration);
+            break;
+        }
+      });
+      
+      // Sort pending registrations by date (oldest first)
+      categoriesMap.forEach(category => {
+        category.pending.sort((a, b) => {
+          return new Date(a.registration_date) - new Date(b.registration_date);
+        });
+        
+        // Sort approved by name
+        category.approved.sort((a, b) => {
+          const nameA = `${a.last_name}, ${a.first_name}`;
+          const nameB = `${b.last_name}, ${b.first_name}`;
+          return nameA.localeCompare(nameB);
+        });
+      });
+      
+      // Populate category filter
+      const categoryFilter = document.getElementById('categoryFilter');
+      categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+      
+      // Sort category names alphabetically
+      Array.from(categoryNames).sort().forEach(categoryName => {
+        const option = document.createElement('option');
+        option.value = categoryName;
+        option.textContent = categoryName;
+        categoryFilter.appendChild(option);
+      });
+      
+      // Render categories
+      renderCategories(Array.from(categoriesMap.values()));
+    }
+    
+    /**
+     * Render categories and their registrations
+     */
+    function renderCategories(categories) {
+      const container = document.getElementById('categorizedRegistrations');
+      container.innerHTML = '';
+      
+      // Sort categories alphabetically by name
+      categories.sort((a, b) => a.name.localeCompare(b.name));
+      
+      categories.forEach(category => {
+        // Create category section
+        const categorySection = document.createElement('div');
+        categorySection.className = 'category-section mb-4';
+        categorySection.dataset.categoryName = category.name;
+        
+        // Category header
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'card-header bg-primary text-white';
+        
+        const headerContent = document.createElement('div');
+        headerContent.className = 'd-flex justify-content-between align-items-center';
+        
+        const categoryTitle = document.createElement('h5');
+        categoryTitle.className = 'mb-0';
+        categoryTitle.textContent = category.name;
+        
+        const totalCount = category.approved.length + category.pending.length + category.rejected.length;
+        const categoryBadge = document.createElement('span');
+        categoryBadge.className = 'badge bg-light text-dark';
+        categoryBadge.textContent = `${totalCount} participants`;
+        
+        headerContent.appendChild(categoryTitle);
+        headerContent.appendChild(categoryBadge);
+        cardHeader.appendChild(headerContent);
+        card.appendChild(cardHeader);
+        
+        // Card body
+        const cardBody = document.createElement('div');
+        cardBody.className = 'card-body p-0';
+        
+        // Approved section
+        cardBody.appendChild(createStatusSection(
+          'approved', 
+          'Approved Participants', 
+          category.approved, 
+          'success', 
+          'check-circle'
+        ));
+        
+        // Waiting list (pending) section
+        cardBody.appendChild(createStatusSection(
+          'pending', 
+          'Waiting List', 
+          category.pending, 
+          'warning', 
+          'hourglass-split'
+        ));
+        
+        // Rejected section
+        cardBody.appendChild(createStatusSection(
+          'rejected', 
+          'Rejected Registrations', 
+          category.rejected, 
+          'danger', 
+          'x-circle'
+        ));
+        
+        card.appendChild(cardBody);
+        categorySection.appendChild(card);
+        container.appendChild(categorySection);
+      });
+    }
+    
+    /**
+     * Create a status section (approved, pending, rejected)
+     */
+    function createStatusSection(statusType, title, registrations, colorClass, icon) {
+      const section = document.createElement('div');
+      section.className = `${statusType}-section`;
+      section.dataset.status = statusType;
+      
+      // Section header
+      const header = document.createElement('div');
+      header.className = `bg-${colorClass} bg-opacity-10 p-2 d-flex justify-content-between align-items-center`;
+      
+      const headerTitle = document.createElement('h6');
+      headerTitle.className = 'mb-0';
+      headerTitle.innerHTML = `<i class="bi bi-${icon}"></i> ${title}`;
+      
+      const countBadge = document.createElement('span');
+      countBadge.className = `badge bg-${colorClass} ${statusType === 'pending' ? 'text-dark' : ''}`;
+      countBadge.textContent = registrations.length;
+      
+      header.appendChild(headerTitle);
+      header.appendChild(countBadge);
+      section.appendChild(header);
+      
+      // No registrations message
+      if (registrations.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'text-center p-3 text-muted';
+        emptyMessage.textContent = `No ${statusType === 'pending' ? 'waiting list' : statusType} registrations for this category.`;
+        section.appendChild(emptyMessage);
+        return section;
+      }
+      
+      // Registrations table
+      const tableResponsive = document.createElement('div');
+      tableResponsive.className = 'table-responsive';
+      
+      const table = document.createElement('table');
+      table.className = 'table table-hover mb-0';
+      
+      // Table header
+      const thead = document.createElement('thead');
+      thead.className = 'table-light';
+      thead.innerHTML = `
+        <tr>
+          <th>Athlete</th>
+          <th>Email</th>
+          <th>Registration Date</th>
+          <th>Actions</th>
+        </tr>
+      `;
+      
+      // Table body
+      const tbody = document.createElement('tbody');
+      
+      registrations.forEach(registration => {
+        const tr = document.createElement('tr');
+        
+        // Format registration date
+        const registrationDate = new Date(registration.registration_date);
+        const formattedDate = registrationDate.toLocaleDateString() + ' ' + 
+                            registrationDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        
+        // Determine action buttons based on status
+        let actionButtons = '';
+        
+        switch(registration.status) {
+          case 'pending':
+            actionButtons = `
+              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
+                <input type="hidden" name="eventId" value="${eventId}">
+                <input type="hidden" name="status" value="approved">
+                <button type="submit" class="btn btn-sm btn-success">
+                  <i class="bi bi-check-circle"></i> Approve
+                </button>
+              </form>
+              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline ms-1">
+                <input type="hidden" name="eventId" value="${eventId}">
+                <input type="hidden" name="status" value="rejected">
+                <button type="submit" class="btn btn-sm btn-danger">
+                  <i class="bi bi-x-circle"></i> Reject
+                </button>
+              </form>
+            `;
+            break;
+          
+          case 'approved':
+            actionButtons = `
+              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
+                <input type="hidden" name="eventId" value="${eventId}">
+                <input type="hidden" name="status" value="rejected">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="bi bi-x-circle"></i> Remove
+                </button>
+              </form>
+            `;
+            break;
+            
+          case 'rejected':
+            actionButtons = `
+              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
+                <input type="hidden" name="eventId" value="${eventId}">
+                <input type="hidden" name="status" value="approved">
+                <button type="submit" class="btn btn-sm btn-outline-success">
+                  <i class="bi bi-check-circle"></i> Approve
+                </button>
+              </form>
+            `;
+            break;
+        }
+        
+        tr.innerHTML = `
+          <td><strong>${registration.first_name} ${registration.last_name}</strong></td>
+          <td>${registration.email}</td>
+          <td title="${formattedDate}">${formattedDate}</td>
+          <td>${actionButtons}</td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+      
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      tableResponsive.appendChild(table);
+      section.appendChild(tableResponsive);
+      
+      return section;
+    }
+    
+    /**
+     * Filter registrations based on selected category and status
+     */
+    function filterRegistrations() {
+      const categoryName = document.getElementById('categoryFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      
+      // Get all category sections
+      const categorySections = document.querySelectorAll('.category-section');
+      let visibleCategoryCount = 0;
+      
+      categorySections.forEach(section => {
+        // Handle category filter
+        if (categoryName === 'all' || section.dataset.categoryName === categoryName) {
+          
+          // Handle status filter
+          const approvedSection = section.querySelector('.approved-section');
+          const pendingSection = section.querySelector('.pending-section');
+          const rejectedSection = section.querySelector('.rejected-section');
+          
+          if (status === 'all') {
+            section.classList.remove('d-none');
+            approvedSection.classList.remove('d-none');
+            pendingSection.classList.remove('d-none');
+            rejectedSection.classList.remove('d-none');
+            visibleCategoryCount++;
+          } else {
+            // Show only sections that match the status
+            section.classList.remove('d-none');
+            approvedSection.classList.toggle('d-none', status !== 'approved');
+            pendingSection.classList.toggle('d-none', status !== 'pending');
+            rejectedSection.classList.toggle('d-none', status !== 'rejected');
+            
+            // Check if the selected section has any entries
+            const hasEntries = (status === 'approved' && approvedSection.querySelector('tbody tr')) ||
+                              (status === 'pending' && pendingSection.querySelector('tbody tr')) ||
+                              (status === 'rejected' && rejectedSection.querySelector('tbody tr'));
+            
+            if (hasEntries) {
+              visibleCategoryCount++;
+            } else {
+              section.classList.add('d-none');
+            }
+          }
+        } else {
+          section.classList.add('d-none');
+        }
+      });
+      
+      // Show message if no matching registrations
+      if (visibleCategoryCount === 0) {
+        document.getElementById('noRegistrationsMessage').classList.remove('d-none');
+        document.getElementById('noRegistrationsMessage').textContent = 'No registrations match your filter criteria.';
+      } else {
+        document.getElementById('noRegistrationsMessage').classList.add('d-none');
+      }
+    }
+  });
+  </script>
 </body>
 </html>
