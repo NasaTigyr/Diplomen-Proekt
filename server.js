@@ -7,6 +7,7 @@ const session = require('express-session');
 const multer = require('multer');
 const fs = require('fs');
 const controller = require('./controller.js');
+const db = require('./db.js'); 
 
 // Import routes
 // Initialize express app
@@ -315,8 +316,76 @@ app.post('/cancel-registration', async (req, res) => {
   }
 });
 
-app.get('/manageClub', isAuthenticated, (req, res) => {
-  res.render('manageClub', { user: req.session.user });
+//app.get('/manageClub', isAuthenticated, async (req, res) => {
+//  try {
+//    const userId = req.session.user.id;
+//    
+//    // Query to get the club associated with this user
+//    const [clubs] = await db.query(
+//        "SELECT * FROM clubs WHERE coach_id = ?",
+//        [userId]
+//    );
+//    
+//    const club = clubs && clubs.length > 0 ? clubs[0] : null;
+//    
+//    res.render('manageClub', { 
+//      user: req.session.user,
+//      initialClubData: JSON.stringify(club)
+//    });
+//  } catch (error) {
+//    console.error('Error loading club data:', error);
+//    res.render('manageClub', { 
+//      user: req.session.user,
+//      initialClubData: null
+//    });
+//  }
+//});
+
+app.get('/manageClub', isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    
+    // Query to get the club associated with this user
+    const [clubs] = await db.query(
+        "SELECT * FROM clubs WHERE coach_id = ?",
+        [userId]
+    );
+    
+    const club = clubs && clubs.length > 0 ? clubs[0] : null;
+    
+    // Get club statistics if a club exists
+    let statistics = { athlete_count: 0, event_count: 0, competition_count: 0 };
+    if (club) {
+      // Get athlete count
+      const [athleteResult] = await db.query(
+        "SELECT COUNT(*) as count FROM club_athletes WHERE club_id = ?",
+        [club.id]
+      );
+      statistics.athlete_count = athleteResult[0].count;
+      
+      // Get event count
+      const [eventResult] = await db.query(
+        "SELECT COUNT(*) as count FROM events WHERE creator_id = ?",
+        [userId]
+      );
+      statistics.event_count = eventResult[0].count;
+    }
+    
+    // Render the page with club data directly
+    res.render('manageClub', { 
+      user: req.session.user,
+      club: club,
+      statistics: statistics
+    });
+  } catch (error) {
+    console.error('Error loading club data:', error);
+    res.render('manageClub', { 
+      user: req.session.user,
+      club: null,
+      statistics: { athlete_count: 0, event_count: 0, competition_count: 0 },
+      error: 'Failed to load club data'
+    });
+  }
 });
 
 /// Add this route to server.js
@@ -533,6 +602,251 @@ app.get('/categories/stats/:eventId', async (req, res) => {
     console.error("ERROR fetching category statistics:", error);
     res.status(500).json({ error: error.message });
   }
+});
+// Club Management Routes
+app.get('/clubs/my-club', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        
+        // Query to get the club associated with this user
+        const [clubs] = await db.query(
+            "SELECT * FROM clubs WHERE coach_id = ?",
+            [userId]
+        );
+        
+        if (!clubs || clubs.length === 0) {
+            // User has no club, return empty data
+            return res.status(404).json({ error: 'No club found for this user' });
+        }
+        
+        // Return the club data
+        res.json(clubs[0]);
+    } catch (error) {
+        console.error('Error fetching user club:', error);
+        res.status(500).json({ error: 'Failed to load club data' });
+    }
+});
+
+app.get('/clubs/:id/statistics', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        
+        // Query to get club statistics
+        const [athleteCount] = await db.query(
+            "SELECT COUNT(*) as count FROM club_athletes WHERE club_id = ?",
+            [clubId]
+        );
+        
+        const [eventCount] = await db.query(
+            "SELECT COUNT(*) as count FROM events WHERE creator_id IN (SELECT coach_id FROM clubs WHERE id = ?)",
+            [clubId]
+        );
+        
+        // Return statistics
+        res.json({
+            athlete_count: athleteCount[0].count || 0,
+            event_count: eventCount[0].count || 0,
+            competition_count: 0 // Placeholder
+        });
+    } catch (error) {
+        console.error('Error fetching club statistics:', error);
+        res.status(500).json({ error: 'Failed to load club statistics' });
+    }
+});
+
+app.get('/clubs/:id/athletes', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        
+        // Query to get club athletes
+        const [athletes] = await db.query(`
+            SELECT u.id, u.first_name, u.last_name, u.email, u.date_of_birth, 
+                   u.gender, u.profile_picture, u.contact_number, ca.status, ca.join_date 
+            FROM club_athletes ca 
+            JOIN users u ON ca.athlete_id = u.id 
+            WHERE ca.club_id = ?
+        `, [clubId]);
+        
+        res.json(athletes);
+    } catch (error) {
+        console.error('Error fetching club athletes:', error);
+        res.status(500).json({ error: 'Failed to load club athletes' });
+    }
+});
+
+app.get('/clubs/:id/join-requests', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        
+        // Query to get join requests
+        const [requests] = await db.query(`
+            SELECT ca.id, ca.athlete_id, u.first_name, u.last_name, u.email, 
+                   u.date_of_birth, u.gender, ca.join_date as request_date 
+            FROM club_athletes ca 
+            JOIN users u ON ca.athlete_id = u.id 
+            WHERE ca.club_id = ? AND ca.status = 'pending'
+        `, [clubId]);
+        
+        res.json(requests);
+    } catch (error) {
+        console.error('Error fetching join requests:', error);
+        res.status(500).json({ error: 'Failed to load join requests' });
+    }
+});
+
+app.post('/clubs/:id/join-requests/:requestId/approve', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        const requestId = req.params.requestId;
+        
+        // Verify user is club coach
+        const [club] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, req.session.user.id]
+        );
+        
+        if (!club || club.length === 0) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        
+        // Update request status
+        await db.query(
+            "UPDATE club_athletes SET status = 'active' WHERE id = ? AND club_id = ?",
+            [requestId, clubId]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error approving join request:', error);
+        res.status(500).json({ error: 'Failed to approve join request' });
+    }
+});
+
+app.post('/clubs/:id/join-requests/:requestId/reject', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        const requestId = req.params.requestId;
+        
+        // Verify user is club coach
+        const [club] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, req.session.user.id]
+        );
+        
+        if (!club || club.length === 0) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        
+        // Delete the request
+        await db.query(
+            "DELETE FROM club_athletes WHERE id = ? AND club_id = ? AND status = 'pending'",
+            [requestId, clubId]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error rejecting join request:', error);
+        res.status(500).json({ error: 'Failed to reject join request' });
+    }
+});
+
+app.delete('/clubs/:id/athletes/:athleteId', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        const athleteId = req.params.athleteId;
+        
+        // Verify user is club coach
+        const [club] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [clubId, req.session.user.id]
+        );
+        
+        if (!club || club.length === 0) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        
+        // Remove athlete from club
+        await db.query(
+            "DELETE FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+            [clubId, athleteId]
+        );
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error removing athlete:', error);
+        res.status(500).json({ error: 'Failed to remove athlete' });
+    }
+});
+
+app.get('/athletes/:id/competitions', isAuthenticated, async (req, res) => {
+    try {
+        const athleteId = req.params.id;
+        
+        // Query to get athlete competitions (from individual_registrations)
+        const [competitions] = await db.query(`
+            SELECT ir.id, ir.status, e.name as event_name, c.name as category_name, e.start_date as event_date
+            FROM individual_registrations ir
+            JOIN events e ON ir.event_id = e.id
+            JOIN categories c ON ir.category_id = c.id
+            WHERE ir.athlete_id = ?
+            ORDER BY e.start_date DESC
+        `, [athleteId]);
+        
+        res.json(competitions);
+    } catch (error) {
+        console.error('Error fetching athlete competitions:', error);
+        res.status(500).json({ error: 'Failed to load athlete competitions' });
+    }
+});
+
+// Club invitations routes
+app.get('/clubs/:id/invitations', isAuthenticated, async (req, res) => {
+    // This would be a placeholder until you implement invitations table
+    res.json([]);
+});
+
+app.post('/clubs/update', isAuthenticated, upload.single('logo'), async (req, res) => {
+    try {
+        const { club_id, name, description, address, phone, email, website } = req.body;
+        
+        // Verify user is club coach
+        const [club] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [club_id, req.session.user.id]
+        );
+        
+        if (!club || club.length === 0) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        
+        // Handle logo upload if present
+        let logoPath = club[0].logo;
+        if (req.file) {
+            logoPath = '/uploads/' + req.file.filename;
+        }
+        
+        // Update club information
+        await db.query(`
+            UPDATE clubs 
+            SET name = ?, description = ?, logo = ?, address = ?, 
+                updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ?
+        `, [name, description, logoPath, address, club_id]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating club:', error);
+        res.status(500).json({ error: 'Failed to update club' });
+    }
+});
+
+app.post('/clubs/verify', isAuthenticated, upload.fields([
+    { name: 'registration-document', maxCount: 1 },
+    { name: 'coach-certification', maxCount: 1 },
+    { name: 'federation-document', maxCount: 1 }
+]), async (req, res) => {
+    // This would be implemented once you have a verification system
+    res.json({ success: true });
 });
 // Start server
 app.listen(PORT, () => {
