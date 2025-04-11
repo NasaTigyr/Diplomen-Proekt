@@ -1311,6 +1311,207 @@ async function rejectJoinRequest(clubId, requestId, coachId) {
         throw error;
     }
 }
+// Add these functions to your controller.js file
+
+async function addCategory(req, res) {
+  try {
+    const eventId = req.params.eventId;
+    const { name, description, age_group, gender, max_participants, weight_class, rules, fee, status } = req.body;
+    
+    // Validate required fields
+    if (!name || !age_group || !gender) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Validate event exists and user is authorized
+    const event = await getEventById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    if (parseInt(event.creator_id) !== parseInt(req.session.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to modify this event' });
+    }
+    
+    // Enhanced description to store additional fields
+    let enhancedDescription = description || '';
+    
+    // Collect additional fields
+    const additionalFields = [];
+    
+    if (weight_class) {
+      additionalFields.push(`Weight Class: ${weight_class}`);
+    }
+    
+    if (rules) {
+      additionalFields.push(`Special Rules: ${rules}`);
+    }
+    
+    if (fee) {
+      additionalFields.push(`Registration Fee: $${parseFloat(fee).toFixed(2)}`);
+    }
+    
+    if (status && status !== 'active') {
+      additionalFields.push(`Status: ${status}`);
+    }
+    
+    // Append additional fields to description
+    if (additionalFields.length > 0) {
+      enhancedDescription += (enhancedDescription ? '\n\n' : '') + 
+        additionalFields.join('\n\n');
+    }
+    
+    // Current timestamp
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    // Add category to database
+    const [result] = await db.query(
+      'INSERT INTO categories (event_id, name, age_group, gender, description, max_participants, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        eventId,
+        name,
+        age_group,
+        gender,
+        enhancedDescription,
+        max_participants || null,
+        currentDate,
+        currentDate
+      ]
+    );
+    
+    // Return success response with new category ID
+    res.status(201).json({ 
+      success: true,
+      id: result.insertId,
+      message: 'Category created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating category:', error);
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+}
+
+async function updateCategory(req, res) {
+  try {
+    const categoryId = req.params.categoryId;
+    const { name, description, age_group, gender, max_participants, weight_class, rules, fee, status } = req.body;
+    
+    // Validate required fields
+    if (!name || !age_group || !gender) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Get the category to check authorization
+    const [categoryResult] = await db.query(
+      'SELECT c.*, e.creator_id FROM categories c JOIN events e ON c.event_id = e.id WHERE c.id = ?',
+      [categoryId]
+    );
+    
+    if (!categoryResult || categoryResult.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    const category = categoryResult[0];
+    
+    // Check if user is authorized to update this category
+    if (parseInt(category.creator_id) !== parseInt(req.session.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to modify this category' });
+    }
+    
+    // Enhanced description to store additional fields
+    let enhancedDescription = description || '';
+    
+    // Collect additional fields
+    const additionalFields = [];
+    
+    if (weight_class) {
+      additionalFields.push(`Weight Class: ${weight_class}`);
+    }
+    
+    if (rules) {
+      additionalFields.push(`Special Rules: ${rules}`);
+    }
+    
+    if (fee) {
+      additionalFields.push(`Registration Fee: $${parseFloat(fee).toFixed(2)}`);
+    }
+    
+    if (status && status !== 'active') {
+      additionalFields.push(`Status: ${status}`);
+    }
+    
+    // Append additional fields to description
+    if (additionalFields.length > 0) {
+      enhancedDescription += (enhancedDescription ? '\n\n' : '') + 
+        additionalFields.join('\n\n');
+    }
+    
+    // Current timestamp
+    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    // Update category in database
+    await db.query(
+      'UPDATE categories SET name = ?, age_group = ?, gender = ?, description = ?, max_participants = ?, updated_at = ? WHERE id = ?',
+      [
+        name,
+        age_group,
+        gender,
+        enhancedDescription,
+        max_participants || null,
+        currentDate,
+        categoryId
+      ]
+    );
+    
+    // Return success response
+    res.json({ 
+      success: true,
+      id: parseInt(categoryId),
+      message: 'Category updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+}
+
+async function deleteCategory(req, res) {
+  try {
+    const categoryId = req.params.categoryId;
+    
+    // Get the category to check authorization
+    const [categoryResult] = await db.query(
+      'SELECT c.*, e.creator_id FROM categories c JOIN events e ON c.event_id = e.id WHERE c.id = ?',
+      [categoryId]
+    );
+    
+    if (!categoryResult || categoryResult.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    const category = categoryResult[0];
+    
+    // Check if user is authorized to delete this category
+    if (parseInt(category.creator_id) !== parseInt(req.session.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to delete this category' });
+    }
+    
+    // Delete the category
+    await db.query('DELETE FROM categories WHERE id = ?', [categoryId]);
+    
+    // Return success response
+    res.json({ 
+      success: true,
+      message: 'Category deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+}
+
+
+// Update and delete functions would follow a similar approach
 
 const controller = {
     login,
@@ -1339,7 +1540,10 @@ const controller = {
     removeAthleteFromClub,
     getClubJoinRequests,
     approveJoinRequest,
-    rejectJoinRequest
+    rejectJoinRequest,
+    addCategory,
+    updateCategory,
+    deleteCategory
 
 };
 

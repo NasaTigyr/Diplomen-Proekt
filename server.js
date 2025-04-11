@@ -1072,41 +1072,16 @@ app.get('/manageClub', isAuthenticated, async (req, res) => {
 });
 
 // Add this route to your server.js file, near other event-related routes
-app.get('/category/:categoryId/participants', isAuthenticated, async (req, res) => {
+
+app.put('/categories/:categoryId', isAuthenticated, async (req, res) => {
   try {
-    const categoryId = req.params.categoryId;
-    
-    // Fetch category details to verify event
-    const [categoryResult] = await db.query(
-      'SELECT event_id FROM categories WHERE id = ?', 
-      [categoryId]
-    );
-    
-    if (!categoryResult || categoryResult.length === 0) {
-      return res.status(404).json({ error: 'Category not found' });
-    }
-    
-    // Fetch registrations for this category with user details
-    const [registrations] = await db.query(`
-      SELECT 
-        ir.id, 
-        u.id as user_id, 
-        u.first_name, 
-        u.last_name, 
-        u.email, 
-        ir.status 
-      FROM individual_registrations ir
-      JOIN users u ON ir.athlete_id = u.id
-      WHERE ir.category_id = ?
-      ORDER BY u.last_name, u.first_name
-    `, [categoryId]);
-    
-    res.json(registrations);
+    await controller.updateCategory(req, res);
   } catch (error) {
-    console.error('Error fetching category participants:', error);
-    res.status(500).json({ error: 'Failed to load participants' });
+    console.error('Error in update category route:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 // Add this to your server.js, near other routes
 app.get('/api/events', async (req, res) => {
   try {
@@ -1169,6 +1144,23 @@ app.get('/public/category/:categoryId/participants', async (req, res) => {
   }
 });
 
+app.post('/events/:eventId/categories', isAuthenticated, async (req, res) => {
+  try {
+    await controller.addCategory(req, res);
+  } catch (error) {
+    console.error('Error in add category route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/categories/:categoryId', isAuthenticated, async (req, res) => {
+  try {
+    await controller.deleteCategory(req, res);
+  } catch (error) {
+    console.error('Error in delete category route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
