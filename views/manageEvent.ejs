@@ -306,700 +306,707 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const eventId = <%= eventId %>;
-  
-  // Load event data
-  loadEventData();
-  
-  // Register click event for "View as Participant" button
-  document.getElementById('viewAsParticipantBtn').addEventListener('click', function() {
-    window.location.href = `/eventDetails/${eventId}`;
-  });
-  
-  // Function to fetch participants for a category
-  async function fetchCategoryParticipants(categoryId) {
-    try {
-      const response = await fetch(`/public/category/${categoryId}/participants`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch participants');
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching participants:', error);
-      return [];
-    }
-  }
-
-  // Function to generate and download CSV
-  function downloadParticipantsCSV(participants, categoryName) {
-    const csvContent = [
-      'Participant ID,First Name,Last Name,Email',
-      ...participants.map(p => `${p.user_id},${p.first_name},${p.last_name},${p.email}`)
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  document.addEventListener('DOMContentLoaded', function() {
+    const eventId = <%= eventId %>;
     
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${categoryName}_participants.csv`);
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // Function to create participants modal
-  function createParticipantsModal(participants, categoryName) {
-    let modal = document.getElementById('participantsModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'participantsModal';
-      modal.className = 'modal fade';
-      modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Participants - ${categoryName}</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="participantsTableBody"></tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" id="extractParticipantsBtn">Extract CSV</button>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    const tableBody = modal.querySelector('#participantsTableBody');
-    tableBody.innerHTML = participants.map(p => `
-      <tr>
-        <td>${p.user_id}</td>
-        <td>${p.first_name} ${p.last_name}</td>
-        <td>${p.email}</td>
-        <td>${p.status || 'Pending'}</td>
-      </tr>
-    `).join('');
-
-    const extractBtn = modal.querySelector('#extractParticipantsBtn');
-    extractBtn.onclick = () => downloadParticipantsCSV(participants, categoryName);
-
-    const modalInstance = new bootstrap.Modal(modal);
-    modalInstance.show();
-  }
-  
-  // Check if event date has passed
-  function checkEventDate(endDate) {
-    if (!endDate) return;
+    // Load event data
+    loadEventData();
     
-    const eventEndDate = new Date(endDate);
-    const currentDate = new Date();
+    // Register click event for "View as Participant" button
+    document.getElementById('viewAsParticipantBtn').addEventListener('click', function() {
+      window.location.href = `/eventDetails/${eventId}`;
+    });
     
-    if (eventEndDate < currentDate) {
-      // Add warning banner for past events
-      const warningDiv = document.createElement('div');
-      warningDiv.className = 'alert alert-warning alert-dismissible fade show mb-4';
-      warningDiv.innerHTML = `
-        <strong>This event has ended!</strong> 
-        It ended on ${eventEndDate.toLocaleDateString()}.
-        <button class="btn btn-sm btn-danger ms-3" id="archiveEventBtn">
-          Archive Event
-        </button>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      `;
-      
-      // Insert after header
-      const headerRow = document.querySelector('.container .row');
-      headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling);
-      
-      // Add event listener to archive button
-      document.getElementById('archiveEventBtn').addEventListener('click', function() {
-        confirmArchiveEvent();
-      });
-    }
-  }
-  
-  // Confirm archive event
-  function confirmArchiveEvent() {
-    document.getElementById('confirmModalLabel').textContent = 'Archive Event';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to archive this event? This will remove it from active listings.';
-    
-    // Store action data
-    document.getElementById('confirmActionBtn').setAttribute('data-action', 'archive-event');
-    document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    modal.show();
-  }
-  
-  // Load event details function
-  function loadEventData() {
-    // Fetch event details
-    fetch(`/eventDetails/${eventId}/data`)
-      .then(response => {
+    // Function to fetch participants for a category
+    async function fetchCategoryParticipants(categoryId) {
+      try {
+        const response = await fetch(`/public/category/${categoryId}/participants`);
         if (!response.ok) {
-          throw new Error('Failed to load event');
+          throw new Error('Failed to fetch participants');
         }
-        return response.json();
-      })
-      .then(event => {
-        // Update page with event details
-        document.getElementById('eventTitle').textContent = event.name || 'Unnamed Event';
-        
-        // Format dates
-        if (event.start_date) {
-          const startDate = new Date(event.start_date);
-          let dateText = startDate.toLocaleDateString();
-          
-          if (event.end_date) {
-            const endDate = new Date(event.end_date);
-            dateText += ` - ${endDate.toLocaleDateString()}`;
-          }
-          
-          document.getElementById('eventDates').textContent = dateText;
-        }
-        
-        // Update other fields
-        document.getElementById('eventDescription').textContent = event.description || 'No description provided';
-        document.getElementById('eventLocation').textContent = event.address || 'No location specified';
-        
-        // Registration period
-        if (event.registration_start && event.registration_end) {
-          const regStart = new Date(event.registration_start);
-          const regEnd = new Date(event.registration_end);
-          document.getElementById('registrationPeriod').textContent = 
-            `${regStart.toLocaleDateString()} - ${regEnd.toLocaleDateString()}`;
-        } else {
-          document.getElementById('registrationPeriod').textContent = 'Not specified';
-        }
-        
-        // Event type
-        document.getElementById('eventType').textContent = 
-          event.event_type === 'team' ? 'Team Competition' : 'Individual Competition';
-        
-        // Banner image
-        if (event.banner_image) {
-          const img = document.createElement('img');
-          img.src = event.banner_image;
-          img.alt = 'Event banner';
-          img.className = 'img-fluid rounded';
-          document.getElementById('eventBanner').appendChild(img);
-        } else {
-          document.getElementById('eventBanner').innerHTML = 
-            '<div class="text-center text-muted p-3 border rounded">No banner image</div>';
-        }
-        
-        // Check if event has passed
-        checkEventDate(event.end_date);
-      })
-      .catch(error => {
-        console.error('Error loading event:', error);
-        alert('Failed to load event details. Please try again later.');
-      });
-    
-    // Load categories
-    loadCategories();
-    
-    // Load timetable
-    loadTimetable();
-  }
-  
-  // Load categories function
-  function loadCategories() {
-    // First fetch categories
-    fetch(`/eventDetails/${eventId}/categories`)
-      .then(response => {
-        if (!response.ok && response.status !== 404) {
-          throw new Error('Failed to load categories');
-        }
-        return response.json();
-      })
-      .then(categories => {
-        if (!categories || categories.length === 0) {
-          document.getElementById('noCategoriesMessage').classList.remove('d-none');
-          return;
-        }
-        
-        // Next, fetch category statistics (participant counts)
-        fetch(`/categories/stats/${eventId}`)
-          .then(response => {
-            if (!response.ok) {
-              console.error('Failed to load participant counts, will display 0');
-              return { categoryStats: [] };
-            }
-            return response.json();
-          })
-          .then(data => {
-            // Create a map of category_id -> participant_count for easy lookup
-            const statsMap = new Map();
-            if (data.categoryStats) {
-              data.categoryStats.forEach(stat => {
-                statsMap.set(stat.category_id, stat.participant_count);
-              });
-            }
-            
-            // Now display the categories with the correct participant count
-            displayCategories(categories, statsMap);
-          })
-          .catch(error => {
-            console.error('Error loading participant counts:', error);
-            // Still display the categories but with 0 participants
-            displayCategories(categories, new Map());
-          });
-      })
-      .catch(error => {
-        console.error('Error loading categories:', error);
-        document.getElementById('noCategoriesMessage').classList.remove('d-none');
-        document.getElementById('noCategoriesMessage').textContent = 'Failed to load categories. Please try again later.';
-      });
-  }
-  
-  // Display categories with participant counts
-  function displayCategories(categories, statsMap) {
-    const tbody = document.getElementById('categoriesTableBody');
-    const noCategories = document.getElementById('noCategoriesMessage');
-    
-    // Clear existing data
-    tbody.innerHTML = '';
-    noCategories.classList.add('d-none');
-    
-    // Add each category to table
-    categories.forEach(category => {
-      const row = document.createElement('tr');
-      
-      // Format age group
-      let ageGroup = category.age_group || 'N/A';
-      ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      
-      // Format gender
-      let gender = category.gender || 'N/A';
-      gender = gender.charAt(0).toUpperCase() + gender.slice(1);
-      
-      // Get participant count from stats map or default to 0
-      const participantCount = statsMap.get(category.id) || 0;
-      
-      // Determine badge color based on registration status
-      let badgeClass = 'bg-primary';
-      if (category.max_participants) {
-        if (participantCount >= category.max_participants) {
-          badgeClass = 'bg-danger'; // Full
-        } else if (participantCount >= category.max_participants * 0.75) {
-          badgeClass = 'bg-warning'; // Nearly full
-        }
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching participants:', error);
+        return [];
       }
+    }
+
+    // Function to generate and download CSV
+    function downloadParticipantsCSV(participants, categoryName) {
+      const csvContent = [
+        'Participant ID,First Name,Last Name,Email',
+        ...participants.map(p => `${p.user_id},${p.first_name},${p.last_name},${p.email}`)
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       
-      row.innerHTML = `
-        <td>${category.name}</td>
-        <td>${ageGroup}</td>
-        <td>${gender}</td>
-        <td><span class="badge ${badgeClass}">${participantCount}</span></td>
-        <td>${category.max_participants || 'Unlimited'}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
-            <i class="fas fa-trash"></i>
-          </button>
-          <button class="btn btn-sm btn-info ms-2 show-participants-btn" data-id="${category.id}">
-            <i class="fas fa-users"></i> Show Participants
-          </button>
-        </td>
-      `;
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${categoryName}_approved_participants.csv`);
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Function to create participants modal
+    function createParticipantsModal(participants, categoryName) {
+      // Filter to only approved participants
+      const approvedParticipants = participants.filter(p => p.status === 'approved');
       
-      tbody.appendChild(row);
-    });
-    
-    // Add event listeners for "Show Participants" buttons
-    document.querySelectorAll('.show-participants-btn').forEach(button => {
-      button.addEventListener('click', async function() {
-        const categoryId = this.getAttribute('data-id');
-        const categoryName = this.closest('tr').querySelector('td:first-child').textContent;
-        
-        try {
-          const participants = await fetchCategoryParticipants(categoryId);
-          createParticipantsModal(participants, categoryName);
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Failed to load participants');
-        }
-      });
-    });
-    
-    // Add edit and delete category handlers
-    document.querySelectorAll('.edit-category').forEach(button => {
-      button.addEventListener('click', function() {
-        const categoryId = this.getAttribute('data-id');
-        editCategory(categoryId, categories);
-      });
-    });
-    
-    document.querySelectorAll('.delete-category').forEach(button => {
-      button.addEventListener('click', function() {
-        const categoryId = this.getAttribute('data-id');
-        confirmDeleteCategory(categoryId);
-      });
-    });
-  }
-  
-  // Load timetable function
-  function loadTimetable() {
-    fetch(`/eventDetails/${eventId}/timetable`)
-      .then(response => {
-        if (!response.ok && response.status !== 404) {
-          throw new Error('Failed to load timetable');
-        }
-        return response.json();
-      })
-      .then(timetable => {
-        const timetableContent = document.getElementById('timetableContent');
-        const noTimetable = document.getElementById('noTimetableMessage');
-        
-        if (!timetable || timetable.length === 0 || !timetable[0].timetable_file) {
-          noTimetable.classList.remove('d-none');
-          return;
-        }
-        
-        noTimetable.classList.add('d-none');
-        
-        // Display the timetable file
-        timetableContent.innerHTML = `
-          <div class="card">
-            <div class="card-body text-center">
-              <h5 class="card-title">Timetable Document</h5>
-              <p class="card-text">The timetable for this event has been uploaded.</p>
-              <a href="${timetable[0].timetable_file}" class="btn btn-primary" target="_blank">
-                <i class="fas fa-download"></i> Download Timetable
-              </a>
-            </div>
-          </div>
-        `;
-      })
-      .catch(error => {
-        console.error('Error loading timetable:', error);
-        document.getElementById('noTimetableMessage').classList.remove('d-none');
-        document.getElementById('noTimetableMessage').textContent = 'Failed to load timetable. Please try again later.';
-      });
-  }
-  
-  // Edit category function with enhanced form
-  function editCategory(categoryId, categories) {
-    const category = categories.find(c => c.id == categoryId);
-    if (!category) return;
-    
-    // Populate modal form with basic fields
-    document.getElementById('categoryId').value = category.id;
-    document.getElementById('categoryName').value = category.name;
-    document.getElementById('ageGroup').value = category.age_group;
-    document.getElementById('gender').value = category.gender;
-    document.getElementById('maxParticipants').value = category.max_participants || '';
-    document.getElementById('categoryDescription').value = category.description || '';
-    
-    // Enhanced fields - only set if they exist in our modal
-    // Parse additional fields from description
-    const description = category.description || '';
-    
-    // Try to extract weight class if the field exists
-    if (document.getElementById('category-weight-class')) {
-      const weightClassMatch = description.match(/Weight Class: ([^\n]+)/);
-      document.getElementById('category-weight-class').value = weightClassMatch ? weightClassMatch[1] : '';
-    }
-    
-    // Try to extract rules if the field exists
-    if (document.getElementById('category-rules')) {
-      const rulesMatch = description.match(/Special Rules: ([^\n]+)/);
-      document.getElementById('category-rules').value = rulesMatch ? rulesMatch[1] : '';
-    }
-    
-    // Try to extract fee if the field exists
-    if (document.getElementById('category-fee')) {
-      const feeMatch = description.match(/Registration Fee: \$([0-9.]+)/);
-      document.getElementById('category-fee').value = feeMatch ? feeMatch[1] : '0.00';
-    }
-    
-    // Try to extract status if the field exists
-    if (document.getElementById('category-status')) {
-      const statusMatch = description.match(/Status: ([^\n]+)/);
-      document.getElementById('category-status').value = statusMatch ? statusMatch[1].toLowerCase() : 'active';
-    }
-    
-    // Set modal title
-    document.getElementById('categoryModalLabel').textContent = 'Edit Category';
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-    modal.show();
-  }
-  
-  // Confirm delete category
-  function confirmDeleteCategory(categoryId) {
-    document.getElementById('confirmModalLabel').textContent = 'Delete Category';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this category? This will also remove all registrations for this category.';
-    
-    // Store action data
-    document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-category');
-    document.getElementById('confirmActionBtn').setAttribute('data-id', categoryId);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    modal.show();
-  }
-  
-  // Save category function
-  document.getElementById('saveCategoryBtn').addEventListener('click', function() {
-    // Get basic form values
-    const categoryId = document.getElementById('categoryId').value;
-    const name = document.getElementById('categoryName').value;
-    const description = document.getElementById('categoryDescription').value || '';
-    const ageGroup = document.getElementById('ageGroup').value;
-    const gender = document.getElementById('gender').value;
-    const maxParticipants = document.getElementById('maxParticipants').value;
-    
-    // Get enhanced form values if they exist
-    let enhancedDescription = description;
-    const additionalFields = [];
-    
-    // Check if enhanced fields exist and add them to the description
-    if (document.getElementById('category-weight-class') && document.getElementById('category-weight-class').value) {
-      additionalFields.push(`Weight Class: ${document.getElementById('category-weight-class').value}`);
-    }
-    
-    if (document.getElementById('category-rules') && document.getElementById('category-rules').value) {
-      additionalFields.push(`Special Rules: ${document.getElementById('category-rules').value}`);
-    }
-    
-    if (document.getElementById('category-fee') && document.getElementById('category-fee').value) {
-      additionalFields.push(`Registration Fee: $${parseFloat(document.getElementById('category-fee').value).toFixed(2)}`);
-    }
-    
-    if (document.getElementById('category-status') && document.getElementById('category-status').value !== 'active') {
-      additionalFields.push(`Status: ${document.getElementById('category-status').value}`);
-    }
-    
-    // Append additional fields to description
-    if (additionalFields.length > 0) {
-      enhancedDescription += (enhancedDescription ? '\n\n' : '') + additionalFields.join('\n\n');
-    }
-    
-    // In a real implementation, we would have API calls here
-    // For now, we'll simulate success and refresh the categories
-    
-    const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
-    modal.hide();
-    
-    // Show a success message
-    alert(`Category ${categoryId ? 'updated' : 'created'} successfully! (Note: Backend implementation needed)`);
-    
-    // Refresh the categories list
-    loadCategories();
-  });
-  
-  // Event listener for add category button
-  document.getElementById('addCategoryBtn').addEventListener('click', function() {
-    // Reset form
-    document.getElementById('categoryForm').reset();
-    document.getElementById('categoryId').value = '';
-    
-    // Reset enhanced form fields if they exist
-    if (document.getElementById('category-weight-class')) document.getElementById('category-weight-class').value = '';
-    if (document.getElementById('category-rules')) document.getElementById('category-rules').value = '';
-    if (document.getElementById('category-fee')) document.getElementById('category-fee').value = '';
-    if (document.getElementById('category-status')) document.getElementById('category-status').value = 'active';
-    
-    // Set modal title
-    document.getElementById('categoryModalLabel').textContent = 'Add Category';
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
-    modal.show();
-  });
-  
-  document.getElementById('uploadTimetableBtn').addEventListener('click', function() {
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('timetableModal'));
-    modal.show();
-  });
-  
-  document.getElementById('editEventBtn').addEventListener('click', function() {
-    // Redirect to edit page
-    window.location.href = `/editEvent/${eventId}`;
-  });
-  
-  document.getElementById('deleteEventBtn').addEventListener('click', function() {
-    document.getElementById('confirmModalLabel').textContent = 'Delete Event';
-    document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this event? This will permanently remove all event data, categories, and registrations.';
-    
-    // Store action data
-    document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-event');
-    document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
-    
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    modal.show();
-  });
-  
-  // Timetable upload handler
-  document.getElementById('uploadTimetableSubmitBtn').addEventListener('click', function() {
-    // This would be implemented with actual file upload
-    // For now, just close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
-    modal.hide();
-    
-    // Show success message
-    alert('Timetable uploaded successfully! (Note: this is just a placeholder, backend implementation needed)');
-    loadTimetable();
-  });
-  
-  // Confirmation action handler
-  document.getElementById('confirmActionBtn').addEventListener('click', function() {
-    const action = this.getAttribute('data-action');
-    const id = this.getAttribute('data-id');
-    
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
-    modal.hide();
-    
-    // For now, just show an alert
-    // These would be actual API calls in a real implementation
-    switch(action) {
-      case 'delete-category':
-        alert(`Category deletion API call would happen here for ID: ${id}`);
-        loadCategories();
-        break;
-      case 'delete-event':
-        alert(`Event deletion API call would happen here for ID: ${id}`);
-        // Redirect back to events page after deletion
-        window.location.href = '/events';
-        break;
-      case 'archive-event':
-        alert(`Event archiving API call would happen here for ID: ${id}`);
-        window.location.reload();
-        break;
-    }
-  });
-  
-  // Filters functionality
-  document.getElementById('applyFiltersBtn').addEventListener('click', function() {
-    // This would filter the registrations table in a real implementation
-    alert('Filtering functionality would happen here with the backend implementation');
-  });
-  
-  // Update the Category Modal with enhanced fields while preserving the existing structure
-  const categoryModal = document.getElementById('categoryModal');
-  if (categoryModal) {
-    // Get the original form content
-    const modalBody = categoryModal.querySelector('.modal-body');
-    
-    // Create enhanced modal content
-    const enhancedModalContent = `
-      <form id="categoryForm">
-        <input type="hidden" id="categoryId">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="categoryName" class="form-label">Category Name</label>
-              <input type="text" class="form-control" id="categoryName" required>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="ageGroup" class="form-label">Age Group</label>
-              <select class="form-select" id="ageGroup" required>
-                <option value="under_8">Under 8</option>
-                <option value="under_12">Under 12</option>
-                <option value="under_14">Under 14</option>
-                <option value="under_16">Under 16</option>
-                <option value="under_18">Under 18</option>
-                <option value="under_21">Under 21</option>
-                <option value="senior">Senior</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="gender" class="form-label">Gender</label>
-              <select class="form-select" id="gender" required>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="mixed">Mixed</option>
-              </select>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="maxParticipants" class="form-label">Max Participants</label>
-              <input type="number" class="form-control" id="maxParticipants" min="1">
-            </div>
-          </div>
-        </div>
-        <div class="mb-3">
-          <label for="categoryDescription" class="form-label">Description</label>
-          <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
-        </div>
-        
-        <!-- Enhanced Fields -->
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="category-weight-class" class="form-label">Weight Class</label>
-              <input type="text" class="form-control" id="category-weight-class" placeholder="e.g., -60kg, 60-66kg, +100kg">
-              <small class="form-text text-muted">Format: "min-max" (e.g., 60-66kg) or "+/- value" (e.g., +100kg)</small>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="category-fee" class="form-label">Registration Fee*</label>
-              <div class="input-group">
-                <span class="input-group-text">$</span>
-                <input type="number" class="form-control" id="category-fee" min="0" step="0.01" required>
+      let modal = document.getElementById('participantsModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'participantsModal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Approved Participants - ${categoryName}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                    </tr>
+                  </thead>
+                  <tbody id="participantsTableBody"></tbody>
+                </table>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="extractParticipantsBtn">Extract CSV</button>
               </div>
             </div>
           </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="category-rules" class="form-label">Special Rules</label>
-              <textarea class="form-control" id="category-rules" rows="2"></textarea>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="mb-3">
-              <label for="category-status" class="form-label">Status</label>
-              <select class="form-select" id="category-status">
-                <option value="active">Active</option>
-                <option value="draft">Draft</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </form>
-    `;
+        `;
+        document.body.appendChild(modal);
+      }
+
+      const tableBody = modal.querySelector('#participantsTableBody');
+      
+      if (approvedParticipants.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="text-center">No approved participants yet.</td></tr>';
+      } else {
+        tableBody.innerHTML = approvedParticipants.map(p => `
+          <tr>
+            <td>${p.user_id}</td>
+            <td>${p.first_name} ${p.last_name}</td>
+            <td>${p.email}</td>
+          </tr>
+        `).join('');
+      }
+
+      const extractBtn = modal.querySelector('#extractParticipantsBtn');
+      extractBtn.onclick = () => downloadParticipantsCSV(approvedParticipants, categoryName);
+
+      const modalInstance = new bootstrap.Modal(modal);
+      modalInstance.show();
+    }
     
-    // Replace modal body content
-    modalBody.innerHTML = enhancedModalContent;
-  }
-});
+    // Check if event date has passed
+    function checkEventDate(endDate) {
+      if (!endDate) return;
+      
+      const eventEndDate = new Date(endDate);
+      const currentDate = new Date();
+      
+      if (eventEndDate < currentDate) {
+        // Add warning banner for past events
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning alert-dismissible fade show mb-4';
+        warningDiv.innerHTML = `
+          <strong>This event has ended!</strong> 
+          It ended on ${eventEndDate.toLocaleDateString()}.
+          <button class="btn btn-sm btn-danger ms-3" id="archiveEventBtn">
+            Archive Event
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Insert after header
+        const headerRow = document.querySelector('.container .row');
+        headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling);
+        
+        // Add event listener to archive button
+        document.getElementById('archiveEventBtn').addEventListener('click', function() {
+          confirmArchiveEvent();
+        });
+      }
+    }
+    
+    // Confirm archive event
+    function confirmArchiveEvent() {
+      document.getElementById('confirmModalLabel').textContent = 'Archive Event';
+      document.getElementById('confirmMessage').textContent = 'Are you sure you want to archive this event? This will remove it from active listings.';
+      
+      // Store action data
+      document.getElementById('confirmActionBtn').setAttribute('data-action', 'archive-event');
+      document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+      modal.show();
+    }
+    
+    // Load event details function
+    function loadEventData() {
+      // Fetch event details
+      fetch(`/eventDetails/${eventId}/data`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to load event');
+          }
+          return response.json();
+        })
+        .then(event => {
+          // Update page with event details
+          document.getElementById('eventTitle').textContent = event.name || 'Unnamed Event';
+          
+          // Format dates
+          if (event.start_date) {
+            const startDate = new Date(event.start_date);
+            let dateText = startDate.toLocaleDateString();
+            
+            if (event.end_date) {
+              const endDate = new Date(event.end_date);
+              dateText += ` - ${endDate.toLocaleDateString()}`;
+            }
+            
+            document.getElementById('eventDates').textContent = dateText;
+          }
+          
+          // Update other fields
+          document.getElementById('eventDescription').textContent = event.description || 'No description provided';
+          document.getElementById('eventLocation').textContent = event.address || 'No location specified';
+          
+          // Registration period
+          if (event.registration_start && event.registration_end) {
+            const regStart = new Date(event.registration_start);
+            const regEnd = new Date(event.registration_end);
+            document.getElementById('registrationPeriod').textContent = 
+              `${regStart.toLocaleDateString()} - ${regEnd.toLocaleDateString()}`;
+          } else {
+            document.getElementById('registrationPeriod').textContent = 'Not specified';
+          }
+          
+          // Event type
+          document.getElementById('eventType').textContent = 
+            event.event_type === 'team' ? 'Team Competition' : 'Individual Competition';
+          
+          // Banner image
+          if (event.banner_image) {
+            const img = document.createElement('img');
+            img.src = event.banner_image;
+            img.alt = 'Event banner';
+            img.className = 'img-fluid rounded';
+            document.getElementById('eventBanner').appendChild(img);
+          } else {
+            document.getElementById('eventBanner').innerHTML = 
+              '<div class="text-center text-muted p-3 border rounded">No banner image</div>';
+          }
+          
+          // Check if event has passed
+          checkEventDate(event.end_date);
+        })
+        .catch(error => {
+          console.error('Error loading event:', error);
+          alert('Failed to load event details. Please try again later.');
+        });
+      
+      // Load categories
+      loadCategories();
+      
+      // Load timetable
+      loadTimetable();
+    }
+    
+    // Load categories function
+    function loadCategories() {
+      // First fetch categories
+      fetch(`/eventDetails/${eventId}/categories`)
+        .then(response => {
+          if (!response.ok && response.status !== 404) {
+            throw new Error('Failed to load categories');
+          }
+          return response.json();
+        })
+        .then(categories => {
+          if (!categories || categories.length === 0) {
+            document.getElementById('noCategoriesMessage').classList.remove('d-none');
+            return;
+          }
+          
+          // Next, fetch category statistics (participant counts)
+          fetch(`/categories/stats/${eventId}`)
+            .then(response => {
+              if (!response.ok) {
+                console.error('Failed to load participant counts, will display 0');
+                return { categoryStats: [] };
+              }
+              return response.json();
+            })
+            .then(data => {
+              // Create a map of category_id -> participant_count for easy lookup
+              const statsMap = new Map();
+              if (data.categoryStats) {
+                data.categoryStats.forEach(stat => {
+                  statsMap.set(stat.category_id, stat.participant_count);
+                });
+              }
+              
+              // Now display the categories with the correct participant count
+              displayCategories(categories, statsMap);
+            })
+            .catch(error => {
+              console.error('Error loading participant counts:', error);
+              // Still display the categories but with 0 participants
+              displayCategories(categories, new Map());
+            });
+        })
+        .catch(error => {
+          console.error('Error loading categories:', error);
+          document.getElementById('noCategoriesMessage').classList.remove('d-none');
+          document.getElementById('noCategoriesMessage').textContent = 'Failed to load categories. Please try again later.';
+        });
+    }
+    
+    // Display categories with participant counts
+    function displayCategories(categories, statsMap) {
+      const tbody = document.getElementById('categoriesTableBody');
+      const noCategories = document.getElementById('noCategoriesMessage');
+      
+      // Clear existing data
+      tbody.innerHTML = '';
+      noCategories.classList.add('d-none');
+      
+      // Add each category to table
+      categories.forEach(category => {
+        const row = document.createElement('tr');
+        
+        // Format age group
+        let ageGroup = category.age_group || 'N/A';
+        ageGroup = ageGroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Format gender
+        let gender = category.gender || 'N/A';
+        gender = gender.charAt(0).toUpperCase() + gender.slice(1);
+        
+        // Get participant count from stats map or default to 0
+        const participantCount = statsMap.get(category.id) || 0;
+        
+        // Determine badge color based on registration status
+        let badgeClass = 'bg-primary';
+        if (category.max_participants) {
+          if (participantCount >= category.max_participants) {
+            badgeClass = 'bg-danger'; // Full
+          } else if (participantCount >= category.max_participants * 0.75) {
+            badgeClass = 'bg-warning'; // Nearly full
+          }
+        }
+        
+        row.innerHTML = `
+          <td>${category.name}</td>
+          <td>${ageGroup}</td>
+          <td>${gender}</td>
+          <td><span class="badge ${badgeClass}">${participantCount}</span></td>
+          <td>${category.max_participants || 'Unlimited'}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary edit-category" data-id="${category.id}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger delete-category" data-id="${category.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+            <button class="btn btn-sm btn-info ms-2 show-participants-btn" data-id="${category.id}">
+              <i class="fas fa-users"></i> Show Participants
+            </button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+      
+      // Add event listeners for "Show Participants" buttons
+      document.querySelectorAll('.show-participants-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+          const categoryId = this.getAttribute('data-id');
+          const categoryName = this.closest('tr').querySelector('td:first-child').textContent;
+          
+          try {
+            const participants = await fetchCategoryParticipants(categoryId);
+            createParticipantsModal(participants, categoryName);
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to load participants');
+          }
+        });
+      });
+      
+      // Add edit and delete category handlers
+      document.querySelectorAll('.edit-category').forEach(button => {
+        button.addEventListener('click', function() {
+          const categoryId = this.getAttribute('data-id');
+          editCategory(categoryId, categories);
+        });
+      });
+      
+      document.querySelectorAll('.delete-category').forEach(button => {
+        button.addEventListener('click', function() {
+          const categoryId = this.getAttribute('data-id');
+          confirmDeleteCategory(categoryId);
+        });
+      });
+    }
+    
+    // Load timetable function
+    function loadTimetable() {
+      fetch(`/eventDetails/${eventId}/timetable`)
+        .then(response => {
+          if (!response.ok && response.status !== 404) {
+            throw new Error('Failed to load timetable');
+          }
+          return response.json();
+        })
+        .then(timetable => {
+          const timetableContent = document.getElementById('timetableContent');
+          const noTimetable = document.getElementById('noTimetableMessage');
+          
+          if (!timetable || timetable.length === 0 || !timetable[0].timetable_file) {
+            noTimetable.classList.remove('d-none');
+            return;
+          }
+          
+          noTimetable.classList.add('d-none');
+          
+          // Display the timetable file
+          timetableContent.innerHTML = `
+            <div class="card">
+              <div class="card-body text-center">
+                <h5 class="card-title">Timetable Document</h5>
+                <p class="card-text">The timetable for this event has been uploaded.</p>
+                <a href="${timetable[0].timetable_file}" class="btn btn-primary" target="_blank">
+                  <i class="fas fa-download"></i> Download Timetable
+                </a>
+              </div>
+            </div>
+          `;
+        })
+        .catch(error => {
+          console.error('Error loading timetable:', error);
+          document.getElementById('noTimetableMessage').classList.remove('d-none');
+          document.getElementById('noTimetableMessage').textContent = 'Failed to load timetable. Please try again later.';
+        });
+    }
+    
+    // Edit category function with enhanced form
+    function editCategory(categoryId, categories) {
+      const category = categories.find(c => c.id == categoryId);
+      if (!category) return;
+      
+      // Populate modal form with basic fields
+      document.getElementById('categoryId').value = category.id;
+      document.getElementById('categoryName').value = category.name;
+      document.getElementById('ageGroup').value = category.age_group;
+      document.getElementById('gender').value = category.gender;
+      document.getElementById('maxParticipants').value = category.max_participants || '';
+      document.getElementById('categoryDescription').value = category.description || '';
+      
+      // Enhanced fields - only set if they exist in our modal
+      // Parse additional fields from description
+      const description = category.description || '';
+      
+      // Try to extract weight class if the field exists
+      if (document.getElementById('category-weight-class')) {
+        const weightClassMatch = description.match(/Weight Class: ([^\n]+)/);
+        document.getElementById('category-weight-class').value = weightClassMatch ? weightClassMatch[1] : '';
+      }
+      
+      // Try to extract rules if the field exists
+      if (document.getElementById('category-rules')) {
+        const rulesMatch = description.match(/Special Rules: ([^\n]+)/);
+        document.getElementById('category-rules').value = rulesMatch ? rulesMatch[1] : '';
+      }
+      
+      // Try to extract fee if the field exists
+      if (document.getElementById('category-fee')) {
+        const feeMatch = description.match(/Registration Fee: \$([0-9.]+)/);
+        document.getElementById('category-fee').value = feeMatch ? feeMatch[1] : '0.00';
+      }
+      
+      // Try to extract status if the field exists
+      if (document.getElementById('category-status')) {
+        const statusMatch = description.match(/Status: ([^\n]+)/);
+        document.getElementById('category-status').value = statusMatch ? statusMatch[1].toLowerCase() : 'active';
+      }
+      
+      // Set modal title
+      document.getElementById('categoryModalLabel').textContent = 'Edit Category';
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+      modal.show();
+    }
+    
+    // Confirm delete category
+    function confirmDeleteCategory(categoryId) {
+      document.getElementById('confirmModalLabel').textContent = 'Delete Category';
+      document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this category? This will also remove all registrations for this category.';
+      
+      // Store action data
+      document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-category');
+      document.getElementById('confirmActionBtn').setAttribute('data-id', categoryId);
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+      modal.show();
+    }
+    
+    // Save category function
+    document.getElementById('saveCategoryBtn').addEventListener('click', function() {
+      // Get basic form values
+      const categoryId = document.getElementById('categoryId').value;
+      const name = document.getElementById('categoryName').value;
+      const description = document.getElementById('categoryDescription').value || '';
+      const ageGroup = document.getElementById('ageGroup').value;
+      const gender = document.getElementById('gender').value;
+      const maxParticipants = document.getElementById('maxParticipants').value;
+      
+      // Get enhanced form values if they exist
+      let enhancedDescription = description;
+      const additionalFields = [];
+      
+      // Check if enhanced fields exist and add them to the description
+      if (document.getElementById('category-weight-class') && document.getElementById('category-weight-class').value) {
+        additionalFields.push(`Weight Class: ${document.getElementById('category-weight-class').value}`);
+      }
+      
+      if (document.getElementById('category-rules') && document.getElementById('category-rules').value) {
+        additionalFields.push(`Special Rules: ${document.getElementById('category-rules').value}`);
+      }
+      
+      if (document.getElementById('category-fee') && document.getElementById('category-fee').value) {
+        additionalFields.push(`Registration Fee: $${parseFloat(document.getElementById('category-fee').value).toFixed(2)}`);
+      }
+      
+      if (document.getElementById('category-status') && document.getElementById('category-status').value !== 'active') {
+        additionalFields.push(`Status: ${document.getElementById('category-status').value}`);
+      }
+      
+      // Append additional fields to description
+      if (additionalFields.length > 0) {
+        enhancedDescription += (enhancedDescription ? '\n\n' : '') + additionalFields.join('\n\n');
+      }
+      
+      // In a real implementation, we would have API calls here
+      // For now, we'll simulate success and refresh the categories
+      
+      const modal = bootstrap.Modal.getInstance(document.getElementById('categoryModal'));
+      modal.hide();
+      
+      // Show a success message
+      alert(`Category ${categoryId ? 'updated' : 'created'} successfully! (Note: Backend implementation needed)`);
+      
+      // Refresh the categories list
+      loadCategories();
+    });
+    
+    // Event listener for add category button
+    document.getElementById('addCategoryBtn').addEventListener('click', function() {
+      // Reset form
+      document.getElementById('categoryForm').reset();
+      document.getElementById('categoryId').value = '';
+      
+      // Reset enhanced form fields if they exist
+      if (document.getElementById('category-weight-class')) document.getElementById('category-weight-class').value = '';
+      if (document.getElementById('category-rules')) document.getElementById('category-rules').value = '';
+      if (document.getElementById('category-fee')) document.getElementById('category-fee').value = '';
+      if (document.getElementById('category-status')) document.getElementById('category-status').value = 'active';
+      
+      // Set modal title
+      document.getElementById('categoryModalLabel').textContent = 'Add Category';
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+      modal.show();
+    });
+    
+    document.getElementById('uploadTimetableBtn').addEventListener('click', function() {
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('timetableModal'));
+      modal.show();
+    });
+    
+    document.getElementById('editEventBtn').addEventListener('click', function() {
+      // Redirect to edit page
+      window.location.href = `/editEvent/${eventId}`;
+    });
+    
+    document.getElementById('deleteEventBtn').addEventListener('click', function() {
+      document.getElementById('confirmModalLabel').textContent = 'Delete Event';
+      document.getElementById('confirmMessage').textContent = 'Are you sure you want to delete this event? This will permanently remove all event data, categories, and registrations.';
+      
+      // Store action data
+      document.getElementById('confirmActionBtn').setAttribute('data-action', 'delete-event');
+      document.getElementById('confirmActionBtn').setAttribute('data-id', eventId);
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+      modal.show();
+    });
+    
+    // Timetable upload handler
+    document.getElementById('uploadTimetableSubmitBtn').addEventListener('click', function() {
+      // This would be implemented with actual file upload
+      // For now, just close the modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
+      modal.hide();
+      
+      // Show success message
+      alert('Timetable uploaded successfully! (Note: this is just a placeholder, backend implementation needed)');
+      loadTimetable();
+    });
+    
+    // Confirmation action handler
+    document.getElementById('confirmActionBtn').addEventListener('click', function() {
+      const action = this.getAttribute('data-action');
+      const id = this.getAttribute('data-id');
+      
+      // Close modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+      modal.hide();
+      
+      // For now, just show an alert
+      // These would be actual API calls in a real implementation
+      switch(action) {
+        case 'delete-category':
+          alert(`Category deletion API call would happen here for ID: ${id}`);
+          loadCategories();
+          break;
+        case 'delete-event':
+          alert(`Event deletion API call would happen here for ID: ${id}`);
+          // Redirect back to events page after deletion
+          window.location.href = '/events';
+          break;
+        case 'archive-event':
+          alert(`Event archiving API call would happen here for ID: ${id}`);
+          window.location.reload();
+          break;
+      }
+    });
+    
+    // Filters functionality
+    document.getElementById('applyFiltersBtn').addEventListener('click', function() {
+      // This would filter the registrations table in a real implementation
+      alert('Filtering functionality would happen here with the backend implementation');
+    });
+    
+    // Update the Category Modal with enhanced fields while preserving the existing structure
+    const categoryModal = document.getElementById('categoryModal');
+    if (categoryModal) {
+      // Get the original form content
+      const modalBody = categoryModal.querySelector('.modal-body');
+      
+      // Create enhanced modal content
+      const enhancedModalContent = `
+        <form id="categoryForm">
+          <input type="hidden" id="categoryId">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="categoryName" class="form-label">Category Name</label>
+                <input type="text" class="form-control" id="categoryName" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="ageGroup" class="form-label">Age Group</label>
+                <select class="form-select" id="ageGroup" required>
+                  <option value="under_8">Under 8</option>
+                  <option value="under_12">Under 12</option>
+                  <option value="under_14">Under 14</option>
+                  <option value="under_16">Under 16</option>
+                  <option value="under_18">Under 18</option>
+                  <option value="under_21">Under 21</option>
+                  <option value="senior">Senior</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="gender" class="form-label">Gender</label>
+                <select class="form-select" id="gender" required>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="maxParticipants" class="form-label">Max Participants</label>
+                <input type="number" class="form-control" id="maxParticipants" min="1">
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label">Description</label>
+            <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+          </div>
+          
+          <!-- Enhanced Fields -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="category-weight-class" class="form-label">Weight Class</label>
+                <input type="text" class="form-control" id="category-weight-class" placeholder="e.g., -60kg, 60-66kg, +100kg">
+                <small class="form-text text-muted">Format: "min-max" (e.g., 60-66kg) or "+/- value" (e.g., +100kg)</small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="category-fee" class="form-label">Registration Fee*</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" id="category-fee" min="0" step="0.01" required>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="category-rules" class="form-label">Special Rules</label>
+                <textarea class="form-control" id="category-rules" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="category-status" class="form-label">Status</label>
+                <select class="form-select" id="category-status">
+                  <option value="active">Active</option>
+                  <option value="draft">Draft</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </form>
+      `;
+      
+      // Replace modal body content
+      modalBody.innerHTML = enhancedModalContent;
+    }
+  });
 </script>
 
 <script>
@@ -1097,7 +1104,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete category');
-      }
+
+}
       
       const result = await response.json();
       
@@ -1142,5 +1150,6 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
 });
 </script>
+
 </body>
 </html>
