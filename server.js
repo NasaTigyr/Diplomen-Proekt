@@ -1171,6 +1171,9 @@ app.delete('/categories/:categoryId', isAuthenticated, async (req, res) => {
 // Add this route to server.js
 app.put('/user/password', isAuthenticated, controller.changePassword);
 
+// Add this route in server.js
+app.put('/user/profile', isAuthenticated, upload.single('profile_picture'), controller.updateProfile);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

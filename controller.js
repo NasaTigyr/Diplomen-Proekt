@@ -141,12 +141,13 @@ async function register(req, res) {
         const hashedPassword = await bcrypt.hash(password, 10);
         
         // Handle profile picture if uploaded
-        let profilePicturePath = null;
-        if (req.file) {
-            profilePicturePath = '/uploads/profile_picture/' + req.file.filename;
-          console.log('this is the photo path', profilePicturePath); 
-        }
-        
+        // In controller.js, register function
+          let profilePicturePath = null;
+          if (req.file) {
+              // Change this path to be consistent
+              profilePicturePath = '/uploads/' + req.file.filename;
+              console.log('Profile picture saved at:', profilePicturePath);
+          }
         // Insert user into database using your specific query
         const result = await db.query(
             queries.addUser, 
@@ -198,6 +199,7 @@ async function register(req, res) {
         return res.redirect('/register?error=' + encodeURIComponent('An error occurred during registration: ' + error.message));
     }
 }
+
 async function updateProfile(req, res) {
     try {
         // Ensure the user is logged in
@@ -215,6 +217,7 @@ async function updateProfile(req, res) {
             
             // Delete old profile picture if it exists
             if (req.session.user.profile_picture) {
+                const fs = require('fs'); // Make sure fs is imported
                 const oldPicturePath = path.join(__dirname, 'public', req.session.user.profile_picture);
                 if (fs.existsSync(oldPicturePath)) {
                     fs.unlinkSync(oldPicturePath);
@@ -232,14 +235,15 @@ async function updateProfile(req, res) {
         const updatedUserResult = await db.query(queries.getUserById, [userId]);
         const updatedUser = updatedUserResult[0][0];
         
-        // Update session with new user data
+        // Update session with new user data - fix the field names to match your DB
         req.session.user = {
             id: updatedUser.id,
             email: updatedUser.email,
-            first_name: updatedUser.name,
-            last_name: updatedUser.family_name,
-            user_type: updatedUser.role,
-            profile_picture: updatedUser.profile_picture
+            first_name: updatedUser.first_name, // Changed from name
+            last_name: updatedUser.last_name,    // Changed from family_name
+            user_type: updatedUser.user_type,    // Changed from role
+            profile_picture: updatedUser.profile_picture,
+            contact_number: updatedUser.contact_number
         };
         
         return res.status(200).json({ 
@@ -251,6 +255,7 @@ async function updateProfile(req, res) {
         return res.status(500).json({ message: 'An error occurred while updating your profile' });
     }
 }
+
 async function changePassword(req, res) {
     try {
         // Ensure user is logged in
