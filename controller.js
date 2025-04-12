@@ -812,7 +812,28 @@ async function registerUserForCategory(userId, categoryId) {
       throw new Error("Invalid user ID or category ID");
     }
     
-    // Get category details to check max participants
+    // Get user details
+    const [userData] = await db.query(
+      "SELECT id, gender, date_of_birth FROM users WHERE id = ?",
+      [userId]
+    );
+    
+    if (!userData || userData.length === 0) {
+      throw new Error("User not found");
+    }
+    
+    const user = userData[0];
+    
+    // Calculate user's age
+    const birthDate = new Date(user.date_of_birth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    // Get category details
     const [categoryData] = await db.query(
       "SELECT * FROM categories WHERE id = ?",
       [categoryId]
@@ -823,6 +844,40 @@ async function registerUserForCategory(userId, categoryId) {
     }
     
     const category = categoryData[0];
+    
+    // Gender validation
+    if (category.gender !== 'mixed' && category.gender !== user.gender) {
+      throw new Error(`This category is only for ${category.gender} participants`);
+    }
+    
+    // Age group validation logic
+    const ageGroupRestrictions = {
+      'under_8': { minAge: 0, maxAge: 7 },
+      'under_12': { minAge: 8, maxAge: 11 },
+      'under_14': { minAge: 12, maxAge: 13 },
+      'under_16': { minAge: 14, maxAge: 15 }, // Cadet
+      'under_18': { minAge: 16, maxAge: 17 }, // Junior
+      'under_21': { minAge: 18, maxAge: 20 },
+      'senior': { minAge: 21, maxAge: 100 }
+    };
+    
+    // Check if the age falls exactly within the category
+    const restriction = ageGroupRestrictions[category.age_group];
+    if (!restriction || age < restriction.minAge || age > restriction.maxAge) {
+      throw new Error(`You are not eligible for the ${category.age_group} age group`);
+    }
+    
+    // Get category details to check max participants
+    const [eventData] = await db.query(
+      "SELECT * FROM events WHERE id = ?",
+      [category.event_id]
+    );
+    
+    if (!eventData || eventData.length === 0) {
+      throw new Error("Event not found");
+    }
+    
+    const event = eventData[0];
     
     // Check if category has max_participants defined
     if (category.max_participants) {
@@ -848,14 +903,11 @@ async function registerUserForCategory(userId, categoryId) {
       throw new Error("Already registered for this category");
     }
     
-    // Get event_id from the category
-    const eventId = category.event_id;
-    
     // Create registration record
     const currentDate = new Date();
     const [result] = await db.query(
       "INSERT INTO individual_registrations (event_id, athlete_id, category_id, status, registration_date) VALUES (?, ?, ?, ?, ?)",
-      [eventId, userId, categoryId, "pending", currentDate]
+      [category.event_id, userId, categoryId, "pending", currentDate]
     );
     
     // Get the newly created registration

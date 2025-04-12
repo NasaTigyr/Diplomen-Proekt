@@ -1174,6 +1174,25 @@ app.put('/user/password', isAuthenticated, controller.changePassword);
 // Add this route in server.js
 app.put('/user/profile', isAuthenticated, upload.single('profile_picture'), controller.updateProfile);
 
+app.get('/user/profile-data', isAuthenticated, (req, res) => {
+  const userData = req.session.user;
+  
+  // Fetch additional user details including date of birth
+  db.query(
+    'SELECT date_of_birth, gender FROM users WHERE id = ?', 
+    [userData.id]
+  ).then(([results]) => {
+    if (results.length > 0) {
+      userData.date_of_birth = results[0].date_of_birth;
+      userData.gender = results[0].gender;
+    }
+    
+    res.json(userData);
+  }).catch(error => {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ error: 'Failed to fetch user data' });
+  });
+});
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
