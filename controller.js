@@ -1309,7 +1309,6 @@ async function sendClubInvitation(userId, clubId, invitationData) {
         throw error;
     }
 }
-
 async function getClubAthletes(clubId) {
     try {
         const [athletes] = await db.query(`

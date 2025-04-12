@@ -1229,6 +1229,400 @@ app.post('/events/:eventId/upload-timetable', isAuthenticated, upload.single('ti
   }
 });
 
+// Add this to your server.js file
+app.get('/clubs/:id/invitations', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        
+        // Query to get club invitations
+        const [invitations] = await db.query(`
+            SELECT i.id, i.athlete_id, i.message, i.status, i.sent_date, 
+                   u.email, u.first_name, u.last_name
+            FROM club_invitations i 
+            JOIN users u ON i.athlete_id = u.id
+            WHERE i.club_id = ?
+            ORDER BY i.sent_date DESC
+        `, [clubId]);
+        
+        res.json(invitations);
+    } catch (error) {
+        console.error('Error fetching club invitations:', error);
+        res.status(500).json({ error: 'Failed to load invitations' });
+    }
+});
+
+app.post('/clubs/invitations/send', isAuthenticated, async (req, res) => {
+    try {
+        const { club_id, email, message } = req.body;
+        
+        // Check if the club belongs to the user
+        const [club] = await db.query(
+            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
+            [club_id, req.session.user.id]
+        );
+        
+        if (!club || club.length === 0) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+        
+        // Use the controller function
+        await controller.sendClubInvitation(req.session.user.id, club_id, { email, message });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error sending invitation:', error);
+        res.status(500).json({ error: error.message || 'Failed to send invitation' });
+    }
+});
+
+// Join Club page route
+app.get('/joinClub', isAuthenticated, (req, res) => {
+    res.render('joinClub', { user: req.session.user });
+});
+
+// Get user's club invitations
+app.get('/user/invitations', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        
+        // Query to get all invitations for this user with club and coach details
+        const [invitations] = await db.query(`
+            SELECT 
+                i.id, i.club_id, i.message, i.status, i.sent_date,
+                c.name as club_name, c.logo as club_logo,
+                CONCAT(u.first_name, ' ', u.last_name) as coach_name
+            FROM club_invitations i
+            JOIN clubs c ON i.club_id = c.id
+            JOIN users u ON c.coach_id = u.id
+            WHERE i.athlete_id = ?
+            ORDER BY 
+                FIELD(i.status, 'pending', 'accepted', 'rejected', 'expired'),
+                i.sent_date DESC
+        `, [userId]);
+        
+        res.json(invitations);
+    } catch (error) {
+        console.error('Error fetching club invitations:', error);
+        res.status(500).json({ error: 'Failed to load invitations' });
+    }
+});
+
+// Accept club invitation
+app.post('/user/invitations/:id/accept', isAuthenticated, async (req, res) => {
+    try {
+        const invitationId = req.params.id;
+        const userId = req.session.user.id;
+        
+        // Get the invitation to check if it belongs to this user and is pending
+        const [invitation] = await db.query(
+            "SELECT * FROM club_invitations WHERE id = ? AND athlete_id = ? AND status = 'pending'",
+            [invitationId, userId]
+        );
+        
+        if (!invitation || invitation.length === 0) {
+            return res.status(404).json({ error: 'Invitation not found or already processed' });
+        }
+        
+        // Begin transaction
+        await db.query('START TRANSACTION');
+        
+        try {
+            // Update invitation status
+            await db.query(
+                "UPDATE club_invitations SET status = 'accepted', updated_at = NOW() WHERE id = ?",
+                [invitationId]
+            );
+            
+            // Add user to club athletes
+            const clubId = invitation[0].club_id;
+            const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            
+            // Check if already a member (shouldn't happen but just in case)
+            const [existingMember] = await db.query(
+                "SELECT * FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+                [clubId, userId]
+            );
+            
+            if (existingMember.length === 0) {
+                await db.query(
+                    "INSERT INTO club_athletes (club_id, athlete_id, join_date, status, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?)",
+                    [clubId, userId, currentDate, currentDate, currentDate]
+                );
+            } else {
+                // Update existing membership to active
+                await db.query(
+                    "UPDATE club_athletes SET status = 'active', updated_at = ? WHERE club_id = ? AND athlete_id = ?",
+                    [currentDate, clubId, userId]
+                );
+            }
+            
+            // Commit transaction
+            await db.query('COMMIT');
+            
+            res.json({ success: true, message: 'Invitation accepted successfully' });
+        } catch (error) {
+            // Rollback on error
+            await db.query('ROLLBACK');
+            throw error;
+        }
+    } catch (error) {
+        console.error('Error accepting invitation:', error);
+        res.status(500).json({ error: 'Failed to accept invitation' });
+    }
+});
+
+// Decline club invitation
+app.post('/user/invitations/:id/decline', isAuthenticated, async (req, res) => {
+    try {
+        const invitationId = req.params.id;
+        const userId = req.session.user.id;
+        
+        // Get the invitation to check if it belongs to this user and is pending
+        const [invitation] = await db.query(
+            "SELECT * FROM club_invitations WHERE id = ? AND athlete_id = ? AND status = 'pending'",
+            [invitationId, userId]
+        );
+        
+        if (!invitation || invitation.length === 0) {
+            return res.status(404).json({ error: 'Invitation not found or already processed' });
+        }
+        
+        // Update invitation status
+        await db.query(
+            "UPDATE club_invitations SET status = 'rejected', updated_at = NOW() WHERE id = ?",
+            [invitationId]
+        );
+        
+        res.json({ success: true, message: 'Invitation declined successfully' });
+    } catch (error) {
+        console.error('Error declining invitation:', error);
+        res.status(500).json({ error: 'Failed to decline invitation' });
+    }
+});
+
+// Get user's club memberships
+app.get('/user/memberships', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        
+        // Query to get all club memberships for this user
+        const [memberships] = await db.query(`
+            SELECT 
+                ca.id, ca.club_id, ca.status, ca.join_date,
+                c.name as club_name, c.description as club_description, c.logo as club_logo
+            FROM club_athletes ca
+            JOIN clubs c ON ca.club_id = c.id
+            WHERE ca.athlete_id = ?
+            ORDER BY 
+                FIELD(ca.status, 'active', 'pending', 'inactive'),
+                ca.join_date DESC
+        `, [userId]);
+        
+        res.json(memberships);
+    } catch (error) {
+        console.error('Error fetching club memberships:', error);
+        res.status(500).json({ error: 'Failed to load memberships' });
+    }
+});
+
+// Leave a club
+app.post('/user/memberships/:id/leave', isAuthenticated, async (req, res) => {
+    try {
+        const membershipId = req.params.id;
+        const userId = req.session.user.id;
+        
+        // Get the membership to check if it belongs to this user and is active
+        const [membership] = await db.query(
+            "SELECT * FROM club_athletes WHERE id = ? AND athlete_id = ? AND status = 'active'",
+            [membershipId, userId]
+        );
+        
+        if (!membership || membership.length === 0) {
+            return res.status(404).json({ error: 'Membership not found or not active' });
+        }
+        
+        // Delete the membership
+        await db.query(
+            "DELETE FROM club_athletes WHERE id = ?",
+            [membershipId]
+        );
+        
+        res.json({ success: true, message: 'You have left the club successfully' });
+    } catch (error) {
+        console.error('Error leaving club:', error);
+        res.status(500).json({ error: 'Failed to leave club' });
+    }
+});
+
+// Cancel a join request
+app.post('/user/memberships/:id/cancel', isAuthenticated, async (req, res) => {
+    try {
+        const membershipId = req.params.id;
+        const userId = req.session.user.id;
+        
+        // Get the membership to check if it belongs to this user and is pending
+        const [membership] = await db.query(
+            "SELECT * FROM club_athletes WHERE id = ? AND athlete_id = ? AND status = 'pending'",
+            [membershipId, userId]
+        );
+        
+        if (!membership || membership.length === 0) {
+            return res.status(404).json({ error: 'Join request not found or not pending' });
+        }
+        
+        // Delete the pending request
+        await db.query(
+            "DELETE FROM club_athletes WHERE id = ?",
+            [membershipId]
+        );
+        
+        res.json({ success: true, message: 'Join request cancelled successfully' });
+    } catch (error) {
+        console.error('Error cancelling join request:', error);
+        res.status(500).json({ error: 'Failed to cancel join request' });
+    }
+});
+
+// Get all clubs or search clubs
+app.get('/clubs', async (req, res) => {
+    try {
+        const searchTerm = req.query.search || '';
+        let query = `
+            SELECT c.*, u.first_name, u.last_name
+            FROM clubs c
+            JOIN users u ON c.coach_id = u.id
+        `;
+        let params = [];
+        
+        if (searchTerm) {
+            query += `
+                WHERE c.name LIKE ? 
+                OR c.description LIKE ? 
+                OR c.address LIKE ?
+            `;
+            const searchPattern = `%${searchTerm}%`;
+            params = [searchPattern, searchPattern, searchPattern];
+        }
+        
+        query += ' ORDER BY c.name';
+        
+        const [clubs] = await db.query(query, params);
+        
+        // Format the response for the frontend
+        const formattedClubs = clubs.map(club => ({
+            id: club.id,
+            name: club.name,
+            description: club.description,
+            logo: club.logo,
+            address: club.address,
+            phone: club.phone,
+            email: club.email,
+            website: club.website,
+            coach_name: `${club.first_name} ${club.last_name}`,
+            verification_status: club.verification_status || 'pending'
+        }));
+        
+        res.json(formattedClubs);
+    } catch (error) {
+        console.error('Error fetching clubs:', error);
+        res.status(500).json({ error: 'Failed to load clubs' });
+    }
+});
+
+// Get a specific club's details
+app.get('/clubs/:id', async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        
+        const [clubs] = await db.query(`
+            SELECT c.*, u.first_name, u.last_name
+            FROM clubs c
+            JOIN users u ON c.coach_id = u.id
+            WHERE c.id = ?
+        `, [clubId]);
+        
+        if (!clubs || clubs.length === 0) {
+            return res.status(404).json({ error: 'Club not found' });
+        }
+        
+        const club = clubs[0];
+        
+        // Format the response
+        const formattedClub = {
+            id: club.id,
+            name: club.name,
+            description: club.description,
+            logo: club.logo,
+            address: club.address,
+            phone: club.phone,
+            email: club.email,
+            website: club.website,
+            coach_name: `${club.first_name} ${club.last_name}`,
+            verification_status: club.verification_status || 'pending'
+        };
+        
+        res.json(formattedClub);
+    } catch (error) {
+        console.error('Error fetching club details:', error);
+        res.status(500).json({ error: 'Failed to load club details' });
+    }
+});
+
+// Send a club join request
+app.post('/clubs/:id/join', isAuthenticated, async (req, res) => {
+    try {
+        const clubId = req.params.id;
+        const userId = req.session.user.id;
+        const { message } = req.body;
+        
+        // Check if club exists
+        const [clubs] = await db.query(
+            "SELECT * FROM clubs WHERE id = ?",
+            [clubId]
+        );
+        
+        if (!clubs || clubs.length === 0) {
+            return res.status(404).json({ error: 'Club not found' });
+        }
+        
+        // Check if already a member or has a pending request
+        const [existingMembership] = await db.query(
+            "SELECT * FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+            [clubId, userId]
+        );
+        
+        if (existingMembership.length > 0) {
+            return res.status(400).json({ error: 'You already have a membership or pending request for this club' });
+        }
+        
+        // Create join request
+        const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        
+        await db.query(
+            "INSERT INTO club_athletes (club_id, athlete_id, join_date, status, created_at, updated_at) VALUES (?, ?, ?, 'pending', ?, ?)",
+            [clubId, userId, currentDate, currentDate, currentDate]
+        );
+        
+        // If message was provided, store it in a new table (needs to be created)
+        if (message) {
+            try {
+                await db.query(
+                    "INSERT INTO join_request_messages (club_id, athlete_id, message, created_at) VALUES (?, ?, ?, ?)",
+                    [clubId, userId, message, currentDate]
+                );
+            } catch (error) {
+                console.error('Error storing join request message:', error);
+                // Continue without the message if there's an error (table might not exist yet)
+            }
+        }
+        
+        res.json({ success: true, message: 'Join request sent successfully' });
+    } catch (error) {
+        console.error('Error sending join request:', error);
+        res.status(500).json({ error: 'Failed to send join request' });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

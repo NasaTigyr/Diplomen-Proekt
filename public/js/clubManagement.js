@@ -925,6 +925,42 @@ fetch(`/clubs/${clubData.id}/join-requests/${requestId}/approve`, {
  * @param {string} requestId - The request ID
  * @param {string} athleteId - The athlete ID
  */
+
+function approveJoinRequest(requestId, athleteId) {
+    // Show confirmation dialog if needed
+    if (!confirm('Are you sure you want to approve this join request?')) {
+        return;
+    }
+    
+    fetch(`/clubs/${clubData.id}/join-requests/${requestId}/approve`, {
+        method: 'POST'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to approve join request');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Show success message
+        showSuccessMessage('Join request approved successfully');
+        
+        // Refresh join requests
+        loadJoinRequests();
+        
+        // Refresh athletes
+        loadAthletes();
+        
+        // Refresh club statistics
+        loadClubStatistics();
+    })
+    .catch(error => {
+        console.error('Error approving join request:', error);
+        showErrorMessage('Failed to approve join request. Please try again.');
+    });
+}
+
+
 function rejectJoinRequest(requestId, athleteId) {
     // Show confirmation dialog
     if (!confirm('Are you sure you want to reject this join request?')) {
@@ -996,7 +1032,6 @@ function loadInvitations() {
             `;
         });
 }
-
 /**
  * Display invitations
  * @param {Array} invitationsList - The invitations data
@@ -1222,9 +1257,9 @@ function submitVerification() {
     formData.append('club_id', clubData.id);
     
     // Check if at least one document is selected
-    const registrationDoc = form.querySelector('#registration-document').files.length > 0;
-    const coachCert = form.querySelector('#coach-certification').files.length > 0;
-    const federationDoc = form.querySelector('#federation-document').files.length > 0;
+    const registrationDoc = document.getElementById('registration-document').files.length > 0;
+    const coachCert = document.getElementById('coach-certification').files.length > 0;
+    const federationDoc = document.getElementById('federation-document').files.length > 0;
     
     if (!registrationDoc && !coachCert && !federationDoc) {
         showErrorMessage('Please upload at least one verification document');
@@ -1270,7 +1305,6 @@ function submitVerification() {
         submitButton.textContent = originalText;
     });
 }
-
 /**
  * Show loading state
  * @param {string} section - The section being loaded

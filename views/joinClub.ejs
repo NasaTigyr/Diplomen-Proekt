@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join a Club - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Include the navigation header -->
+    <%- include('header', {currentPage: 'joinClub', user: user}); %>
+    
+    <div class="container my-5">
+        <!-- Alert message container (hidden by default) -->
+        <div id="alert-container" class="alert d-none mb-4" role="alert"></div>
+        
+        <div class="row">
+            <div class="col-lg-12 mb-4">
+                <h2>Join a Martial Arts Club</h2>
+                <p class="lead">Connect with clubs, participate in competitions, and track your progress.</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Invitations Section -->
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Club Invitations</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="invitations-container">
+                            <div class="text-center py-3">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading invitations...</span>
+                                </div>
+                                <p>Loading your invitations...</p>
+                            </div>
+                        </div>
+                        
+                        <div id="no-invitations-message" class="alert alert-info text-center d-none">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span>You don't have any club invitations at the moment.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Club Memberships Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">Your Club Memberships</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="memberships-container">
+                            <div class="text-center py-3">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading memberships...</span>
+                                </div>
+                                <p>Loading your club memberships...</p>
+                            </div>
+                        </div>
+                        
+                        <div id="no-memberships-message" class="alert alert-info text-center d-none">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span>You're not a member of any clubs yet.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Find a Club Section -->
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">Find a Club</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="club-search" class="form-control" placeholder="Search clubs by name, location, or sport...">
+                                <button class="btn btn-outline-secondary" type="button" id="club-search-btn">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="clubs-container">
+                            <div class="text-center py-3">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Loading clubs...</span>
+                                </div>
+                                <p>Loading clubs near you...</p>
+                            </div>
+                        </div>
+                        
+                        <div id="no-clubs-message" class="alert alert-info text-center d-none">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span>No clubs found matching your search criteria.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- How to Join Section -->
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">How to Join a Club</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h5>Option 1: Accept an Invitation</h5>
+                            <p>If a club coach has invited you, you can simply accept their invitation.</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Option 2: Request to Join</h5>
+                            <p>Find a club you're interested in and send them a join request.</p>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <h5>Option 3: Create Your Own Club</h5>
+                            <p>If you're a coach, you can <a href="/createClub">create your own club</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Club Details Modal -->
+    <div class="modal fade" id="clubDetailsModal" tabindex="-1" aria-labelledby="clubDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="clubDetailsModalLabel">Club Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div id="club-logo-container" class="mb-3">
+                            <!-- Default placeholder -->
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px;">
+                                <span class="text-white display-4">C</span>
+                            </div>
+                        </div>
+                        <h3 id="club-name">Club Name</h3>
+                        <p id="club-verification-badge"><span class="badge bg-success">Verified</span></p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>About</h5>
+                            <p id="club-description">Club description will appear here...</p>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Contact Information</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Address:</strong> <span id="club-address">123 Main St, City, Country</span></li>
+                                <li><strong>Phone:</strong> <span id="club-phone">555-123-4567</span></li>
+                                <li><strong>Email:</strong> <span id="club-email">club@example.com</span></li>
+                                <li id="club-website-item"><strong>Website:</strong> <span id="club-website">www.clubexample.com</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div id="club-join-request-section" class="mb-3">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Want to join this club? Send a join request and the club coach will review it.
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="join-request-message" class="form-label">Message to Coach (Optional)</label>
+                            <textarea class="form-control" id="join-request-message" rows="3" placeholder="Let the coach know why you want to join this club..."></textarea>
+                        </div>
+                        
+                        <button type="button" id="send-join-request-btn" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send Join Request
+                        </button>
+                    </div>
+                    
+                    <div id="club-already-member-section" class="alert alert-success d-none">
+                        <i class="bi bi-check-circle me-2"></i>
+                        You are already a member of this club.
+                    </div>
+                    
+                    <div id="club-request-pending-section" class="alert alert-warning d-none">
+                        <i class="bi bi-hourglass-split me-2"></i>
+                        Your request to join this club is pending approval.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3 mt-5">
+        <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/joinClub.js"></script>
+</body>
+</html>
