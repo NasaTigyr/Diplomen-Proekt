@@ -813,9 +813,10 @@ async function registerUserForCategory(userId, categoryId) {
       
       // Check if category is already full
       if (participantCount[0].count >= category.max_participants) {
-        throw new Error("This category is full, registration is closed");
+        throw new Error("This category is full. Registration is closed until space becomes available.");
       }
     }
+    
     // Check if already registered
     const [existingReg] = await db.query(
       "SELECT * FROM individual_registrations WHERE athlete_id = ? AND category_id = ?",
@@ -953,9 +954,10 @@ async function updateRegistrationStatus(registrationId, status, userId) {
     
     // Get registration details first to check permissions
     const [registrationDetails] = await db.query(`
-      SELECT r.*, e.creator_id 
+      SELECT r.*, e.creator_id, c.id as category_id, c.max_participants
       FROM individual_registrations r
       JOIN events e ON r.event_id = e.id
+      JOIN categories c ON r.category_id = c.id
       WHERE r.id = ?
     `, [registrationId]);
     
@@ -963,9 +965,28 @@ async function updateRegistrationStatus(registrationId, status, userId) {
       throw new Error('Registration not found');
     }
     
+    const registration = registrationDetails[0];
+    
     // Verify user is the event creator
-    if (registrationDetails[0].creator_id != userId) {
+    if (registration.creator_id != userId) {
       throw new Error('Not authorized to update this registration');
+    }
+    
+    // If changing to approved, check if the category is at max capacity
+    if (status === 'approved' && registration.max_participants) {
+      // Get current approved count
+      const [approvedCountResult] = await db.query(`
+        SELECT COUNT(*) as count 
+        FROM individual_registrations 
+        WHERE category_id = ? AND status = 'approved'
+      `, [registration.category_id]);
+      
+      const currentApprovedCount = approvedCountResult[0].count;
+      
+      // Check if we're already at or over the max (shouldn't exceed but checking anyway)
+      if (currentApprovedCount >= registration.max_participants) {
+        throw new Error('Category is already at maximum capacity. Remove an approved registration first.');
+      }
     }
     
     // Update the registration status

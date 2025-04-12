@@ -531,6 +531,7 @@ app.get('/event/:id/registrations', isAuthenticated, async (req, res) => {
   }
 });
 // Route to update registration status (form submission)
+// Route to update registration status (form submission)
 app.post('/registration/:id/update-status', isAuthenticated, async (req, res) => {
   try {
     const registrationId = req.params.id;
@@ -544,9 +545,11 @@ app.post('/registration/:id/update-status', isAuthenticated, async (req, res) =>
     res.redirect(`/event/${eventId}/registrations?success=Status updated successfully`);
   } catch (error) {
     console.error("Error updating registration status:", error);
-    res.redirect(`/event/${req.body.eventId}/registrations?error=${error.message}`);
+    // Pass the specific error message to the redirect
+    res.redirect(`/event/${req.body.eventId}/registrations?error=${encodeURIComponent(error.message)}`);
   }
 });
+
 // Route to display the edit event page
 app.get('/editEvent/:id', isAuthenticated, async (req, res) => {
   try {

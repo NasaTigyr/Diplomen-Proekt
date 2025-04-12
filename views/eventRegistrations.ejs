@@ -86,8 +86,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <script>
+
+<script>
   document.addEventListener('DOMContentLoaded', function() {
     // Get the registrations data passed from the server
     const registrationsData = <%- JSON.stringify(registrations || []) %>;
@@ -127,14 +127,23 @@
           categoriesMap.set(categoryId, {
             id: categoryId,
             name: categoryName,
+            age_group: registration.age_group,
+            gender: registration.gender,
+            max_participants: null, // Will be set later
             approved: [],
             pending: [],
             rejected: []
           });
         }
         
-        // Add to the appropriate status list
         const category = categoriesMap.get(categoryId);
+        
+        // Update category max_participants if not set yet
+        if (registration.max_participants && category.max_participants === null) {
+          category.max_participants = registration.max_participants;
+        }
+        
+        // Add to the appropriate status list
         switch(registration.status) {
           case 'approved':
             category.approved.push(registration);
@@ -209,9 +218,30 @@
         categoryTitle.textContent = category.name;
         
         const totalCount = category.approved.length + category.pending.length + category.rejected.length;
-        const categoryBadge = document.createElement('span');
-        categoryBadge.className = 'badge bg-light text-dark';
-        categoryBadge.textContent = `${totalCount} participants`;
+        
+        // Create badge with category info
+        const categoryBadge = document.createElement('div');
+        categoryBadge.className = 'd-flex align-items-center';
+        
+        // Add max participant info if available
+        let participantInfo = `${totalCount} participants`;
+        if (category.max_participants) {
+          participantInfo = `${category.approved.length}/${category.max_participants} participants`;
+          
+          // Check if category is full
+          if (category.approved.length >= category.max_participants) {
+            // Create a "Full" badge
+            const fullBadge = document.createElement('span');
+            fullBadge.className = 'badge bg-danger ms-2';
+            fullBadge.textContent = 'FULL';
+            categoryBadge.appendChild(fullBadge);
+          }
+        }
+        
+        const countBadge = document.createElement('span');
+        countBadge.className = 'badge bg-light text-dark';
+        countBadge.textContent = participantInfo;
+        categoryBadge.prepend(countBadge);
         
         headerContent.appendChild(categoryTitle);
         headerContent.appendChild(categoryBadge);
@@ -222,13 +252,18 @@
         const cardBody = document.createElement('div');
         cardBody.className = 'card-body p-0';
         
+        // Check if category is at max capacity
+        const isAtMaxCapacity = category.max_participants && category.approved.length >= category.max_participants;
+        
         // Approved section
         cardBody.appendChild(createStatusSection(
           'approved', 
           'Approved Participants', 
           category.approved, 
           'success', 
-          'check-circle'
+          'check-circle',
+          category.max_participants,
+          isAtMaxCapacity
         ));
         
         // Waiting list (pending) section
@@ -237,7 +272,9 @@
           'Waiting List', 
           category.pending, 
           'warning', 
-          'hourglass-split'
+          'hourglass-split',
+          category.max_participants,
+          isAtMaxCapacity
         ));
         
         // Rejected section
@@ -246,7 +283,9 @@
           'Rejected Registrations', 
           category.rejected, 
           'danger', 
-          'x-circle'
+          'x-circle',
+          category.max_participants,
+          isAtMaxCapacity
         ));
         
         card.appendChild(cardBody);
@@ -258,7 +297,7 @@
     /**
      * Create a status section (approved, pending, rejected)
      */
-    function createStatusSection(statusType, title, registrations, colorClass, icon) {
+    function createStatusSection(statusType, title, registrations, colorClass, icon, maxParticipants, isAtMaxCapacity) {
       const section = document.createElement('div');
       section.className = `${statusType}-section`;
       section.dataset.status = statusType;
@@ -273,11 +312,30 @@
       
       const countBadge = document.createElement('span');
       countBadge.className = `badge bg-${colorClass} ${statusType === 'pending' ? 'text-dark' : ''}`;
-      countBadge.textContent = registrations.length;
+      
+      // If this is the approved section and we have max participants, show count/max
+      if (statusType === 'approved' && maxParticipants) {
+        countBadge.textContent = `${registrations.length}/${maxParticipants}`;
+        
+        // Add capacity indicator
+        if (isAtMaxCapacity) {
+          countBadge.className = 'badge bg-danger'; // Change to red when full
+        }
+      } else {
+        countBadge.textContent = registrations.length;
+      }
       
       header.appendChild(headerTitle);
       header.appendChild(countBadge);
       section.appendChild(header);
+      
+      // Category capacity warning for pending section when category is full
+      if (statusType === 'pending' && isAtMaxCapacity) {
+        const warningAlert = document.createElement('div');
+        warningAlert.className = 'alert alert-danger m-2 mb-0';
+        warningAlert.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <strong>Category is full!</strong> Remove approved participants to approve new ones.';
+        section.appendChild(warningAlert);
+      }
       
       // No registrations message
       if (registrations.length === 0) {
@@ -323,22 +381,39 @@
         
         switch(registration.status) {
           case 'pending':
-            actionButtons = `
-              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
-                <input type="hidden" name="eventId" value="${eventId}">
-                <input type="hidden" name="status" value="approved">
-                <button type="submit" class="btn btn-sm btn-success">
-                  <i class="bi bi-check-circle"></i> Approve
+            // For pending registrations, disable the approve button if at max capacity
+            if (isAtMaxCapacity) {
+              actionButtons = `
+                <button type="button" class="btn btn-sm btn-danger disabled" 
+                  data-bs-toggle="tooltip" title="Category is full! Remove approved participants first.">
+                  <i class="bi bi-x-circle"></i> Category Full
                 </button>
-              </form>
-              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline ms-1">
-                <input type="hidden" name="eventId" value="${eventId}">
-                <input type="hidden" name="status" value="rejected">
-                <button type="submit" class="btn btn-sm btn-danger">
-                  <i class="bi bi-x-circle"></i> Reject
-                </button>
-              </form>
-            `;
+                <form action="/registration/${registration.id}/update-status" method="post" class="d-inline ms-1">
+                  <input type="hidden" name="eventId" value="${eventId}">
+                  <input type="hidden" name="status" value="rejected">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
+                </form>
+              `;
+            } else {
+              actionButtons = `
+                <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
+                  <input type="hidden" name="eventId" value="${eventId}">
+                  <input type="hidden" name="status" value="approved">
+                  <button type="submit" class="btn btn-sm btn-success">
+                    <i class="bi bi-check-circle"></i> Approve
+                  </button>
+                </form>
+                <form action="/registration/${registration.id}/update-status" method="post" class="d-inline ms-1">
+                  <input type="hidden" name="eventId" value="${eventId}">
+                  <input type="hidden" name="status" value="rejected">
+                  <button type="submit" class="btn btn-sm btn-danger">
+                    <i class="bi bi-x-circle"></i> Reject
+                  </button>
+                </form>
+              `;
+            }
             break;
           
           case 'approved':
@@ -354,15 +429,25 @@
             break;
             
           case 'rejected':
-            actionButtons = `
-              <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
-                <input type="hidden" name="eventId" value="${eventId}">
-                <input type="hidden" name="status" value="approved">
-                <button type="submit" class="btn btn-sm btn-outline-success">
-                  <i class="bi bi-check-circle"></i> Approve
+            // For rejected registrations, disable the approve button if at max capacity
+            if (isAtMaxCapacity) {
+              actionButtons = `
+                <button type="button" class="btn btn-sm btn-outline-danger disabled"
+                  data-bs-toggle="tooltip" title="Category is full! Remove approved participants first.">
+                  <i class="bi bi-x-circle"></i> Category Full
                 </button>
-              </form>
-            `;
+              `;
+            } else {
+              actionButtons = `
+                <form action="/registration/${registration.id}/update-status" method="post" class="d-inline">
+                  <input type="hidden" name="eventId" value="${eventId}">
+                  <input type="hidden" name="status" value="approved">
+                  <button type="submit" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-check-circle"></i> Approve
+                  </button>
+                </form>
+              `;
+            }
             break;
         }
         
@@ -441,7 +526,14 @@
         document.getElementById('noRegistrationsMessage').classList.add('d-none');
       }
     }
+    
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
   });
   </script>
+  
 </body>
 </html>
