@@ -768,22 +768,19 @@ async function getTimetableByEventId(eventId) {
       throw new Error("Invalid event ID");
     }
     
-    // Fetch timetable entries from database
-//    const [rows] = await db.query(
-//      "SELECT * FROM timetable_entries WHERE event_id = ?",
-//      [eventId]
-//    );
+    // Fetch timetable file from events table
+    const [rows] = await db.query(
+      "SELECT timetable_file FROM events WHERE id = ?", 
+      [eventId]
+    );
     
-    const [rows] = await db.query(eventQueries.getTimetableFileFromEventId, [eventId]); 
-      
-    
-    return rows; // Return all timetable entries
+    // Return the timetable file path if it exists
+    return rows && rows.length > 0 ? rows : [];
   } catch (error) {
     console.error("Error in getTimetableByEventId:", error);
     throw error;
   }
 }
-
 async function getUserRegistrations(userId) {
   try {
     // Validate userId

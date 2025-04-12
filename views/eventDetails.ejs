@@ -984,59 +984,36 @@ function isEligibleForCategory(category) {
         showError('timetable-container', 'Failed to load timetable. Please try refreshing the page.');
       });
   }
-  
+
   function displayTimetable(entries) {
-    const container = document.getElementById('timetable-container');
-    const noMessage = document.getElementById('no-timetable-message');
-    
+  const container = document.getElementById('timetable-container');
+  const noMessage = document.getElementById('no-timetable-message');
+  
+  container.innerHTML = '';
+  
+  if (!entries || entries.length === 0 || !entries[0].timetable_file) {
     container.innerHTML = '';
-    
-    if (!entries || entries.length === 0) {
-      container.innerHTML = '';
-      noMessage.classList.remove('d-none');
-      return;
-    }
-    
-    noMessage.classList.add('d-none');
-    
-    // Sort entries by start time
-    entries.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-    
-    let html = `
-      <table class="table table -striped">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Title</th>
-            <th>Location</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    
-    entries.forEach(entry => {
-      const startTime = new Date(entry.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const endTime = entry.end_time ? new Date(entry.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-      const date = new Date(entry.start_time).toLocaleDateString();
-      
-      html += `
-        <tr>
-          <td>${date}<br>${startTime}${endTime ? ` - ${endTime}` : ''}</td>
-          <td>${entry.title}</td>
-          <td>${entry.location || 'TBD'}</td>
-          <td>${entry.description || ''}</td>
-        </tr>
-      `;
-    });
-    
-    html += `
-        </tbody>
-      </table>
-    `;
-    
-    container.innerHTML = html;
+    noMessage.classList.remove('d-none');
+    return;
   }
+  
+  noMessage.classList.add('d-none');
+  
+  // Create a download link for the timetable file
+  const html = `
+    <div class="card">
+      <div class="card-body text-center">
+        <h5 class="card-title">Event Timetable</h5>
+        <p class="card-text">A timetable document is available for this event.</p>
+        <a href="${entries[0].timetable_file}" class="btn btn-primary" target="_blank" download>
+          <i class="bi bi-download"></i> Download Timetable
+        </a>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+}
   
   function fetchUserRegistrations() {
     if (!isLoggedIn) return;

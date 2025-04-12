@@ -285,11 +285,12 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="timetableForm">
+        <form id="timetableUploadForm" enctype="multipart/form-data">
           <div class="mb-3">
             <label for="timetableFile" class="form-label">Select File</label>
-            <input class="form-control" type="file" id="timetableFile" accept=".pdf,.docx,.xlsx">
-            <div class="form-text">Accepted formats: PDF, Word, Excel</div>
+            <input class="form-control" type="file" id="timetableFile" name="timetable_file" 
+                   accept=".pdf,.docx,.xlsx,.xls,.csv">
+            <div class="form-text">Accepted formats: PDF, Word, Excel, CSV</div>
           </div>
         </form>
       </div>
@@ -300,7 +301,6 @@
     </div>
   </div>
 </div>
-
     <footer class="bg-light text-center py-3 mt-5">
         <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
@@ -865,16 +865,45 @@ function loadCategories() {
     
     // Timetable upload handler
     document.getElementById('uploadTimetableSubmitBtn').addEventListener('click', function() {
-      // This would be implemented with actual file upload
-      // For now, just close the modal
-      const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
-      modal.hide();
-      
-      // Show success message
-      alert('Timetable uploaded successfully! (Note: this is just a placeholder, backend implementation needed)');
-      loadTimetable();
-    });
+  const fileInput = document.getElementById('timetableFile');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    alert('Please select a file to upload');
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append('timetable_file', file);
+  
+  fetch(`/events/${eventId}/upload-timetable`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.json().then(data => {
+        throw new Error(data.error || 'Failed to upload timetable');
+      });
+    }
+    return response.json();
+  })
+  .then(data => {
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('timetableModal'));
+    modal.hide();
     
+    // Show success message
+    alert('Timetable uploaded successfully');
+    
+    // Refresh timetable display
+    loadTimetable();
+  })
+  .catch(error => {
+    console.error('Upload error:', error);
+    alert(error.message);
+  });
+});
     // Confirmation action handler
     document.getElementById('confirmActionBtn').addEventListener('click', function() {
       const action = this.getAttribute('data-action');

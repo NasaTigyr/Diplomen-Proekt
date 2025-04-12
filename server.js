@@ -1193,6 +1193,42 @@ app.get('/user/profile-data', isAuthenticated, (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user data' });
   });
 });
+
+// Add this to your existing routes in server.js
+app.post('/events/:eventId/upload-timetable', isAuthenticated, upload.single('timetable_file'), async (req, res) => {
+  try {
+    // Check if user is the event creator
+    const eventId = req.params.eventId;
+    const event = await controller.getEventById(eventId);
+    
+    if (!event || parseInt(event.creator_id) !== parseInt(req.session.user.id)) {
+      return res.status(403).json({ error: 'Not authorized to upload timetable' });
+    }
+    
+    // If a file was uploaded
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // Construct the file path
+    const timetableFilePath = '/uploads/' + req.file.filename;
+    
+    // Update the event with the timetable file path
+    await db.query(
+      'UPDATE events SET timetable_file = ? WHERE id = ?', 
+      [timetableFilePath, eventId]
+    );
+    
+    res.json({ 
+      message: 'Timetable uploaded successfully', 
+      filePath: timetableFilePath 
+    });
+  } catch (error) {
+    console.error('Error uploading timetable:', error);
+    res.status(500).json({ error: 'Failed to upload timetable' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
