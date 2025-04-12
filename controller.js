@@ -1124,15 +1124,14 @@ async function updateEvent(eventId, userId, eventData, files) {
   }
 }
 
-async function getCategoryStats(eventId) {
+async function getCategoryStats(eventId, status = null) {
   try {
     // Validate eventId
     if (isNaN(parseInt(eventId))) {
       throw new Error("Invalid event ID");
     }
     
-    // Fetch categories with registration counts
-    const [rows] = await db.query(`
+    let query = `
       SELECT 
         c.id as category_id, 
         COUNT(ir.id) as participant_count 
@@ -1141,12 +1140,22 @@ async function getCategoryStats(eventId) {
       LEFT JOIN 
         individual_registrations ir ON c.id = ir.category_id 
       WHERE 
-        c.event_id = ? 
-      GROUP BY 
-        c.id
-    `, [eventId]);
+        c.event_id = ?`;
     
-    return rows; // Return all category stats
+    const params = [eventId];
+    
+    // Add status filter if provided
+    if (status) {
+      query += ` AND ir.status = ?`;
+      params.push(status);
+    }
+    
+    // Add GROUP BY clause
+    query += ` GROUP BY c.id`;
+    
+    // Execute query
+    const [rows] = await db.query(query, params);
+    return rows;
   } catch (error) {
     console.error("Error in getCategoryStats:", error);
     throw error;

@@ -637,16 +637,19 @@ app.get('/eventDetails/:id/categoryStats', async (req, res) => {
 });
 
 // Add this to your server.js file, near the other API endpoints
+
 app.get('/categories/stats/:eventId', async (req, res) => {
   try {
     const eventId = req.params.eventId;
-    const stats = await controller.getCategoryStats(eventId);
+    const status = req.query.status || null;
+    const stats = await controller.getCategoryStats(eventId, status);
     res.json({ categoryStats: stats });
   } catch (error) {
     console.error("ERROR fetching category statistics:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 // Club Management Routes
 app.get('/clubs/my-club', isAuthenticated, async (req, res) => {
     try {

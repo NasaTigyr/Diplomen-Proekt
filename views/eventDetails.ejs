@@ -425,30 +425,31 @@
       });
   }
   
-  function fetchCategoryStats() {
-    return fetch(`/categories/stats/${eventId}`)
-      .then(response => {
-        if (!response.ok) {
-          console.error('Failed to load participant counts');
-          return { categoryStats: [] };
-        }
-        return response.json();
-      })
-      .then(data => {
-        // Store category statistics in global map for later use
-        statsMap = new Map();
-        if (data.categoryStats) {
-          data.categoryStats.forEach(stat => {
-            statsMap.set(stat.category_id, stat.participant_count);
-          });
-        }
-        return data;
-      })
-      .catch(error => {
-        console.error('Error loading participant counts:', error);
+
+function fetchCategoryStats() {
+  return fetch(`/categories/stats/${eventId}?status=approved`)
+    .then(response => {
+      if (!response.ok) {
+        console.error('Failed to load participant counts');
         return { categoryStats: [] };
-      });
-  }
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Store category statistics in global map for later use
+      statsMap = new Map();
+      if (data.categoryStats) {
+        data.categoryStats.forEach(stat => {
+          statsMap.set(stat.category_id, stat.participant_count);
+        });
+      }
+      return data;
+    })
+    .catch(error => {
+      console.error('Error loading participant counts:', error);
+      return { categoryStats: [] };
+    });
+}
 
   // Function to fetch participants for a category
   async function fetchCategoryParticipants(categoryId) {
