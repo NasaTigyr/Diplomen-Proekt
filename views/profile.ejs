@@ -305,7 +305,7 @@
                 new_password: newPassword,
                 confirm_password: confirmPassword
             };
-            
+
             fetch('/user/password', {
                 method: 'PUT',
                 headers: {
@@ -328,6 +328,7 @@
             .catch(error => {
                 showAlert(error.message, 'danger');
             });
+            
         }
         
         function showAlert(message, type) {

@@ -1167,6 +1167,10 @@ app.delete('/categories/:categoryId', isAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Add this route to server.js
+app.put('/user/password', isAuthenticated, controller.changePassword);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
