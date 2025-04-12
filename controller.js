@@ -613,47 +613,14 @@ async function getEventDetailsPage(req, res) {
   }
 }
 
-//async function registerForCategory(req, res) {
-//  try {
-//    const { categoryId } = req.body;
-//    const userId = req.session.user.id;
-//    
-// const [existingReg] = await db.query(
-//  'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
-//  [categoryId, userId] // Replaced user_id with athlete_id
-//);   
-//    
-//    if (existingReg.length > 0) {
-//      return res.status(400).json({ error: 'Already registered for this category' });
-//    }
-//    
-//    // Create registration
-//    const [result] = await db.query(
-//      'INSERT INTO individual_registrations (category_id, athlete_id, status, registration_date) VALUES (?, ?, ?, ?)',
-//      [categoryId, userId, 'pending', new Date()]
-//    );
-//    
-//    // Get the new registration
-//    const [newReg] = await db.query(
-//      'SELECT * FROM individual_registrations WHERE id = ?',
-//      [result.insertId]
-//    );
-//    
-//    res.status(201).json(newReg[0]);
-//  } catch (error) {
-//    console.error('Registration error:', error);
-//    res.status(500).json({ error: error.message });
-//  }
-//}
-
-  async function registerForCategory(req, res) {
+async function registerForCategory(req, res) {
   try {
     const { categoryId } = req.body;
     const userId = req.session.user.id;
     
-    // First, get the event_id from the category
+    // First, get the category details to check max participants
     const [categoryData] = await db.query(
-      'SELECT event_id FROM categories WHERE id = ?',
+      'SELECT c.*, event_id FROM categories c WHERE id = ?',
       [categoryId]
     );
     
@@ -661,7 +628,22 @@ async function getEventDetailsPage(req, res) {
       return res.status(404).json({ error: 'Category not found' });
     }
     
-    const eventId = categoryData[0].event_id;
+    const category = categoryData[0];
+    const eventId = category.event_id;
+    
+    // Check if category has max_participants defined
+    if (category.max_participants) {
+      // Get current participant count for this category
+      const [participantCount] = await db.query(
+        'SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ?',
+        [categoryId]
+      );
+      
+      // Check if category is already full
+      if (participantCount[0].count >= category.max_participants) {
+        return res.status(400).json({ error: 'This category is full, registration is closed' });
+      }
+    }
     
     // Check if already registered
     const [existingReg] = await db.query(
@@ -810,6 +792,32 @@ async function registerUserForCategory(userId, categoryId) {
       throw new Error("Invalid user ID or category ID");
     }
     
+    // Get category details to check max participants
+    const [categoryData] = await db.query(
+      "SELECT * FROM categories WHERE id = ?",
+      [categoryId]
+    );
+    
+    if (!categoryData || categoryData.length === 0) {
+      throw new Error("Category not found");
+    }
+    
+    const category = categoryData[0];
+    
+    // Check if category has max_participants defined
+    if (category.max_participants) {
+      // Get current participant count for this category
+      const [participantCount] = await db.query(
+        "SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ?",
+        [categoryId]
+      );
+      
+      // Check if category is already full
+      if (participantCount[0].count >= category.max_participants) {
+        throw new Error("This category is full, registration is closed");
+      }
+    }
+    
     // Check if already registered
     const [existingReg] = await db.query(
       "SELECT * FROM individual_registrations WHERE athlete_id = ? AND category_id = ?",
@@ -820,11 +828,14 @@ async function registerUserForCategory(userId, categoryId) {
       throw new Error("Already registered for this category");
     }
     
+    // Get event_id from the category
+    const eventId = category.event_id;
+    
     // Create registration record
     const currentDate = new Date();
     const [result] = await db.query(
-      "INSERT INTO individual_registrations (user_id, category_id, status, registration_date) VALUES (?, ?, ?, ?)",
-      [userId, categoryId, "pending", currentDate]
+      "INSERT INTO individual_registrations (event_id, athlete_id, category_id, status, registration_date) VALUES (?, ?, ?, ?, ?)",
+      [eventId, userId, categoryId, "pending", currentDate]
     );
     
     // Get the newly created registration

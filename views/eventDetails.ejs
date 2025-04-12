@@ -89,6 +89,7 @@
       <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
   const eventId = <%= eventId %>;
   let eventData = null;
@@ -96,6 +97,8 @@
   let timetableEntries = [];
   let userRegistrations = [];
   let isLoading = false;
+  let statsMap = new Map(); // Map to store category ID to participant count
+  
   // Check if user is logged in
   const isLoggedIn = <%= typeof user !== 'undefined' && user ? 'true' : 'false' %>;
   
@@ -155,6 +158,184 @@
         console.error('Error fetching event details:', error);
         showError('event-details', 'Failed to load event details. Please try refreshing the page.');
       });
+  }
+  
+  function updateCategoryRegistrationButtons() {
+    if (!eventData) return;
+    
+    categories.forEach(category => {
+      const actionContainer = document.getElementById(`category-action-${category.id}`);
+      if (!actionContainer) return;
+      
+      // Check if category has reached maximum participants
+      const participantCount = statsMap.get(category.id) || 0;
+      const isCategoryFull = category.max_participants && participantCount >= category.max_participants;
+      
+      if (isLoggedIn) {
+        const registration = userRegistrations.find(reg => reg.category_id === category.id);
+        
+        if (registration) {
+          // User is registered for this category
+          let statusBadge = '';
+          switch(registration.status) {
+            case 'pending':
+              statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
+              break;
+            case 'approved':
+              statusBadge = '<span class="badge bg-success">Approved</span>';
+              break;
+            case 'rejected':
+              statusBadge = '<span class="badge bg-danger">Rejected</span>';
+              break;
+            default:
+              statusBadge = '<span class="badge bg-secondary">Unknown Status</span>';
+          }
+          
+          actionContainer.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                ${statusBadge} You are registered for this category
+              </div>
+              <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">
+                Cancel Registration
+              </button>
+            </div>
+          `;
+        } else {
+          // User is not registered
+          const now = new Date();
+          const regStartDate = new Date(eventData.registration_start);
+          const regEndDate = new Date(eventData.registration_end);
+          
+          if (now >= regStartDate && now <= regEndDate) {
+            if (isCategoryFull) {
+              // Category is full - disable registration
+              actionContainer.innerHTML = `
+                <button class="btn btn-danger btn-sm" disabled>
+                  Category Full
+                </button>
+              `;
+            } else {
+              // Category has space - show normal register button
+              actionContainer.innerHTML = `
+                <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">
+                  Register
+                </button>
+              `;
+            }
+          } else if (now < regStartDate) {
+            actionContainer.innerHTML = `
+              <button class="btn btn-secondary btn-sm" disabled>
+                Registration Not Open Yet
+              </button>
+            `;
+          } else {
+            actionContainer.innerHTML = `
+              <button class="btn btn-secondary btn-sm" disabled>
+                Registration Closed
+              </button>
+            `;
+          }
+        }
+      } else {
+        // User is not logged in
+        if (isCategoryFull) {
+          actionContainer.innerHTML = `
+            <button class="btn btn-danger btn-sm" disabled>
+              Category Full
+            </button>
+          `;
+        } else {
+          actionContainer.innerHTML = `
+            <a href="/login?redirect=/eventDetails/${eventId}" class="btn btn-outline-primary btn-sm">
+              Login to Register
+            </a>
+          `;
+        }
+      }
+    });
+  }
+  
+  function updateRegistrationSection() {
+    if (!eventData) return;
+    
+    const registrationBody = document.getElementById('registration-body');
+    const now = new Date();
+    const regStartDate = new Date(eventData.registration_start);
+    const regEndDate = new Date(eventData.registration_end);
+    
+    let html = '';
+    
+    if (now < regStartDate) {
+      html = `
+        <div class="alert alert-warning">
+          Registration for this event has not opened yet. Registration will open on ${regStartDate.toLocaleDateString()}.
+        </div>
+      `;
+    } else if (now > regEndDate) {
+      html = `
+        <div class="alert alert-danger">
+          Registration for this event is closed. Registration closed on ${regEndDate.toLocaleDateString()}.
+        </div>
+      `;
+    } else {
+      html = `
+        <div class="alert alert-success">
+          Registration is open! Select a category above to register.
+        </div>
+      `;
+    }
+    
+    // Add user registrations if logged in
+    if (isLoggedIn) {
+      if (userRegistrations && userRegistrations.length > 0) {
+        html += `
+          <h5 class="mt-3">Your Registrations</h5>
+          <ul class="list-group">
+        `;
+        
+        userRegistrations.forEach(reg => {
+          const category = categories.find(c => c.id === reg.category_id);
+          let statusBadge = '';
+          
+          switch(reg.status) {
+            case 'pending':
+              statusBadge = '<span class="badge bg-warning">Pending</span>';
+              break;
+            case 'approved':
+              statusBadge = '<span class="badge bg-success">Approved</span>';
+              break;
+            case 'rejected':
+              statusBadge = '<span class="badge bg-danger">Rejected</span>';
+              break;
+            default:
+              statusBadge = '<span class="badge bg-secondary">Unknown</span>';
+          }
+          
+          html += `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              ${category ? category.name : 'Unknown Category'}
+              <div>
+                ${statusBadge}
+                <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelRegistration(${reg.id})">
+                  Cancel
+                </button>
+              </div>
+            </li>
+          `;
+        });
+        
+        html += '</ul>';
+      }
+    } else {
+      html += `
+        <div class="alert alert-info mt-3">
+          Please <a href="/login?redirect=/eventDetails/${eventId}">log in</a> to register for this event.
+        </div>
+      `;
+    }
+    
+    registrationBody.innerHTML = html;
   }
   
   function displayEventDetails(event) {
@@ -253,25 +434,35 @@
         }
         return response.json();
       })
+      .then(data => {
+        // Store category statistics in global map for later use
+        statsMap = new Map();
+        if (data.categoryStats) {
+          data.categoryStats.forEach(stat => {
+            statsMap.set(stat.category_id, stat.participant_count);
+          });
+        }
+        return data;
+      })
       .catch(error => {
         console.error('Error loading participant counts:', error);
         return { categoryStats: [] };
       });
   }
 
-// Function to fetch participants for a category
-async function fetchCategoryParticipants(categoryId) {
-  try {
-    const response = await fetch(`/public/category/${categoryId}/participants`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch participants');
+  // Function to fetch participants for a category
+  async function fetchCategoryParticipants(categoryId) {
+    try {
+      const response = await fetch(`/public/category/${categoryId}/participants`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch participants');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      return [];
     }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching participants:', error);
-    return [];
   }
-}
 
   // Function to create participants modal
   function createParticipantsModal(participants, categoryName) {
@@ -602,163 +793,33 @@ async function fetchCategoryParticipants(categoryId) {
       });
   }
   
-  function updateCategoryRegistrationButtons() {
-    if (!eventData) return;
-    
-    categories.forEach(category => {
-      const actionContainer = document.getElementById(`category-action-${category.id}`);
-      if (!actionContainer) return;
-      
-      if (isLoggedIn) {
-        const registration = userRegistrations.find(reg => reg.category_id === category.id);
-        
-        if (registration) {
-          // User is registered for this category
-          let statusBadge = '';
-          switch(registration.status) {
-            case 'pending':
-              statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
-              break;
-            case 'approved':
-              statusBadge = '<span class="badge bg-success">Approved</span>';
-              break;
-            case 'rejected':
-              statusBadge = '<span class="badge bg-danger">Rejected</span>';
-              break;
-            default:
-              statusBadge = '<span class="badge bg-secondary">Unknown Status</span>';
-          }
-          
-          actionContainer.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                ${statusBadge} You are registered for this category
-              </div>
-              <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">
-                Cancel Registration
-              </button>
-            </div>
-          `;
-        } else {
-          // User is not registered
-          const now = new Date();
-          const regStartDate = new Date(eventData.registration_start);
-          const regEndDate = new Date(eventData.registration_end);
-          
-          if (now >= regStartDate && now <= regEndDate) {
-            actionContainer.innerHTML = `
-              <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">
-                Register
-              </button>
-            `;
-          } else if (now < regStartDate) {
-            actionContainer.innerHTML = `
-              <button class="btn btn-secondary btn-sm" disabled>
-                Registration Not Open Yet
-              </button>
-            `;
-          } else {
-            actionContainer.innerHTML = `
-              <button class="btn btn-secondary btn-sm" disabled>
-                Registration Closed
-              </button>
-            `;
-          }
-        }
-      } else {
-        actionContainer.innerHTML = `
-          <a href="/login?redirect=/eventDetails/${eventId}" class="btn btn-outline-primary btn-sm">
-            Login to Register
-          </a>
-        `;
-      }
-    });
-  }
-  
-  function updateRegistrationSection() {
-    if (!eventData) return;
-    
-    const registrationBody = document.getElementById('registration-body');
-    const now = new Date();
-    const regStartDate = new Date(eventData.registration_start);
-    const regEndDate = new Date(eventData.registration_end);
-    
-    let html = '';
-    
-    if (now < regStartDate) {
-      html = `
-        <div class="alert alert-warning">
-          Registration for this event has not opened yet. Registration will open on ${regStartDate.toLocaleDateString()}.
-        </div>
-      `;
-    } else if (now > regEndDate) {
-      html = `
-        <div class="alert alert-danger">
-          Registration for this event is closed. Registration closed on ${regEndDate.toLocaleDateString()}.
-        </div>
-      `;
-    } else {
-      html = `
-        <div class="alert alert-success">
-          Registration is open! Select a category above to register.
-        </div>
-      `;
-    }
-    
-    // Add user registrations if logged in
-    if (isLoggedIn) {
-      if (userRegistrations && userRegistrations.length > 0) {
-        html += `
-          <h5 class="mt-3">Your Registrations</h5>
-          <ul class="list-group">
-        `;
-        
-        userRegistrations.forEach(reg => {
-          const category = categories.find(c => c.id === reg.category_id);
-          let statusBadge = '';
-          
-          switch(reg.status) {
-            case 'pending':
-              statusBadge = '<span class="badge bg-warning">Pending</span>';
-              break;
-            case 'approved':
-              statusBadge = '<span class="badge bg-success">Approved</span>';
-              break;
-            case 'rejected':
-              statusBadge = '<span class="badge bg-danger">Rejected</span>';
-              break;
-            default:
-              statusBadge = '<span class="badge bg-secondary">Unknown</span>';
-          }
-          
-          html += `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              ${category ? category.name : 'Unknown Category'}
-              <div>
-                ${statusBadge}
-                <button class="btn btn-sm btn-outline-danger ms-2" onclick="cancelRegistration(${reg.id})">
-                  Cancel
-                </button>
-              </div>
-            </li>
-          `;
-        });
-        
-        html += '</ul>';
-      }
-    } else {
-      html += `
-        <div class="alert alert-info mt-3">
-          Please <a href="/login?redirect=/eventDetails/${eventId}">log in</a> to register for this event.
-        </div>
-      `;
-    }
-    
-    registrationBody.innerHTML = html;
-  }
-  
   function registerForCategory(categoryId) {
     if (isLoading) return;
+    
+    // Add check for category being full before attempting registration
+    const category = categories.find(c => c.id === categoryId);
+    if (category && category.max_participants) {
+      const participantCount = statsMap.get(categoryId) || 0;
+      if (participantCount >= category.max_participants) {
+        // Show an alert that category is full
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.innerHTML = `
+          Sorry, this category is now full. Please select another category.
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.getElementById('event-details').insertAdjacentElement('beforebegin', alertDiv);
+        
+        // Auto dismiss alert after 5 seconds
+        setTimeout(() => {
+          alertDiv.classList.remove('show');
+          setTimeout(() => alertDiv.remove(), 500);
+        }, 5000);
+        
+        return; // Stop the registration process
+      }
+    }
+    
     isLoading = true;
     
     if (!isLoggedIn) {
@@ -872,7 +933,7 @@ async function fetchCategoryParticipants(categoryId) {
         })
       })
       .then(response => {
-        if (!response.ok) {
+if (!response.ok) {
           throw new Error('Failed to cancel registration');
         }
         return response.json();
@@ -923,5 +984,6 @@ async function fetchCategoryParticipants(categoryId) {
     }
   }
 </script>
+
   </body>
 </html>
