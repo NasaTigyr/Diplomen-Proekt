@@ -57,30 +57,31 @@
                             <button id="edit-profile-btn" class="btn btn-sm btn-outline-primary">Edit</button>
                         </div>
                         <div class="card-body">
-                            <form id="profile-form">
+                            <!-- Important: Use enctype="multipart/form-data" for file uploads -->
+                            <form id="profile-form" enctype="multipart/form-data">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="first_name" class="form-label">First Name</label>
-                                        <input type="text" class="form-control" id="first_name" value="<%= user.first_name %>" disabled>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="<%= user.first_name %>" disabled>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="last_name" class="form-label">Last Name</label>
-                                        <input type="text" class="form-control" id="last_name" value="<%= user.last_name %>" disabled>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="<%= user.last_name %>" disabled>
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="email" class="form-label">Email</label>
-                                    <input type="email" class="form-control" id="email" value="<%= user.email %>" disabled>
+                                    <input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" disabled>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="date_of_birth" class="form-label">Date of Birth</label>
-                                        <input type="date" class="form-control" id="date_of_birth" value="<%= user.date_of_birth ? (typeof user.date_of_birth === 'string' ? user.date_of_birth.split('T')[0] : new Date(user.date_of_birth).toISOString().split('T')[0]) : '' %>" disabled>
+                                        <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="<%= user.date_of_birth ? (typeof user.date_of_birth === 'string' ? user.date_of_birth.split('T')[0] : new Date(user.date_of_birth).toISOString().split('T')[0]) : '' %>" disabled>
                                         <small class="form-text text-muted">Used for age category assignments</small>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="gender" class="form-label">Gender</label>
-                                        <select class="form-select" id="gender" disabled>
+                                        <select class="form-select" id="gender" name="gender" disabled>
                                             <option value="male" <%= user.gender === 'male' ? 'selected' : '' %>>Male</option>
                                             <option value="female" <%= user.gender === 'female' ? 'selected' : '' %>>Female</option>
                                         </select>
@@ -88,11 +89,11 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="contact_number" class="form-label">Contact Number</label>
-                                    <input type="tel" class="form-control" id="contact_number" value="<%= user.contact_number || '' %>" placeholder="<%= user.contact_numbe ? user.contact_number : 'No number provided' %>" disabled>
+                                    <input type="tel" class="form-control" id="contact_number" name="contact_number" value="<%= user.contact_number || '' %>" placeholder="<%= user.contact_number ? user.contact_number : 'No number provided' %>" disabled>
                                 </div>
                                 <div class="mb-3">
                                     <label for="profile_picture" class="form-label">Profile Picture</label>
-                                    <input type="file" class="form-control" id="profile_picture" disabled>
+                                    <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*" disabled>
                                     <% if (user.profile_picture) { %>
                                         <div class="mt-2">
                                             <img src="<%= user.profile_picture %>" alt="Current profile picture" class="img-thumbnail" style="max-height: 100px;">
@@ -147,6 +148,14 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Store original user data to be used when canceling edits
+        const originalUserData = {
+            first_name: '<%= user.first_name %>',
+            last_name: '<%= user.last_name %>',
+            email: '<%= user.email %>',
+            contact_number: '<%= user.contact_number || "" %>'
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             // Tab navigation
             document.getElementById('profile-tab').addEventListener('click', showProfileSection);
@@ -202,10 +211,11 @@
                 saveButton.disabled = true;
                 
                 // Reset form values
-                document.getElementById('first_name').value = '<%= user.first_name %>';
-                document.getElementById('last_name').value = '<%= user.last_name %>';
-                document.getElementById('email').value = '<%= user.email %>';
-                document.getElementById('contact_number').value = '<%= user.contact_number || "" %>';
+                document.getElementById('first_name').value = originalUserData.first_name;
+                document.getElementById('last_name').value = originalUserData.last_name;
+                document.getElementById('email').value = originalUserData.email;
+                document.getElementById('contact_number').value = originalUserData.contact_number;
+                document.getElementById('profile_picture').value = '';
                 
                 // Disable inputs
                 inputs.forEach(input => {
@@ -230,22 +240,13 @@
         function updateProfile(e) {
             e.preventDefault();
             
-            const data = {
-                first_name: document.getElementById('first_name').value,
-                last_name: document.getElementById('last_name').value,
-                email: document.getElementById('email').value,
-                contact_number: document.getElementById('contact_number').value
-            };
+            const formData = new FormData();
+            formData.append('first_name', document.getElementById('first_name').value);
+            formData.append('last_name', document.getElementById('last_name').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('contact_number', document.getElementById('contact_number').value);
             
             const profilePicture = document.getElementById('profile_picture').files[0];
-            
-            // Create FormData for file upload
-            const formData = new FormData();
-            formData.append('first_name', data.first_name);
-            formData.append('last_name', data.last_name);
-            formData.append('email', data.email);
-            formData.append('contact_number', data.contact_number);
-            
             if (profilePicture) {
                 formData.append('profile_picture', profilePicture);
             }
@@ -278,7 +279,7 @@
                 }, 1500);
             })
             .catch(error => {
-                showAlert(error.message, 'danger');
+                showAlert(error.message || 'An error occurred while updating your profile', 'danger');
             });
         }
         
@@ -326,9 +327,8 @@
                 document.getElementById('password-form').reset();
             })
             .catch(error => {
-                showAlert(error.message, 'danger');
+                showAlert(error.message || 'An error occurred while changing your password', 'danger');
             });
-            
         }
         
         function showAlert(message, type) {

@@ -199,6 +199,7 @@ async function register(req, res) {
         return res.redirect('/register?error=' + encodeURIComponent('An error occurred during registration: ' + error.message));
     }
 }
+// This is the updated updateProfile function for controller.js
 
 async function updateProfile(req, res) {
     try {
@@ -210,17 +211,30 @@ async function updateProfile(req, res) {
         const userId = req.session.user.id;
         const { first_name, last_name, email, contact_number } = req.body;
         
+        // Validate required fields
+        if (!first_name || !last_name || !email) {
+            return res.status(400).json({ message: 'Name and email are required fields' });
+        }
+        
         // Handle profile picture if uploaded
         let profilePicturePath = req.session.user.profile_picture;
+        
         if (req.file) {
             profilePicturePath = '/uploads/' + req.file.filename;
+            console.log('New profile picture saved at:', profilePicturePath);
             
             // Delete old profile picture if it exists
             if (req.session.user.profile_picture) {
-                const fs = require('fs'); // Make sure fs is imported
-                const oldPicturePath = path.join(__dirname, 'public', req.session.user.profile_picture);
-                if (fs.existsSync(oldPicturePath)) {
-                    fs.unlinkSync(oldPicturePath);
+                try {
+                    const fs = require('fs');
+                    const oldPicturePath = path.join(__dirname, 'public', req.session.user.profile_picture);
+                    if (fs.existsSync(oldPicturePath)) {
+                        fs.unlinkSync(oldPicturePath);
+                        console.log('Deleted old profile picture:', req.session.user.profile_picture);
+                    }
+                } catch (e) {
+                    console.error('Error deleting old profile picture:', e);
+                    // Continue with update even if delete fails
                 }
             }
         }
@@ -235,15 +249,17 @@ async function updateProfile(req, res) {
         const updatedUserResult = await db.query(queries.getUserById, [userId]);
         const updatedUser = updatedUserResult[0][0];
         
-        // Update session with new user data - fix the field names to match your DB
+        // Update session with new user data
         req.session.user = {
             id: updatedUser.id,
             email: updatedUser.email,
-            first_name: updatedUser.first_name, // Changed from name
-            last_name: updatedUser.last_name,    // Changed from family_name
-            user_type: updatedUser.user_type,    // Changed from role
+            first_name: updatedUser.first_name,
+            last_name: updatedUser.last_name,
+            user_type: updatedUser.user_type,
             profile_picture: updatedUser.profile_picture,
-            contact_number: updatedUser.contact_number
+            contact_number: updatedUser.contact_number,
+            date_of_birth: updatedUser.date_of_birth,
+            gender: updatedUser.gender
         };
         
         return res.status(200).json({ 
