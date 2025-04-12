@@ -1308,6 +1308,7 @@ app.get('/user/invitations', isAuthenticated, async (req, res) => {
 });
 
 // Accept club invitation
+// Accept club invitation
 app.post('/user/invitations/:id/accept', isAuthenticated, async (req, res) => {
     try {
         const invitationId = req.params.id;
@@ -1356,10 +1357,19 @@ app.post('/user/invitations/:id/accept', isAuthenticated, async (req, res) => {
                 );
             }
             
+            // Update user_type to 'athlete' in users table
+            await db.query(
+                "UPDATE users SET user_type = 'athlete' WHERE id = ?",
+                [userId]
+            );
+            
+            // Update session with new user type
+            req.session.user.user_type = 'athlete';
+            
             // Commit transaction
             await db.query('COMMIT');
             
-            res.json({ success: true, message: 'Invitation accepted successfully' });
+            res.json({ success: true, message: 'Invitation accepted successfully', user_type: 'athlete' });
         } catch (error) {
             // Rollback on error
             await db.query('ROLLBACK');
@@ -1370,7 +1380,6 @@ app.post('/user/invitations/:id/accept', isAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Failed to accept invitation' });
     }
 });
-
 // Decline club invitation
 app.post('/user/invitations/:id/decline', isAuthenticated, async (req, res) => {
     try {
