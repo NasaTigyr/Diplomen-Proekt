@@ -176,102 +176,155 @@
         showError('event-details', 'Failed to load event details. Please try refreshing the page.');
       });
   }
+
+function isEligibleForCategory(category) {
+  // Not logged in, can't determine eligibility
+  if (!isLoggedIn || !userData) {
+    return true; // We'll handle this differently in the UI
+  }
   
+  // Calculate user's age based on birth date
+  const birthDate = new Date(userData.date_of_birth);
+  if (!birthDate || isNaN(birthDate.getTime())) {
+    return false; // Invalid birth date
+  }
+  
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  // Age group validation
+  const ageGroupRestrictions = {
+    'under_8': { minAge: 0, maxAge: 7 },
+    'under_12': { minAge: 8, maxAge: 11 },
+    'under_14': { minAge: 12, maxAge: 13 },
+    'under_16': { minAge: 12, maxAge: 15 }, // Cadet
+    'under_18': { minAge: 16, maxAge: 17 }, // Junior
+    'under_21': { minAge: 16, maxAge: 20 },
+    'senior': { minAge: 18, maxAge: 100 }
+  };
+  
+  // Check age eligibility
+  const restriction = ageGroupRestrictions[category.age_group];
+  if (!restriction || age < restriction.minAge || age > restriction.maxAge) {
+    return false; // Not eligible by age
+  }
+  
+  // Gender validation
+  if (category.gender !== 'mixed' && category.gender !== userData.gender) {
+    return false; // Not eligible by gender
+  }
+  
+  return true; // Eligible
+}
+
   function updateCategoryRegistrationButtons() {
-    if (!eventData) return;
+  if (!eventData) return;
+  
+  categories.forEach(category => {
+    const actionContainer = document.getElementById(`category-action-${category.id}`);
+    if (!actionContainer) return;
     
-    categories.forEach(category => {
-      const actionContainer = document.getElementById(`category-action-${category.id}`);
-      if (!actionContainer) return;
+    // Check if category has reached maximum participants
+    const participantCount = statsMap.get(category.id) || 0;
+    const isCategoryFull = category.max_participants && participantCount >= category.max_participants;
+    
+    if (isLoggedIn) {
+      const registration = userRegistrations.find(reg => reg.category_id === category.id);
       
-      // Check if category has reached maximum participants
-      const participantCount = statsMap.get(category.id) || 0;
-      const isCategoryFull = category.max_participants && participantCount >= category.max_participants;
-      
-      if (isLoggedIn) {
-        const registration = userRegistrations.find(reg => reg.category_id === category.id);
+      if (registration) {
+        // User is registered for this category
+        let statusBadge = '';
+        switch(registration.status) {
+          case 'pending':
+            statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
+            break;
+          case 'approved':
+            statusBadge = '<span class="badge bg-success">Approved</span>';
+            break;
+          case 'rejected':
+            statusBadge = '<span class="badge bg-danger">Rejected</span>';
+            break;
+          default:
+            statusBadge = '<span class="badge bg-secondary">Unknown Status</span>';
+        }
         
-        if (registration) {
-          // User is registered for this category
-          let statusBadge = '';
-          switch(registration.status) {
-            case 'pending':
-              statusBadge = '<span class="badge bg-warning">Pending Approval</span>';
-              break;
-            case 'approved':
-              statusBadge = '<span class="badge bg-success">Approved</span>';
-              break;
-            case 'rejected':
-              statusBadge = '<span class="badge bg-danger">Rejected</span>';
-              break;
-            default:
-              statusBadge = '<span class="badge bg-secondary">Unknown Status</span>';
-          }
-          
-          actionContainer.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                ${statusBadge} You are registered for this category
-              </div>
-              <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">
-                Cancel Registration
-              </button>
+        actionContainer.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              ${statusBadge} You are registered for this category
             </div>
-          `;
-        } else {
-          // User is not registered
-          const now = new Date();
-          const regStartDate = new Date(eventData.registration_start);
-          const regEndDate = new Date(eventData.registration_end);
-          
-          if (now >= regStartDate && now <= regEndDate) {
-            if (isCategoryFull) {
-              // Category is full - disable registration
-              actionContainer.innerHTML = `
-                <button class="btn btn-danger btn-sm" disabled>
-                  Category Full
-                </button>
-              `;
-            } else {
-              // Category has space - show normal register button
-              actionContainer.innerHTML = `
-                <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">
-                  Register
-                </button>
-              `;
-            }
-          } else if (now < regStartDate) {
+            <button class="btn btn-sm btn-outline-danger" onclick="cancelRegistration(${registration.id})">
+              Cancel Registration
+            </button>
+          </div>
+        `;
+      } else {
+        // User is not registered - check if they are eligible
+        const isEligible = isEligibleForCategory(category);
+        
+        const now = new Date();
+        const regStartDate = new Date(eventData.registration_start);
+        const regEndDate = new Date(eventData.registration_end);
+        
+        if (now >= regStartDate && now <= regEndDate) {
+          if (isCategoryFull) {
+            // Category is full - disable registration
+            actionContainer.innerHTML = `
+              <button class="btn btn-danger btn-sm" disabled>
+                Category Full
+              </button>
+            `;
+          } else if (!isEligible) {
+            // User is not eligible - show ineligible message
             actionContainer.innerHTML = `
               <button class="btn btn-secondary btn-sm" disabled>
-                Registration Not Open Yet
+                Not Eligible
               </button>
             `;
           } else {
+            // Category has space and user is eligible - show normal register button
             actionContainer.innerHTML = `
-              <button class="btn btn-secondary btn-sm" disabled>
-                Registration Closed
+              <button class="btn btn-primary btn-sm" onclick="registerForCategory(${category.id})">
+                Register
               </button>
             `;
           }
-        }
-      } else {
-        // User is not logged in
-        if (isCategoryFull) {
+        } else if (now < regStartDate) {
           actionContainer.innerHTML = `
-            <button class="btn btn-danger btn-sm" disabled>
-              Category Full
+            <button class="btn btn-secondary btn-sm" disabled>
+              Registration Not Open Yet
             </button>
           `;
         } else {
           actionContainer.innerHTML = `
-            <a href="/login?redirect=/eventDetails/${eventId}" class="btn btn-outline-primary btn-sm">
-              Login to Register
-            </a>
+            <button class="btn btn-secondary btn-sm" disabled>
+              Registration Closed
+            </button>
           `;
         }
       }
-    });
-  }
+    } else {
+      // User is not logged in
+      if (isCategoryFull) {
+        actionContainer.innerHTML = `
+          <button class="btn btn-danger btn-sm" disabled>
+            Category Full
+          </button>
+        `;
+      } else {
+        actionContainer.innerHTML = `
+          <a href="/login?redirect=/eventDetails/${eventId}" class="btn btn-outline-primary btn-sm">
+            Login to Register
+          </a>
+        `;
+      }
+    }
+  });
+}
   
   function validateRegistration(category) {
     // Check if user is logged in
@@ -760,132 +813,155 @@
     const modalInstance = new bootstrap.Modal(modal);
     modalInstance.show();
   }
-  
+
   function displayCategories(categories) {
-    const container = document.getElementById('categories-container');
-    const noMessage = document.getElementById('no-categories-message');
-    
+  const container = document.getElementById('categories-container');
+  const noMessage = document.getElementById('no-categories-message');
+  
+  container.innerHTML = '';
+  
+  if (!categories || categories.length === 0) {
     container.innerHTML = '';
-    
-    if (!categories || categories.length === 0) {
-      container.innerHTML = '';
-      noMessage.classList.remove('d-none');
-      return;
+    noMessage.classList.remove('d-none');
+    return;
+  }
+  
+  // First, fetch category statistics
+  fetchCategoryStats().then(data => {
+    // Create a map of category_id -> participant_count for easy lookup
+    if (data.categoryStats) {
+      data.categoryStats.forEach(stat => {
+        statsMap.set(stat.category_id, stat.participant_count);
+      });
     }
     
-    // First, fetch category statistics
-    fetchCategoryStats().then(data => {
-      // Create a map of category_id -> participant_count for easy lookup
-      const statsMap = new Map();
-      if (data.categoryStats) {
-        data.categoryStats.forEach(stat => {
-          statsMap.set(stat.category_id, stat.participant_count);
-        });
+    noMessage.classList.add('d-none');
+    
+    // Sort categories by eligibility (if user is logged in)
+    if (isLoggedIn && userData) {
+      // First eligible categories, then non-eligible ones
+      categories.sort((a, b) => {
+        const aEligible = isEligibleForCategory(a);
+        const bEligible = isEligibleForCategory(b);
+        
+        if (aEligible && !bEligible) return -1;
+        if (!aEligible && bEligible) return 1;
+        return 0; // Both eligible or both not eligible, maintain original order
+      });
+    }
+    
+    let html = '<div class="list-group">';
+    
+    categories.forEach(category => {
+      // Determine if user is eligible for this category
+      const isEligible = isEligibleForCategory(category);
+      
+      // Add a visual indicator for eligibility
+      const eligibilityClass = isLoggedIn && userData ? (isEligible ? '' : 'border-start border-5 border-secondary bg-light') : '';
+      
+      // Determine age group label
+      const ageGroupLabels = {
+        'under_8': 'Under 8',
+        'under_12': 'Under 12',
+        'under_14': 'Under 14',
+        'under_16': 'Under 16 (Cadet)',
+        'under_18': 'Under 18 (Junior)',
+        'under_21': 'Under 21',
+        'senior': 'Senior'
+      };
+      
+      const ageGroup = ageGroupLabels[category.age_group] || category.age_group;
+      
+      // Determine gender label
+      const genderLabel = {
+        'male': 'Men',
+        'female': 'Women',
+        'mixed': 'Mixed'
+      }[category.gender] || category.gender;
+      
+      // Get participant count from stats map or default to 0
+      const participantCount = statsMap.get(category.id) || 0;
+      
+      // Determine badge color based on registration status
+      let badgeClass = 'bg-primary';
+      if (category.max_participants) {
+        if (participantCount >= category.max_participants) {
+          badgeClass = 'bg-danger'; // Full
+        } else if (participantCount >= category.max_participants * 0.75) {
+          badgeClass = 'bg-warning'; // Nearly full
+        }
       }
       
-      noMessage.classList.add('d-none');
-      
-      let html = '<div class="list-group">';
-      
-      categories.forEach(category => {
-        // Determine age group label
-        const ageGroupLabels = {
-          'under_8': 'Under 8',
-          'under_12': 'Under 12',
-          'under_14': 'Under 14',
-          'under_16': 'Under 16 (Cadet)',
-          'under_18': 'Under 18 (Junior)',
-          'under_21': 'Under 21',
-          'senior': 'Senior'
-        };
-        
-        const ageGroup = ageGroupLabels[category.age_group] || category.age_group;
-        
-        // Determine gender label
-        const genderLabel = {
-          'male': 'Men',
-          'female': 'Women',
-          'mixed': 'Mixed'
-        }[category.gender] || category.gender;
-        
-        // Get participant count from stats map or default to 0
-        const participantCount = statsMap.get(category.id) || 0;
-        
-        // Determine badge color based on registration status
-        let badgeClass = 'bg-primary';
-        if (category.max_participants) {
-          if (participantCount >= category.max_participants) {
-            badgeClass = 'bg-danger'; // Full
-          } else if (participantCount >= category.max_participants * 0.75) {
-            badgeClass = 'bg-warning'; // Nearly full
-          }
-        }
-        
-        html += `
-          <div class="list-group-item">
-            <div class="d-flex w-100 justify-content-between align-items-center">
-              <h5 class="mb-1">${category.name}</h5>
-              <div>
-                <span class="badge ${badgeClass} me-2">
-                  ${participantCount} ${category.max_participants ? 'of ' + category.max_participants : ''} participants
-                </span>
-                ${category.max_participants ? 
-                  `<span class="badge bg-secondary">Max: ${category.max_participants}</span>` : 
-                  '<span class="badge bg-secondary">No limit</span>'}
-              </div>
+      html += `
+        <div class="list-group-item ${eligibilityClass}">
+          <div class="d-flex w-100 justify-content-between align-items-center">
+            <h5 class="mb-1">${category.name}</h5>
+            <div>
+              <span class="badge ${badgeClass} me-2">
+                ${participantCount} ${category.max_participants ? 'of ' + category.max_participants : ''} participants
+              </span>
+              ${category.max_participants ? 
+                `<span class="badge bg-secondary">Max: ${category.max_participants}</span>` : 
+                '<span class="badge bg-secondary">No limit</span>'}
             </div>
-            ${category.description ? `<p class="mb-2">${category.description}</p>` : ''}
-            <div class="d-flex flex-wrap gap-2 mb-2">
-              <span class="badge bg-info">${genderLabel}</span>
-              <span class="badge bg-info">${ageGroup}</span>
-              ${category.weight_class ? `<span class="badge bg-info">Weight: ${category.weight_class}</span>` : ''}
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-2">
-              <button class="btn btn-sm btn-outline-info view-participants-btn" data-category-id="${category.id}" data-category-name="${category.name}">
-                <i class="bi bi-people"></i> View Participants
-              </button>
-              <div id="category-action-${category.id}">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
+          </div>
+          ${category.description ? `<p class="mb-2">${category.description}</p>` : ''}
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="badge bg-info">${genderLabel}</span>
+            <span class="badge bg-info">${ageGroup}</span>
+            ${category.weight_class ? `<span class="badge bg-info">Weight: ${category.weight_class}</span>` : ''}
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <button class="btn btn-sm btn-outline-info view-participants-btn" data-category-id="${category.id}" data-category-name="${category.name}">
+              <i class="bi bi-people"></i> View Participants
+            </button>
+            <div id="category-action-${category.id}">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
               </div>
             </div>
           </div>
-        `;
-      });
-      
-      html += '</div>';
-      container.innerHTML = html;
-      
-      // Add event listeners for "View Participants" buttons
-      document.querySelectorAll('.view-participants-btn').forEach(button => {
-        button.addEventListener('click', async function() {
-          const categoryId = this.getAttribute('data-category-id');
-          const categoryName = this.getAttribute('data-category-name');
-          
-          // Show loading in the button
-          const originalContent = this.innerHTML;
-          this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
-          this.disabled = true;
-          
-          try {
-            const participants = await fetchCategoryParticipants(categoryId);
-            createParticipantsModal(participants, categoryName);
-          } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to load participants');
-          } finally {
-            // Restore button
-            this.innerHTML = originalContent;
-            this.disabled = false;
-          }
-        });
-      });
-      
-      // Update registration buttons
-      updateCategoryRegistrationButtons();
+          ${isLoggedIn && userData && !isEligible ? `
+            <div class="mt-2 small text-muted">
+              <i class="bi bi-info-circle"></i> You are not eligible for this category due to age/gender requirements.
+            </div>
+          ` : ''}
+        </div>
+      `;
     });
-  }
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Add event listeners for "View Participants" buttons
+    document.querySelectorAll('.view-participants-btn').forEach(button => {
+      button.addEventListener('click', async function() {
+        const categoryId = this.getAttribute('data-category-id');
+        const categoryName = this.getAttribute('data-category-name');
+        
+        // Show loading in the button
+        const originalContent = this.innerHTML;
+        this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...`;
+        this.disabled = true;
+        
+        try {
+          const participants = await fetchCategoryParticipants(categoryId);
+          createParticipantsModal(participants, categoryName);
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to load participants');
+        } finally {
+          // Restore button
+          this.innerHTML = originalContent;
+          this.disabled = false;
+        }
+      });
+    });
+    
+    // Update registration buttons
+    updateCategoryRegistrationButtons();
+  });
+}
   
   function fetchTimetable() {
     fetch(`/eventDetails/${eventId}/timetable`)
