@@ -633,9 +633,9 @@ async function registerForCategory(req, res) {
     
     // Check if category has max_participants defined
     if (category.max_participants) {
-      // Get current participant count for this category
+      // Get current approved participant count for this category
       const [participantCount] = await db.query(
-        'SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ?',
+        'SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ? AND status = "approved"',
         [categoryId]
       );
       
@@ -644,7 +644,6 @@ async function registerForCategory(req, res) {
         return res.status(400).json({ error: 'This category is full, registration is closed' });
       }
     }
-    
     // Check if already registered
     const [existingReg] = await db.query(
       'SELECT * FROM individual_registrations WHERE category_id = ? AND athlete_id = ?',
@@ -806,9 +805,9 @@ async function registerUserForCategory(userId, categoryId) {
     
     // Check if category has max_participants defined
     if (category.max_participants) {
-      // Get current participant count for this category
+      // Get current approved participant count for this category
       const [participantCount] = await db.query(
-        "SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ?",
+        "SELECT COUNT(*) as count FROM individual_registrations WHERE category_id = ? AND status = 'approved'",
         [categoryId]
       );
       
@@ -817,7 +816,6 @@ async function registerUserForCategory(userId, categoryId) {
         throw new Error("This category is full, registration is closed");
       }
     }
-    
     // Check if already registered
     const [existingReg] = await db.query(
       "SELECT * FROM individual_registrations WHERE athlete_id = ? AND category_id = ?",
