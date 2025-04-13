@@ -39,6 +39,7 @@
                             
                             <% if (user.user_type === 'regular') { %>
                             <!-- Regular user options -->
+                            <li><a class="dropdown-item" href="/myRegistrations">My Registrations</a></li>
                             <li><a class="dropdown-item" href="/createClub">Create Club</a></li>
                             <li><a class="dropdown-item" href="/joinClub">Join a Club</a></li>
                             <% } %>
@@ -51,7 +52,7 @@
                             <% if (user.user_type === 'athlete') { %>
                             <!-- Athlete options -->
                             <li><a class="dropdown-item" href="/myClub">My Club</a></li>
-                            <li><a class="dropdown-item" href="/myRegistrations">My Competitions</a></li>
+                            <li><a class="dropdown-item" href="/myRegistrations">My Registrations</a></li>
                             <% } %>
                             
                             <li><hr class="dropdown-divider"></li>
