@@ -1370,7 +1370,8 @@ async function getClubJoinRequests(clubId) {
     }
 }
 
-async function approveJoinRequest(clubId, requestId, coachId) {
+
+async function processJoinRequest(clubId, requestId, coachId, action) {
     try {
         // Verify the coach owns the club
         const [clubCheck] = await db.query(
@@ -1379,46 +1380,74 @@ async function approveJoinRequest(clubId, requestId, coachId) {
         );
         
         if (!clubCheck || clubCheck.length === 0) {
-            throw new Error('Not authorized to approve join requests');
+            throw new Error('Not authorized to process join requests');
         }
         
-        // Update request status to active
-        await db.query(
-            "UPDATE club_athletes SET status = 'active' WHERE id = ? AND club_id = ?",
+        // Get the join request details
+        const [requestDetails] = await db.query(
+            "SELECT * FROM club_athletes WHERE id = ? AND club_id = ? AND status = 'pending'",
             [requestId, clubId]
         );
         
-        return { success: true, message: 'Join request approved successfully' };
+        if (!requestDetails || requestDetails.length === 0) {
+            throw new Error('Join request not found');
+        }
+        
+        const athleteId = requestDetails[0].athlete_id;
+        
+        // Start a transaction
+        await db.query('START TRANSACTION');
+        
+        try {
+            if (action === 'approve') {
+                // Update request status to active
+                await db.query(
+                    "UPDATE club_athletes SET status = 'active' WHERE id = ? AND club_id = ?",
+                    [requestId, clubId]
+                );
+                
+                // Update user type to athlete (if not already a coach)
+                await db.query(
+                    "UPDATE users SET user_type = 'athlete' WHERE id = ? AND user_type != 'coach'",
+                    [athleteId]
+                );
+            } else if (action === 'reject') {
+                // Delete the join request
+                await db.query(
+                    "DELETE FROM club_athletes WHERE id = ? AND club_id = ?",
+                    [requestId, clubId]
+                );
+            }
+            
+            // Commit the transaction
+            await db.query('COMMIT');
+            
+            return { 
+                success: true, 
+                message: action === 'approve' 
+                    ? 'Join request approved successfully' 
+                    : 'Join request rejected successfully' 
+            };
+        } catch (updateError) {
+            // Rollback the transaction if any error occurs
+            await db.query('ROLLBACK');
+            throw updateError;
+        }
     } catch (error) {
-        console.error('Error approving join request:', error);
+        console.error('Error processing join request:', error);
         throw error;
     }
 }
 
-async function rejectJoinRequest(clubId, requestId, coachId) {
-    try {
-        // Verify the coach owns the club
-        const [clubCheck] = await db.query(
-            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
-            [clubId, coachId]
-        );
-        
-        if (!clubCheck || clubCheck.length === 0) {
-            throw new Error('Not authorized to reject join requests');
-        }
-        
-        // Delete the join request
-        await db.query(
-            "DELETE FROM club_athletes WHERE id = ? AND club_id = ?",
-            [requestId, clubId]
-        );
-        
-        return { success: true, message: 'Join request rejected successfully' };
-    } catch (error) {
-        console.error('Error rejecting join request:', error);
-        throw error;
-    }
+// Create new methods that use the unified method
+async function approveJoinRequest(clubId, requestId, coachId) {
+    return processJoinRequest(clubId, requestId, coachId, 'approve');
 }
+
+async function rejectJoinRequest(clubId, requestId, coachId) {
+    return processJoinRequest(clubId, requestId, coachId, 'reject');
+}
+
 // Add these functions to your controller.js file
 
 async function addCategory(req, res) {
@@ -1651,7 +1680,10 @@ const controller = {
     rejectJoinRequest,
     addCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    approveJoinRequest,
+    rejectJoinRequest
+  
 
 };
 

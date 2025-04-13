@@ -926,20 +926,30 @@ fetch(`/clubs/${clubData.id}/join-requests/${requestId}/approve`, {
  * @param {string} athleteId - The athlete ID
  */
 
-function approveJoinRequest(requestId, athleteId) {
-    // Show confirmation dialog if needed
-    if (!confirm('Are you sure you want to approve this join request?')) {
-        return;
-    }
-    
+function approveJoinRequest(requestId) {
     fetch(`/clubs/${clubData.id}/join-requests/${requestId}/approve`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => {
+        // Check if response is OK and has content
         if (!response.ok) {
-            throw new Error('Failed to approve join request');
+            // Try to parse error message
+            return response.text().then(errorText => {
+                throw new Error(errorText || 'Failed to approve join request');
+            });
         }
-        return response.json();
+        
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            return response.text();
+        }
     })
     .then(data => {
         // Show success message
@@ -956,25 +966,34 @@ function approveJoinRequest(requestId, athleteId) {
     })
     .catch(error => {
         console.error('Error approving join request:', error);
-        showErrorMessage('Failed to approve join request. Please try again.');
+        showErrorMessage(error.message || 'Failed to approve join request. Please try again.');
     });
 }
 
-
-function rejectJoinRequest(requestId, athleteId) {
-    // Show confirmation dialog
-    if (!confirm('Are you sure you want to reject this join request?')) {
-        return;
-    }
-    
+function rejectJoinRequest(requestId) {
     fetch(`/clubs/${clubData.id}/join-requests/${requestId}/reject`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => {
+        // Check if response is OK and has content
         if (!response.ok) {
-            throw new Error('Failed to reject join request');
+            // Try to parse error message
+            return response.text().then(errorText => {
+                throw new Error(errorText || 'Failed to reject join request');
+            });
         }
-        return response.json();
+        
+        // Check content type before parsing
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            return response.text();
+        }
     })
     .then(data => {
         // Show success message
@@ -985,7 +1004,7 @@ function rejectJoinRequest(requestId, athleteId) {
     })
     .catch(error => {
         console.error('Error rejecting join request:', error);
-        showErrorMessage('Failed to reject join request. Please try again.');
+        showErrorMessage(error.message || 'Failed to reject join request. Please try again.');
     });
 }
 

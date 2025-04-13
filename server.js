@@ -744,62 +744,130 @@ app.get('/clubs/:id/join-requests', isAuthenticated, async (req, res) => {
     }
 });
 
-app.post('/clubs/:id/join-requests/:requestId/approve', isAuthenticated, async (req, res) => {
+// Route to approve join request
+app.post('/clubs/:clubId/join-requests/:requestId/approve', isAuthenticated, async (req, res) => {
     try {
-        const clubId = req.params.id;
+        const clubId = req.params.clubId;
         const requestId = req.params.requestId;
+        const coachId = req.session.user.id;
         
-        // Verify user is club coach
-        const [club] = await db.query(
+        // Verify the user is the coach of the club
+        const [clubCheck] = await db.query(
             "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
-            [clubId, req.session.user.id]
+            [clubId, coachId]
         );
         
-        if (!club || club.length === 0) {
-            return res.status(403).json({ error: 'Not authorized' });
+        if (!clubCheck || clubCheck.length === 0) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Not authorized to approve join requests' 
+            });
         }
         
-        // Update request status
-        await db.query(
-            "UPDATE club_athletes SET status = 'active' WHERE id = ? AND club_id = ?",
-            [requestId, clubId]
-        );
+        // Process the join request
+        const result = await controller.approveJoinRequest(clubId, requestId, coachId);
         
-        res.json({ success: true });
+        // Determine response type based on request
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            // AJAX request
+            return res.status(200).json({
+                success: true,
+                message: 'Join request approved successfully',
+                result: result
+            });
+        } else {
+            // Page redirect
+            req.session.lastMessage = {
+                type: 'success',
+                text: 'Join request approved successfully'
+            };
+            
+            return res.redirect('/manageClub');
+        }
     } catch (error) {
         console.error('Error approving join request:', error);
-        res.status(500).json({ error: 'Failed to approve join request' });
+        
+        // Determine response type based on request
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            // AJAX request
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to approve join request'
+            });
+        } else {
+            // Page redirect
+            req.session.lastMessage = {
+                type: 'error',
+                text: error.message || 'Failed to approve join request'
+            };
+            
+            return res.redirect('/manageClub');
+        }
     }
 });
-
-app.post('/clubs/:id/join-requests/:requestId/reject', isAuthenticated, async (req, res) => {
+// Route to reject join request
+app.post('/clubs/:clubId/join-requests/:requestId/reject', isAuthenticated, async (req, res) => {
     try {
-        const clubId = req.params.id;
+        const clubId = req.params.clubId;
         const requestId = req.params.requestId;
+        const coachId = req.session.user.id;
         
-        // Verify user is club coach
-        const [club] = await db.query(
+        // Verify the user is the coach of the club
+        const [clubCheck] = await db.query(
             "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
-            [clubId, req.session.user.id]
+            [clubId, coachId]
         );
         
-        if (!club || club.length === 0) {
-            return res.status(403).json({ error: 'Not authorized' });
+        if (!clubCheck || clubCheck.length === 0) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Not authorized to reject join requests' 
+            });
         }
         
-        // Delete the request
-        await db.query(
-            "DELETE FROM club_athletes WHERE id = ? AND club_id = ? AND status = 'pending'",
-            [requestId, clubId]
-        );
+        // Process the join request
+        const result = await controller.rejectJoinRequest(clubId, requestId, coachId);
         
-        res.json({ success: true });
+        // Determine response type based on request
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            // AJAX request
+            return res.status(200).json({
+                success: true,
+                message: 'Join request rejected successfully',
+                result: result
+            });
+        } else {
+            // Page redirect
+            req.session.lastMessage = {
+                type: 'success',
+                text: 'Join request rejected successfully'
+            };
+            
+            return res.redirect('/manageClub');
+        }
     } catch (error) {
         console.error('Error rejecting join request:', error);
-        res.status(500).json({ error: 'Failed to reject join request' });
+        
+        // Determine response type based on request
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            // AJAX request
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to reject join request'
+            });
+        } else {
+            // Page redirect
+            req.session.lastMessage = {
+                type: 'error',
+                text: error.message || 'Failed to reject join request'
+            };
+            
+            return res.redirect('/manageClub');
+        }
     }
 });
 
+//
 app.delete('/clubs/:id/athletes/:athleteId', isAuthenticated, async (req, res) => {
     try {
         const clubId = req.params.id;
