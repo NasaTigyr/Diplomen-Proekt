@@ -176,11 +176,15 @@
         showError('event-details', 'Failed to load event details. Please try refreshing the page.');
       });
   }
-
 function isEligibleForCategory(category) {
   // Not logged in, can't determine eligibility
   if (!isLoggedIn || !userData) {
     return true; // We'll handle this differently in the UI
+  }
+  
+  // Check if this is a team event and user has 'regular' status
+  if (eventData && eventData.event_type === 'team' && userData.user_type === 'regular') {
+    return false; // Regular users cannot register for team events
   }
   
   // Calculate user's age based on birth date
