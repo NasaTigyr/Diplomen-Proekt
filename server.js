@@ -1700,6 +1700,30 @@ app.post('/clubs/:id/join', isAuthenticated, async (req, res) => {
     }
 });
 
+// Add these routes to server.js
+app.get('/myClub', isAuthenticated, (req, res) => {
+    res.render('myClub', { user: req.session.user });
+});
+
+app.get('/myRegistrations', isAuthenticated, (req, res) => {
+    res.render('myRegistrations', { user: req.session.user });
+});
+
+// Add this route to support fetching user registrations
+app.get('/user/registrations', isAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        
+        // Fetch registrations with additional event details
+        const registrations = await controller.getUserRegistrations(userId);
+        
+        res.json(registrations);
+    } catch (error) {
+        console.error('Error fetching user registrations:', error);
+        res.status(500).json({ error: 'Failed to load registrations' });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

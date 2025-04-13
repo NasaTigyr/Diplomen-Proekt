@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Club - Martial Arts Competitions</title>
+    <link rel="stylesheet" href="/styleIndex.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="wrapper">
+        <%- include('header', {currentPage: 'myClub', user: user}); %>
+        
+        <section class="main-content">
+            <section class="custom-background">
+                <div class="content">
+                    <div class="container py-4">
+                        <div class="row">
+                            <div class="col-md-8 offset-md-2">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h3 class="card-title">My Club</h3>
+                                        
+                                        <div id="no-club-container" style="display: none;">
+                                            <p>You are not currently a member of any club.</p>
+                                            <div class="mt-3">
+                                                <a href="/joinClub" class="btn btn-primary">Join a Club</a>
+                                                <% if (user.user_type === 'regular') { %>
+                                                    <a href="/createClub" class="btn btn-outline-secondary ml-2">Create a Club</a>
+                                                <% } %>
+                                            </div>
+                                        </div>
+
+                                        <div id="club-info-container" style="display: none;">
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <img id="club-logo" src="" alt="Club Logo" class="img-fluid mb-3">
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <h4 id="club-name"></h4>
+                                                    <p><strong>Description:</strong> <span id="club-description"></span></p>
+                                                    <p><strong>Address:</strong> <span id="club-address"></span></p>
+                                                    <p><strong>Contact:</strong> 
+                                                        <span id="club-phone"></span> | 
+                                                        <span id="club-email"></span>
+                                                    </p>
+                                                    <p><strong>Website:</strong> <a href="#" id="club-website" target="_blank"></a></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mt-4">
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">Club Athletes</div>
+                                                        <ul id="club-athletes-list" class="list-group list-group-flush">
+                                                            <!-- Athletes will be dynamically populated here -->
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="card">
+                                                        <div class="card-header">Club Statistics</div>
+                                                        <div class="card-body">
+                                                            <p>Total Athletes: <span id="athlete-count">0</span></p>
+                                                            <p>Events Created: <span id="event-count">0</span></p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </section>
+        
+        <footer class="bg-light text-center py-3">
+            <p>&copy; 2025 Martial Arts Competitions. All Rights Reserved.</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch user's club memberships
+            fetch('/user/memberships')
+                .then(response => response.json())
+                .then(memberships => {
+                    const clubInfoContainer = document.getElementById('club-info-container');
+                    const noClubContainer = document.getElementById('no-club-container');
+
+                    if (memberships.length === 0) {
+                        noClubContainer.style.display = 'block';
+                        return;
+                    }
+
+                    // Assuming first membership is the primary/current club
+                    const club = memberships[0];
+
+                    // Fetch full club details
+                    return fetch(`/clubs/${club.club_id}`)
+                        .then(response => response.json())
+                        .then(clubDetails => {
+                            // Populate club info
+                            document.getElementById('club-name').textContent = clubDetails.name;
+                            document.getElementById('club-description').textContent = clubDetails.description || 'No description available';
+                            document.getElementById('club-address').textContent = clubDetails.address || 'Not specified';
+                            document.getElementById('club-phone').textContent = clubDetails.phone || 'N/A';
+                            document.getElementById('club-email').textContent = clubDetails.email || 'N/A';
+                            
+                            // Logo
+                            const clubLogo = document.getElementById('club-logo');
+                            clubLogo.src = clubDetails.logo || '/images/default-club.jpg';
+                            
+                            // Website
+                            const clubWebsite = document.getElementById('club-website');
+                            if (clubDetails.website) {
+                                clubWebsite.href = clubDetails.website;
+                                clubWebsite.textContent = clubDetails.website;
+                            } else {
+                                clubWebsite.textContent = 'Not available';
+                            }
+
+                            // Show containers
+                            clubInfoContainer.style.display = 'block';
+
+                            // Fetch and display club athletes
+                            return fetch(`/clubs/${club.club_id}/athletes`);
+                        })
+                        .then(response => response.json())
+                        .then(athletes => {
+                            const athletesList = document.getElementById('club-athletes-list');
+                            athletesList.innerHTML = ''; // Clear previous entries
+
+                            if (athletes.length === 0) {
+                                athletesList.innerHTML = '<li class="list-group-item text-muted">No athletes found</li>';
+                            } else {
+                                athletes.forEach(athlete => {
+                                    const li = document.createElement('li');
+                                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                                    li.innerHTML = `
+                                        <div>
+                                            <img src="${athlete.profile_picture || '/images/default-profile.png'}" 
+                                                 class="rounded-circle mr-2" 
+                                                 style="width: 30px; height: 30px; object-fit: cover;">
+                                            ${athlete.first_name} ${athlete.last_name}
+                                        </div>
+                                        <small class="text-muted">${athlete.email}</small>
+                                    `;
+                                    athletesList.appendChild(li);
+                                });
+                            }
+
+                            // Update athlete count
+                            document.getElementById('athlete-count').textContent = athletes.length;
+                        });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const noClubContainer = document.getElementById('no-club-container');
+                    noClubContainer.style.display = 'block';
+                });
+        });
+    </script>
+</body>
+</html>

@@ -781,25 +781,38 @@ async function getTimetableByEventId(eventId) {
     throw error;
   }
 }
-async function getUserRegistrations(userId) {
-  try {
-    // Validate userId
-    if (isNaN(parseInt(userId))) {
-      throw new Error("Invalid user ID");
-    }
-    
-    // Fetch user registrations
 
-    const [rows] = await db.query(
-      "SELECT r.*, c.event_id FROM individual_registrations r JOIN categories c ON r.category_id = c.id WHERE r.athlete_id = ?",
-      [userId] // Make sure userId actually refers to the athlete's ID
-    );
-    
-    return rows; // Return all registrations
-  } catch (error) {
-    console.error("Error in getUserRegistrations:", error);
-    throw error;
-  }
+async function getUserRegistrations(userId) {
+    try {
+        // Validate userId
+        if (isNaN(parseInt(userId))) {
+            throw new Error("Invalid user ID");
+        }
+        
+        // Fetch registrations with event and category details
+        const [rows] = await db.query(`
+            SELECT 
+                ir.id, 
+                ir.event_id, 
+                ir.category_id, 
+                ir.status, 
+                ir.registration_date,
+                e.name as event_name,
+                e.start_date,
+                e.banner_image,
+                c.name as category_name
+            FROM individual_registrations ir
+            JOIN events e ON ir.event_id = e.id
+            JOIN categories c ON ir.category_id = c.id
+            WHERE ir.athlete_id = ?
+            ORDER BY ir.registration_date DESC
+        `, [userId]);
+        
+        return rows;
+    } catch (error) {
+        console.error("Error in getUserRegistrations:", error);
+        throw error;
+    }
 }
 
 async function registerUserForCategory(userId, categoryId) {
