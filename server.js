@@ -868,31 +868,20 @@ app.post('/clubs/:clubId/join-requests/:requestId/reject', isAuthenticated, asyn
 });
 
 //
+// Update this route in server.js
 app.delete('/clubs/:id/athletes/:athleteId', isAuthenticated, async (req, res) => {
     try {
         const clubId = req.params.id;
         const athleteId = req.params.athleteId;
+        const coachId = req.session.user.id;
         
-        // Verify user is club coach
-        const [club] = await db.query(
-            "SELECT * FROM clubs WHERE id = ? AND coach_id = ?",
-            [clubId, req.session.user.id]
-        );
+        // Use the controller function to handle removal
+        const result = await controller.removeAthleteFromClub(clubId, athleteId, coachId);
         
-        if (!club || club.length === 0) {
-            return res.status(403).json({ error: 'Not authorized' });
-        }
-        
-        // Remove athlete from club
-        await db.query(
-            "DELETE FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
-            [clubId, athleteId]
-        );
-        
-        res.json({ success: true });
+        res.json(result);
     } catch (error) {
         console.error('Error removing athlete:', error);
-        res.status(500).json({ error: 'Failed to remove athlete' });
+        res.status(500).json({ error: 'Failed to remove athlete', details: error.message });
     }
 });
 

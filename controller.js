@@ -1352,19 +1352,48 @@ async function removeAthleteFromClub(clubId, athleteId, coachId) {
             throw new Error('Not authorized to remove athletes');
         }
         
-        // Remove athlete from club
-        await db.query(
-            "DELETE FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
-            [clubId, athleteId]
-        );
+        // Start a transaction
+        await db.query('START TRANSACTION');
         
-        return { success: true, message: 'Athlete removed from club successfully' };
+        try {
+            // Remove athlete from club
+            await db.query(
+                "DELETE FROM club_athletes WHERE club_id = ? AND athlete_id = ?",
+                [clubId, athleteId]
+            );
+            
+            // Check if the athlete has any other active club memberships
+            const [otherMemberships] = await db.query(
+                "SELECT * FROM club_athletes WHERE athlete_id = ? AND status = 'active'",
+                [athleteId]
+            );
+            
+            // If no other active memberships, update user type to 'regular'
+            if (otherMemberships.length === 0) {
+                await db.query(
+                    "UPDATE users SET user_type = 'regular' WHERE id = ?",
+                    [athleteId]
+                );
+            }
+            
+            // Commit the transaction
+            await db.query('COMMIT');
+            
+            return { 
+                success: true, 
+                message: 'Athlete removed from club successfully',
+                changedToRegular: otherMemberships.length === 0
+            };
+        } catch (updateError) {
+            // Rollback the transaction if any error occurs
+            await db.query('ROLLBACK');
+            throw updateError;
+        }
     } catch (error) {
         console.error('Error removing athlete from club:', error);
         throw error;
     }
 }
-
 async function getClubJoinRequests(clubId) {
     try {
         const [requests] = await db.query(`
