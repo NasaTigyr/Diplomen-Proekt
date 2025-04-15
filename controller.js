@@ -5,6 +5,9 @@ const categoryQueries = require('./src/categories/queries');
 
 const bcrypt = require('bcrypt'); 
 
+const fs = require('fs');
+const { generateDetailedBracketsPDF } = require('./bracketsPDFGenerator'); // Adjust path as needed
+
 const jwt = require('jsonwebtoken'); 
 const db = require('./db');
 const path = require('path'); 
@@ -1689,11 +1692,12 @@ async function deleteCategory(req, res) {
   }
 }
 // Add this to your controller.js file
-
 async function generateBrackets(req, res) {
   try {
     const eventId = req.params.eventId;
     const userId = req.session.user.id;
+    
+    console.log("Generating brackets for event");
     
     // Verify the user is the event creator
     const event = await getEventById(eventId);
@@ -1714,8 +1718,6 @@ async function generateBrackets(req, res) {
     }
     
     // Create directory for brackets if it doesn't exist
-    const fs = require('fs');
-    const path = require('path');
     const bracketsDir = path.join(__dirname, 'public/uploads/brackets');
     if (!fs.existsSync(bracketsDir)){
       fs.mkdirSync(bracketsDir, { recursive: true });
@@ -1767,14 +1769,14 @@ async function generateBrackets(req, res) {
       bracketFileUrl = `/uploads/brackets/${filename}`;
       
       // Generate PDF with all brackets
-      await generateBracketsPDF(filepath, categoriesWithBrackets, event);
+      await generateDetailedBracketsPDF(filepath, categoriesWithBrackets, event);
       
       // Store the bracket file path in the event
       await db.query('UPDATE events SET bracket_file = ? WHERE id = ?', [bracketFileUrl, eventId]);
     }
     
     // Return the results
-    res.json({
+    return res.json({
       success: true,
       message: 'Brackets generated successfully',
       categoriesWithBrackets,
@@ -1784,7 +1786,7 @@ async function generateBrackets(req, res) {
     
   } catch (error) {
     console.error('Error generating brackets:', error);
-    res.status(500).json({ error: error.message || 'Failed to generate brackets' });
+    return res.status(500).json({ error: error.message || 'Failed to generate brackets' });
   }
 }
 
@@ -1862,128 +1864,6 @@ function getNextPowerOfTwo(n) {
   return power;
 }
 
-// Function to generate a PDF with all brackets
-async function generateBracketsPDF(filepath, categoriesWithBrackets, event) {
-  try {
-    // We'll use PDFKit to create the PDF
-    const PDFDocument = require('pdfkit');
-    const fs = require('fs');
-    
-    // Create a document
-    const doc = new PDFDocument({
-      size: 'A4',
-      margin: 50,
-      info: {
-        Title: `Tournament Brackets - ${event.name}`,
-        Author: 'Martial Arts Competitions'
-      }
-    });
-    
-    // Pipe its output to the file
-    doc.pipe(fs.createWriteStream(filepath));
-    
-    // Add title
-    doc.fontSize(18).text(`Tournament Brackets - ${event.name}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Generated on ${new Date().toLocaleDateString()}`, { align: 'center' });
-    doc.moveDown(2);
-    
-    // For each category, draw its bracket
-    for (const category of categoriesWithBrackets) {
-      // Draw category header
-      doc.fontSize(14).text(`Category: ${category.name}`, { underline: true });
-      doc.moveDown(0.5);
-      doc.fontSize(10).text(`Participants: ${category.participantCount}`);
-      doc.moveDown(1);
-      
-      // Draw bracket
-      drawBracketInPDF(doc, category.bracket);
-      
-      // Add a page break between categories
-      if (categoriesWithBrackets.indexOf(category) < categoriesWithBrackets.length - 1) {
-        doc.addPage();
-      }
-    }
-    
-    // Finalize PDF
-    doc.end();
-    
-    return filepath;
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate brackets PDF');
-  }
-}
-
-// Function to draw a single bracket in the PDF
-function drawBracketInPDF(doc, bracket) {
-  const pageWidth = doc.page.width - 100; // Adjust for margins
-  const lineHeight = 30;
-  const matchWidth = 150;
-  const matchHeight = 40;
-  
-  // Group matches by round
-  const matchesByRound = {};
-  for (const match of bracket.matches) {
-    if (!matchesByRound[match.round]) {
-      matchesByRound[match.round] = [];
-    }
-    matchesByRound[match.round].push(match);
-  }
-  
-  // Draw each round
-  let x = 50;
-  for (let round = 1; round <= bracket.rounds; round++) {
-    const matches = matchesByRound[round] || [];
-    const spacing = pageWidth / matches.length;
-    
-    // Draw round header
-    doc.fontSize(10).text(`Round ${round}`, x, 50, { width: matchWidth, align: 'center' });
-    
-    // Draw matches
-    let y = 80;
-    for (const match of matches) {
-      // Draw match box
-      doc.rect(x, y, matchWidth, matchHeight).stroke();
-      
-      // Draw players
-      if (match.player1) {
-        doc.fontSize(8).text(match.player1.name, x + 5, y + 10, { width: matchWidth - 10 });
-      } else {
-        doc.fontSize(8).text('TBD', x + 5, y + 10, { width: matchWidth - 10, align: 'center' });
-      }
-      
-      // Draw line between players
-      doc.moveTo(x, y + matchHeight / 2).lineTo(x + matchWidth, y + matchHeight / 2).stroke();
-      
-      if (match.player2) {
-        doc.fontSize(8).text(match.player2.name, x + 5, y + matchHeight / 2 + 5, { width: matchWidth - 10 });
-      } else {
-        doc.fontSize(8).text('TBD', x + 5, y + matchHeight / 2 + 5, { width: matchWidth - 10, align: 'center' });
-      }
-      
-      // Draw connector to next match if not final round
-      if (match.nextMatchId && round < bracket.rounds) {
-        const nextMatch = bracket.matches.find(m => m.id === match.nextMatchId);
-        if (nextMatch) {
-          const nextMatchIndex = matchesByRound[nextMatch.round].indexOf(nextMatch);
-          const nextY = 80 + nextMatchIndex * (matchHeight + lineHeight);
-          
-          // Draw line to next match
-          doc.moveTo(x + matchWidth, y + matchHeight / 2)
-             .lineTo(x + matchWidth + 20, y + matchHeight / 2)
-             .lineTo(x + matchWidth + 20, nextY + matchHeight / 2)
-             .lineTo(x + matchWidth + 50, nextY + matchHeight / 2)
-             .stroke();
-        }
-      }
-      
-      y += matchHeight + lineHeight;
-    }
-    
-    x += matchWidth + 50; // Move to next round
-  }
-}
 
 const controller = {
     login,
