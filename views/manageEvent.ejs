@@ -67,11 +67,17 @@
   <div class="tab-content">
     <!-- Categories Tab -->
     <div class="tab-pane fade show active" id="categories" role="tabpanel">
+
       <div class="d-flex justify-content-between mb-3">
         <h3>Event Categories</h3>
-        <button class="btn btn-success" id="addCategoryBtn">
-          <i class="fas fa-plus"></i> Add Category
-        </button>
+        <div>
+          <button class="btn btn-primary me-2" id="generateBracketsBtn">
+            <i class="fas fa-sitemap"></i> Generate Brackets
+          </button>
+          <button class="btn btn-success" id="addCategoryBtn">
+            <i class="fas fa-plus"></i> Add Category
+          </button>
+        </div>
       </div>
       
       <!-- Categories Table -->
@@ -297,6 +303,42 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" id="uploadTimetableSubmitBtn">Upload</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Brackets Generation Modal --> 
+<div class="modal fade" id="bracketGenerationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Generate Tournament Brackets</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="bracketGenerationStatus">
+          <p>Brackets will be generated for all categories with approved participants.</p>
+          <div class="progress mb-3">
+            <div id="bracketGenerationProgress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+          </div>
+          <div id="bracketGenerationLog" class="small text-muted">
+            Ready to generate brackets...
+          </div>
+        </div>
+        
+        <div id="bracketGenerationResults" class="mt-4 d-none">
+          <h6>Generation Complete</h6>
+          <div class="alert alert-success">
+            Brackets have been successfully generated.
+          </div>
+          <div id="generatedBracketsInfo"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="startBracketGenerationBtn">Generate Brackets</button>
+        <a href="#" id="downloadBracketsBtn" class="btn btn-success d-none">Download Brackets</a>
       </div>
     </div>
   </div>
@@ -1178,6 +1220,120 @@ document.addEventListener('DOMContentLoaded', function() {
   // Update the save button click handler to use our new save function
   document.getElementById('saveCategoryBtn').addEventListener('click', saveCategory);
 });
+
+// Add this JavaScript to the existing script in manageEvent.ejs
+
+// Event listener for Generate Brackets button
+document.getElementById('generateBracketsBtn').addEventListener('click', function() {
+  // Show the bracket generation modal
+  const modal = new bootstrap.Modal(document.getElementById('bracketGenerationModal'));
+  modal.show();
+  
+  // Reset the progress and log
+  document.getElementById('bracketGenerationProgress').style.width = '0%';
+  document.getElementById('bracketGenerationLog').innerHTML = 'Ready to generate brackets...';
+  document.getElementById('bracketGenerationResults').classList.add('d-none');
+  document.getElementById('downloadBracketsBtn').classList.add('d-none');
+  document.getElementById('startBracketGenerationBtn').disabled = false;
+});
+
+// Event listener for Start Bracket Generation button
+document.getElementById('startBracketGenerationBtn').addEventListener('click', function() {
+  // Disable the start button
+  this.disabled = true;
+  
+  // Update the log
+  document.getElementById('bracketGenerationLog').innerHTML = 'Starting bracket generation...';
+  document.getElementById('bracketGenerationProgress').style.width = '10%';
+  
+  // Call the API to generate brackets
+  generateBrackets();
+});
+
+// Function to generate brackets
+async function generateBrackets() {
+  try {
+    // Update progress
+    updateBracketGenerationProgress(30, 'Fetching participants...');
+    
+    // Call API to generate brackets
+    const response = await fetch(`/events/${eventId}/generate-brackets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to generate brackets');
+    }
+    
+    updateBracketGenerationProgress(70, 'Brackets generated, saving files...');
+    
+    const data = await response.json();
+    
+    // Show success and file info
+    updateBracketGenerationProgress(100, 'Generation complete!');
+    
+    // Show the results section
+    document.getElementById('bracketGenerationResults').classList.remove('d-none');
+    
+    // Update bracket info
+    let bracketInfo = '';
+    if (data.categoriesWithBrackets && data.categoriesWithBrackets.length > 0) {
+      bracketInfo = `
+        <p>Brackets were generated for ${data.categoriesWithBrackets.length} categories:</p>
+        <ul>
+          ${data.categoriesWithBrackets.map(cat => `
+            <li>${cat.name} - ${cat.participantCount} participants</li>
+          `).join('')}
+        </ul>
+      `;
+    } else {
+      bracketInfo = '<p>No brackets were generated. Ensure categories have approved participants.</p>';
+    }
+    
+    document.getElementById('generatedBracketsInfo').innerHTML = bracketInfo;
+    
+    // If we have a download URL, show the download button
+    if (data.bracketFileUrl) {
+      const downloadBtn = document.getElementById('downloadBracketsBtn');
+      downloadBtn.href = data.bracketFileUrl;
+      downloadBtn.classList.remove('d-none');
+    }
+    
+  } catch (error) {
+    console.error('Error generating brackets:', error);
+    updateBracketGenerationProgress(100, `Error: ${error.message || 'Failed to generate brackets'}`);
+    
+    // Show error message in results
+    document.getElementById('bracketGenerationResults').classList.remove('d-none');
+    document.getElementById('bracketGenerationResults').innerHTML = `
+      <h6>Generation Failed</h6>
+      <div class="alert alert-danger">
+        ${error.message || 'An error occurred during bracket generation.'}
+      </div>
+    `;
+  }
+}
+
+// Function to update the bracket generation progress
+function updateBracketGenerationProgress(percent, message) {
+  const progressBar = document.getElementById('bracketGenerationProgress');
+  const log = document.getElementById('bracketGenerationLog');
+  
+  progressBar.style.width = `${percent}%`;
+  progressBar.setAttribute('aria-valuenow', percent);
+  
+  if (message) {
+    const timestamp = new Date().toLocaleTimeString();
+    log.innerHTML += `<div>${timestamp} - ${message}</div>`;
+    // Auto-scroll to bottom
+    log.scrollTop = log.scrollHeight;
+  }
+}
+
 </script>
 
 </body>

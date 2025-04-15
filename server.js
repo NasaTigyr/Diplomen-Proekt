@@ -1713,6 +1713,15 @@ app.get('/user/registrations', isAuthenticated, async (req, res) => {
     }
 });
 
+app.post('/events/:eventId/generate-brackets', isAuthenticated, async (req, res) => {
+  try {
+    await controller.generateBrackets(req, res);
+  } catch (error) {
+    console.error('Error in generate brackets route:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
