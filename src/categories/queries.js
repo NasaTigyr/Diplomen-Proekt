@@ -1,3 +1,4 @@
+// src/categories/queries.js
 const getCategories = 'SELECT * FROM categories';
 const getCategoryById = 'SELECT * FROM categories WHERE id = ?';
 const getCategoriesByEventId = 'SELECT * FROM categories WHERE event_id = ?';
@@ -8,7 +9,7 @@ const getCategoriesByDescription = 'SELECT * FROM categories WHERE description =
 
 const addCategory = `INSERT INTO categories (event_id, name, age_group, gender, description, max_participants, draw_file_path, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 const deleteCategory = 'DELETE FROM categories WHERE id = ?';
-const updateCategory = 'Update categories SET name = ?, age_group = ?, gender = ?, description = ?, max_participants = ?, draw_file_path = ?, updated_at = ? WHERE id = ?';
+const updateCategory = 'UPDATE categories SET name = ?, age_group = ?, gender = ?, description = ?, max_participants = ?, updated_at = ? WHERE id = ?';
 
 module.exports = {
   getCategories,
@@ -20,5 +21,5 @@ module.exports = {
   getCategoriesByDescription,
   addCategory,
   deleteCategory,
-  updateCategory,
+  updateCategory
 };

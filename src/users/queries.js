@@ -1,10 +1,10 @@
+// src/users/queries.js
 const getUsers = 'SELECT * FROM users';
 const getUserByEmail = 'SELECT * FROM users WHERE email = ?'; 
 const getUsersByRole = 'SELECT * FROM users WHERE role = ?';
 const getUserById = 'SELECT * FROM users WHERE id = ?';
 const getUserByName = 'SELECT * FROM users WHERE name = ?';
-//const getUserByEmail = 'SELECT id, email, password_hash FROM users WHERE email = ?';
-const getPassword = 'SELECT password_hash FROM users WHERE id = ?';  // Uncommented
+const getPassword = 'SELECT password_hash FROM users WHERE id = ?';
 
 const login = 'SELECT id, email, password_hash, first_name, last_name, user_type FROM users WHERE email = ?';
 
@@ -16,7 +16,7 @@ const updateUser = 'UPDATE users SET first_name = ?, last_name = ?, email = ?, c
 
 const updatePassword = 'UPDATE users SET password_hash = ? WHERE id = ?';
 
-const queries = { 
+module.exports = {
   getUsers,
   getUsersByRole, 
   getUserById, 
@@ -29,5 +29,3 @@ const queries = {
   getPassword,
   login
 };
-
-module.exports = queries;
