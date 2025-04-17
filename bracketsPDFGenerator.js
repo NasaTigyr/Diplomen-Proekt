@@ -162,48 +162,56 @@ static drawBracket(doc, bracket) {
       );
     });
 
-    // Draw Y-shaped connections
+    // Draw connections to next round
     if (round < bracket.rounds) {
-      const nextMatches = matchesByRound[round + 1] || [];
+      const nextRound = parseInt(round) + 1;
+      const nextMatches = matchesByRound[nextRound] || [];
       const nextTotalHeight = nextMatches.length * matchHeight + (nextMatches.length - 1) * verticalSpacing;
       const nextStartY = (pageHeight - nextTotalHeight) / 2;
 
+      // In each round, matches feed into the next round in pairs
+      // For example, matches 0 and 1 feed into match 0 of next round
       for (let i = 0; i < matches.length; i += 2) {
+        const matchIndex = Math.floor(i / 2);
+        if (matchIndex >= nextMatches.length) continue;
+
         const match1 = matches[i];
-        const match2 = matches[i + 1];
-        if (!match1 || !match1.nextMatchId) continue;
+        const match2 = i + 1 < matches.length ? matches[i + 1] : null;
+        const nextMatch = nextMatches[matchIndex];
 
-        const nextMatch = bracket.matches.find(m => m.id === match1.nextMatchId);
-        const nextIndex = nextMatches.indexOf(nextMatch);
-        if (!nextMatch || nextIndex === -1) continue;
-
+        // Calculate positions
         const y1 = startY + i * (matchHeight + verticalSpacing) + matchHeight / 2;
         const y2 = match2 ? startY + (i + 1) * (matchHeight + verticalSpacing) + matchHeight / 2 : y1;
-        const joinY = (y1 + y2) / 2;
-
-        const nextY = nextStartY + nextIndex * (matchHeight + verticalSpacing) + matchHeight / 2;
-        const joinX = currentX + matchWidth + horizontalSpacing / 2;
+        const nextY = nextStartY + matchIndex * (matchHeight + verticalSpacing) + matchHeight / 2;
+        
+        // Calculate connector positions
+        const connectorX = currentX + matchWidth + horizontalSpacing / 2;
         const nextX = currentX + matchWidth + horizontalSpacing;
 
-        // Line from match1
+        // Draw horizontal line from first match
         doc.moveTo(currentX + matchWidth, y1)
-           .lineTo(joinX, y1)
+           .lineTo(connectorX, y1)
            .stroke();
 
-        // Line from match2
+        // Draw horizontal line from second match (if exists)
         if (match2) {
           doc.moveTo(currentX + matchWidth, y2)
-             .lineTo(joinX, y2)
+             .lineTo(connectorX, y2)
              .stroke();
         }
 
-        // Vertical joining line
-        doc.moveTo(joinX, y1)
-           .lineTo(joinX, y2)
-           .stroke();
+        // Draw vertical line connecting the two matches
+        if (match2) {
+          doc.moveTo(connectorX, y1)
+             .lineTo(connectorX, y2)
+             .stroke();
+        }
 
-        // Final horizontal to next match
-        doc.moveTo(joinX, joinY)
+        // Draw horizontal line to next round
+        // If there's only one match feeding in, draw from y1
+        // If there are two matches, draw from midpoint
+        const midY = match2 ? (y1 + y2) / 2 : y1;
+        doc.moveTo(connectorX, midY)
            .lineTo(nextX, nextY)
            .stroke();
       }
