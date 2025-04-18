@@ -37,7 +37,7 @@ CREATE TABLE `categories` (
   KEY `idx_categories_event_id` (`event_id`),
   KEY `idx_categories_age_gender` (`age_group`,`gender`),
   CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -50,7 +50,11 @@ INSERT INTO `categories` VALUES
 (3,6,'Kumite male Seniros','senior','male','seniors kumite \n\nWeight Class: -60kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',8,NULL,'2025-04-09 07:35:51','2025-04-09 07:35:51'),
 (4,6,'kumite female seniors ','senior','female','female kumite\n\nWeight Class: -50kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',8,NULL,'2025-04-09 07:35:51','2025-04-09 07:35:51'),
 (5,6,'Kumite male U14 +55','under_14','male','none\n\nWeight Class: +55kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',1,NULL,'2025-04-11 12:42:07','2025-04-11 12:42:07'),
-(6,6,'ntestho','under_8','male','none\n\nWeight Class: -40kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',1,NULL,'2025-04-11 14:35:50','2025-04-11 14:35:50');
+(6,6,'ntestho','under_8','male','none\n\nWeight Class: -40kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',1,NULL,'2025-04-11 14:35:50','2025-04-11 14:35:50'),
+(7,7,'Seinior -50','senior','male','senior -50\n\nWeight Class: -50kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',2,NULL,'2025-04-13 06:37:38','2025-04-13 06:37:38'),
+(8,7,'female seniors','senior','female','femaile seniors\n\nWeight Class: -50kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',2,NULL,'2025-04-13 06:37:38','2025-04-13 06:37:38'),
+(9,6,'test cat ','under_8','male','ntest category\n\nWeight Class: -60kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',1,NULL,'2025-04-17 07:06:14','2025-04-17 07:06:14'),
+(10,8,'notne','under_8','male','psiha\n\nWeight Class: -60kg\n\nSpecial Rules: none\n\nRegistration Fee: $0.00',0,NULL,'2025-04-17 07:07:53','2025-04-17 07:07:53');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -74,7 +78,7 @@ CREATE TABLE `club_athletes` (
   KEY `athlete_id` (`athlete_id`),
   CONSTRAINT `club_athletes_ibfk_1` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE,
   CONSTRAINT `club_athletes_ibfk_2` FOREIGN KEY (`athlete_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -84,8 +88,8 @@ CREATE TABLE `club_athletes` (
 LOCK TABLES `club_athletes` WRITE;
 /*!40000 ALTER TABLE `club_athletes` DISABLE KEYS */;
 INSERT INTO `club_athletes` VALUES
-(3,1,17,'2025-04-12','active','2025-04-12 15:04:13','2025-04-12 18:04:42'),
-(4,1,18,'2025-04-12','active','2025-04-12 15:05:40','2025-04-12 15:05:40');
+(21,1,24,'2025-04-13','active','2025-04-13 04:35:24','2025-04-13 07:35:38'),
+(25,1,17,'2025-04-13','active','2025-04-13 06:39:57','2025-04-13 09:40:04');
 /*!40000 ALTER TABLE `club_athletes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -110,7 +114,7 @@ CREATE TABLE `club_invitations` (
   KEY `athlete_id` (`athlete_id`),
   CONSTRAINT `club_invitations_ibfk_1` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE,
   CONSTRAINT `club_invitations_ibfk_2` FOREIGN KEY (`athlete_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -122,7 +126,10 @@ LOCK TABLES `club_invitations` WRITE;
 INSERT INTO `club_invitations` VALUES
 (1,1,17,'wnanna join?','accepted','2025-04-12 20:20:45','2025-04-12 17:20:45','2025-04-12 17:44:56'),
 (2,1,17,NULL,'accepted','2025-04-12 20:59:54','2025-04-12 17:59:54','2025-04-12 18:00:07'),
-(3,1,18,'nesto','accepted','2025-04-12 21:05:28','2025-04-12 18:05:28','2025-04-12 18:05:40');
+(3,1,18,'nesto','accepted','2025-04-12 21:05:28','2025-04-12 18:05:28','2025-04-12 18:05:40'),
+(4,1,17,NULL,'accepted','2025-04-12 22:26:57','2025-04-12 19:26:57','2025-04-12 19:27:07'),
+(5,1,17,NULL,'accepted','2025-04-13 09:13:39','2025-04-13 06:13:39','2025-04-13 06:13:54'),
+(6,1,17,NULL,'accepted','2025-04-13 09:18:57','2025-04-13 06:18:57','2025-04-13 08:36:54');
 /*!40000 ALTER TABLE `club_invitations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -172,35 +179,6 @@ INSERT INTO `clubs` VALUES
 UNLOCK TABLES;
 
 --
--- Table structure for table `draws`
---
-
-DROP TABLE IF EXISTS `draws`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `draws` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `category_id` int(11) NOT NULL,
-  `status` enum('pending','generated','finalized') NOT NULL DEFAULT 'pending',
-  `file_path` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_category_draw` (`category_id`),
-  CONSTRAINT `draws_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `draws`
---
-
-LOCK TABLES `draws` WRITE;
-/*!40000 ALTER TABLE `draws` DISABLE KEYS */;
-/*!40000 ALTER TABLE `draws` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `events`
 --
 
@@ -222,12 +200,13 @@ CREATE TABLE `events` (
   `timetable_file` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `bracket_file` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `creator_id` (`creator_id`),
   KEY `idx_events_event_type` (`event_type`),
   KEY `idx_events_registration_dates` (`registration_start`,`registration_end`),
   CONSTRAINT `events_ibfk_1` FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -237,7 +216,9 @@ CREATE TABLE `events` (
 LOCK TABLES `events` WRITE;
 /*!40000 ALTER TABLE `events` DISABLE KEYS */;
 INSERT INTO `events` VALUES
-(6,'Test event edited twice pishka','test for everything','/uploads/banner_image_file-1744194951146-534329366.jpg','Arena 8888 Sofia','2025-04-25 12:00:00','2025-04-26 12:00:00','2025-04-09 12:00:00','2025-04-24 12:00:00','free_for_all',1,'/uploads/timetable_file-1744477894582-12225556.pdf','2025-04-09 07:35:51','2025-04-12 17:11:34');
+(6,'Test event edited twice pishka','test for everything','/uploads/banner_image_file-1744194951146-534329366.jpg','Arena 8888 Sofia','2025-04-25 12:00:00','2025-04-26 12:00:00','2025-04-09 12:00:00','2025-04-24 12:00:00','free_for_all',1,'/uploads/timetable_file-1744477894582-12225556.pdf','2025-04-09 07:35:51','2025-04-17 05:31:13','/uploads/brackets/brackets_event_6_2025-04-17T05-31-12-975Z.pdf'),
+(7,'team test event','team test event','/uploads/banner_image_file-1744537058664-138425738.png','Arena 8888 Sofia','2025-04-18 12:00:00','2025-04-19 12:00:00','2025-04-13 12:00:00','2025-04-14 12:00:00','team',1,NULL,'2025-04-13 06:37:38','2025-04-13 06:37:38',NULL),
+(8,'Test event','none','/uploads/banner_image_file-1744884473524-671462654.png','someshit','2025-04-25 12:00:00','2025-04-26 12:00:00','2025-04-17 12:00:00','2025-04-24 12:00:00','free_for_all',1,NULL,'2025-04-17 07:07:53','2025-04-17 07:07:53',NULL);
 /*!40000 ALTER TABLE `events` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -265,7 +246,7 @@ CREATE TABLE `individual_registrations` (
   CONSTRAINT `individual_registrations_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE,
   CONSTRAINT `individual_registrations_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE,
   CONSTRAINT `individual_registrations_ibfk_3` FOREIGN KEY (`athlete_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -277,38 +258,18 @@ LOCK TABLES `individual_registrations` WRITE;
 INSERT INTO `individual_registrations` VALUES
 (6,6,3,18,'2025-04-11 16:31:43','approved','2025-04-11 13:31:43','2025-04-11 14:57:31'),
 (22,6,5,20,'2025-04-12 11:07:42','rejected','2025-04-12 08:07:42','2025-04-12 12:24:39'),
-(29,6,5,19,'2025-04-12 16:28:48','pending','2025-04-12 13:28:48','2025-04-12 13:28:48');
+(29,6,5,19,'2025-04-12 16:28:48','pending','2025-04-12 13:28:48','2025-04-12 13:28:48'),
+(39,6,3,17,'2025-04-13 11:40:01','approved','2025-04-13 08:40:01','2025-04-13 08:40:17'),
+(40,6,6,22,'2025-04-13 12:17:24','pending','2025-04-13 09:17:24','2025-04-13 09:17:24'),
+(41,7,7,17,'2025-04-13 12:40:16','approved','2025-04-13 09:40:16','2025-04-18 11:28:42'),
+(42,6,3,25,'2025-04-15 13:59:23','approved','2025-04-15 10:59:23','2025-04-15 10:59:36'),
+(43,6,3,26,'2025-04-15 14:01:19','approved','2025-04-15 11:01:19','2025-04-15 11:01:50'),
+(44,6,3,28,'2025-04-15 14:03:39','approved','2025-04-15 11:03:39','2025-04-15 11:03:54'),
+(45,6,3,27,'2025-04-15 14:04:04','approved','2025-04-15 11:04:04','2025-04-15 11:04:20'),
+(46,6,4,31,'2025-04-17 08:30:08','approved','2025-04-17 05:30:08','2025-04-17 05:30:57'),
+(47,6,4,29,'2025-04-17 08:30:24','approved','2025-04-17 05:30:24','2025-04-17 05:30:59'),
+(48,6,4,30,'2025-04-17 08:30:37','approved','2025-04-17 05:30:37','2025-04-17 05:31:00');
 /*!40000 ALTER TABLE `individual_registrations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `team_registration_athletes`
---
-
-DROP TABLE IF EXISTS `team_registration_athletes`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `team_registration_athletes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `team_registration_id` int(11) NOT NULL,
-  `athlete_id` int(11) NOT NULL,
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_team_athlete` (`team_registration_id`,`athlete_id`),
-  KEY `athlete_id` (`athlete_id`),
-  CONSTRAINT `team_registration_athletes_ibfk_1` FOREIGN KEY (`team_registration_id`) REFERENCES `team_registrations` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `team_registration_athletes_ibfk_2` FOREIGN KEY (`athlete_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `team_registration_athletes`
---
-
-LOCK TABLES `team_registration_athletes` WRITE;
-/*!40000 ALTER TABLE `team_registration_athletes` DISABLE KEYS */;
-/*!40000 ALTER TABLE `team_registration_athletes` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -373,7 +334,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
   KEY `idx_users_user_type` (`user_type`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -383,13 +344,22 @@ CREATE TABLE `users` (
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 INSERT INTO `users` VALUES
-(1,'yanayakimova@gmail.com','$2b$10$asnX8ZbjAD0Cgj.7SXYNHOfkiREoxeUEHL.mmyYR6/xD3PulFo6L.','Yana','Yakimova','2008-12-12','female','coach','/uploads/profile_pictures/profile-1742245547957-619254971.jpg',NULL,'2025-03-14 16:17:08','2025-03-26 15:51:42'),
-(17,'niki@gmail.com','$2b$10$dXBjXvg8wY47LcarFgJLW.f25ABD2MzHwakEPCbu56tG0bNrLvZcW','Nikolay','Stefanov','2007-03-26','male','regular','/uploads/profile_picture-1744478501316-897976693.jpg','0886704023','2025-03-30 12:22:57','2025-04-12 17:21:41'),
+(1,'yanayakimova@gmail.com','$2b$10$asnX8ZbjAD0Cgj.7SXYNHOfkiREoxeUEHL.mmyYR6/xD3PulFo6L.','Yana','Yakimova','2008-12-12','female','coach','/uploads/profile_picture-1744887968005-820279862.png','','2025-03-14 16:17:08','2025-04-17 11:06:08'),
+(17,'niki@gmail.com','$2b$10$dXBjXvg8wY47LcarFgJLW.f25ABD2MzHwakEPCbu56tG0bNrLvZcW','Nikolay','Stefanov','2007-03-26','male','athlete','/uploads/profile_picture-1744478501316-897976693.jpg','0886704023','2025-03-30 12:22:57','2025-04-13 09:40:04'),
 (18,'aleks@gmail.com','$2b$10$5/HUPs9JhmGKHbvMia0XNOMBWNUPWWnHqz3a5ie7sARW7a8ZxteA6','Aleksander','Stefanov','2011-03-12','male','athlete','/uploads/profile_picture/profile_picture-1744378239799-677977560.png','0886704023','2025-04-11 13:30:39','2025-04-12 18:05:40'),
-(19,'aya@gmail.com','$2b$10$t6bPhuWUeE4VMAWfBgsULOtWluhx9bCA55fGKh6mWmtD5GNRXaf3y','Aya','Stefanova','2012-10-10','female','regular','/uploads/profile_picture/profile_picture-1744378472551-82654147.png','0886704023','2025-04-11 13:34:32','2025-04-11 13:34:32'),
+(19,'aya@gmail.com','$2b$10$t6bPhuWUeE4VMAWfBgsULOtWluhx9bCA55fGKh6mWmtD5GNRXaf3y','Aya','Stefanova','2012-10-10','female','athlete','/uploads/profile_picture/profile_picture-1744378472551-82654147.png','0886704023','2025-04-11 13:34:32','2025-04-13 06:57:20'),
 (20,'test@gmail.com','$2b$10$SINwOL7fWlI.Obr3eUPp9uw4/yLEtZZR.IieLVwBMgi.3l6poON76','test','test','2025-04-10','male','regular','/uploads/profile_picture/profile_picture-1744386198364-838355519.png','0886704023','2025-04-11 15:43:18','2025-04-11 15:43:18'),
 (21,'passtest@gmail.com','$2b$10$pJkTtGD/9hKOnJGe2c9o5uC0OrRRb.lDMYUzMaOUAJ/fyDWAqK3Mi','Pass','test','2025-04-12','male','regular','/uploads/profile_picture/profile_picture-1744464961575-610311422.png','0886704023','2025-04-12 13:36:01','2025-04-12 13:36:38'),
-(22,'nn@gmail.com','$2b$10$i.YUqX3xXqHJRIlTkth5c.vBB3m8.iyK/lTDO2Q8Bkp8P0bJp4/46','n','n','2025-04-03','male','regular','/uploads/profile_picture-1744468837461-749114702.png','0886704023','2025-04-12 13:46:17','2025-04-12 14:40:37');
+(22,'nn@gmail.com','$2b$10$i.YUqX3xXqHJRIlTkth5c.vBB3m8.iyK/lTDO2Q8Bkp8P0bJp4/46','n','n','2025-04-03','male','regular','/uploads/profile_picture-1744468837461-749114702.png','0886704023','2025-04-12 13:46:17','2025-04-12 14:40:37'),
+(23,'joinUser@gmail.com','$2b$10$8Fep7J9Wy2RtaDg4w3o80eBYNy/YdwxxqnZC3E1HtFh/cC.p1.YjC','test','joinrequste user','2025-04-11','male','athlete','/uploads/profile_picture-1744527864255-61705064.png','0886704023','2025-04-13 07:04:24','2025-04-13 07:29:55'),
+(24,'a@gmail.com','$2b$10$V7gvg5B2f6TrLphYg1SQte7iQ4lV5cYgGGDar7997W6yWnqdZULXe','a','a','2025-04-09','male','athlete','/uploads/profile_picture-1744529714511-583363347.jpg','0886704023','2025-04-13 07:35:14','2025-04-13 07:35:38'),
+(25,'s1@gmail.com','$2b$10$3s7xl3bZjiCAr/aae3RF3O9f5DdI6.1aD.JzhOgcKJZmskYsSDXIW','senior1','senior1','2006-02-02','male','regular','/uploads/profile_picture-1744714754369-936494281.png','0886704023','2025-04-15 10:59:14','2025-04-15 10:59:14'),
+(26,'s2@gmail.com','$2b$10$Lh6koTnWoJpm79KrApqF.eA/IuLXo9fHeyTMBWRBpMUGbXlXq6jCe','senior2','senior2','2006-04-04','male','regular','/uploads/profile_picture-1744714873791-208765247.png','0886704023','2025-04-15 11:01:13','2025-04-15 11:01:13'),
+(27,'s3@gmail.com','$2b$10$ygY3XBSmSAeM8/JDFOtHFeWjM.r79bxoEJfNmJTWwwJ1DpKgfo/7e','senior3','senior3','2006-02-02','male','regular','/uploads/profile_picture-1744714968149-289991685.png','0886704023','2025-04-15 11:02:48','2025-04-15 11:02:48'),
+(28,'s4@gmail.com','$2b$10$bKfTJiGn/1X3IKwj7zx/DO/z.J6z7Sw9bRdHIo465GKOCco.5JrWW','senior4','senior4','2006-02-02','male','regular',NULL,'0886704023','2025-04-15 11:03:34','2025-04-15 11:03:34'),
+(29,'sf@gmail.com','$2b$10$1wzUyvFmQp/sI3CNRh6/U.UnwO8XgRxxdR9g0zYWKOWc/VoeZJ9OG','senior female','senior female','2006-04-18','female','regular',NULL,'0886704023','2025-04-17 05:28:20','2025-04-17 05:28:20'),
+(30,'sf2@gmail.com','$2b$10$1WXVzpTbvjPEw4chIYkYmu.ibx4yebAF.LhoXhnxT5FF1HTnhRxpm','senoir','female 2','2006-04-17','female','regular',NULL,'0886704023','2025-04-17 05:29:11','2025-04-17 05:29:11'),
+(31,'sf3@gmail.com','$2b$10$wWfk9YP4Y7o3baR2kVHNhOdf2tiFVedzrZ2RvzthUk/gZUCOqHnO6','senior','female 3','2006-04-17','female','regular',NULL,'0886704023','2025-04-17 05:29:58','2025-04-17 05:29:58');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -402,4 +372,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-12 21:11:11
+-- Dump completed on 2025-04-18 14:32:50
