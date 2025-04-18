@@ -273,45 +273,6 @@ INSERT INTO `individual_registrations` VALUES
 UNLOCK TABLES;
 
 --
--- Table structure for table `team_registrations`
---
-
-DROP TABLE IF EXISTS `team_registrations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `team_registrations` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `event_id` int(11) NOT NULL,
-  `category_id` int(11) NOT NULL,
-  `club_id` int(11) NOT NULL,
-  `coach_id` int(11) NOT NULL,
-  `registration_date` datetime NOT NULL DEFAULT current_timestamp(),
-  `status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
-  `created_at` timestamp NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_team_registration` (`category_id`,`club_id`),
-  KEY `club_id` (`club_id`),
-  KEY `coach_id` (`coach_id`),
-  KEY `idx_team_registrations_event` (`event_id`),
-  KEY `idx_team_registrations_category` (`category_id`),
-  CONSTRAINT `team_registrations_ibfk_1` FOREIGN KEY (`event_id`) REFERENCES `events` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `team_registrations_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `team_registrations_ibfk_3` FOREIGN KEY (`club_id`) REFERENCES `clubs` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `team_registrations_ibfk_4` FOREIGN KEY (`coach_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `team_registrations`
---
-
-LOCK TABLES `team_registrations` WRITE;
-/*!40000 ALTER TABLE `team_registrations` DISABLE KEYS */;
-/*!40000 ALTER TABLE `team_registrations` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `users`
 --
 
@@ -372,4 +333,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-04-18 14:32:50
+-- Dump completed on 2025-04-18 14:40:11
