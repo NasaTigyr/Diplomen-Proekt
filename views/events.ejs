@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events - Martial Arts Competitions</title>
-    <link rel="stylesheet" href="/styleIndex.css">
+    <link rel="stylesheet" href="/styleEvents.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -22,26 +22,27 @@
         </div>
         
         <!-- Search Bar -->
-        <div class="row mt-4 mb-4">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <input type="text" id="searchBar" class="form-control" placeholder="Search events by sport, location, or name">
-                    <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="d-flex justify-content-end">
-                    <select class="form-select ms-2" style="width: auto;" id="sort-select">
-                        <option value="date-asc">Date (Nearest First)</option>
-                        <option value="date-desc">Date (Furthest First)</option>
-                        <option value="title-asc">Title (A-Z)</option>
-                        <option value="title-desc">Title (Z-A)</option>
-                    </select>
-                </div>
-            </div>
+    
+<div class="row mt-4 mb-4">
+    <div class="col-md-6">
+        <!-- Fixed input group to keep button and input on same line -->
+        <div class="input-group">
+            <input type="text" id="searchBar" class="form-control" placeholder="Search events by sport, location, or name">
+            <button class="btn btn-outline-secondary" type="button" id="search-button">Search</button>
         </div>
     </div>
-    
+    <div class="col-md-6">
+        <div class="d-flex justify-content-end">
+            <select class="form-select" style="width: auto;" id="sort-select">
+                <option value="date-asc">Date (Nearest First)</option>
+                <option value="date-desc">Date (Furthest First)</option>
+                <option value="title-asc">Title (A-Z)</option>
+                <option value="title-desc">Title (Z-A)</option>
+            </select>
+        </div>
+    </div>
+</div>
+        
     <!-- Events Section -->
     <section class="events mt-3">
         <div class="container">
@@ -110,14 +111,12 @@
                 });
         }
 
- function displayEvents(events) {
+function displayEvents(events) {
     const container = document.getElementById('eventsList');
     const noEventsMessage = document.getElementById('no-events-message');
     
     // Get the current user ID (from the server-side)
     const currentUserId = <%= userId ? userId : 'null' %>;
-    console.log('Current user ID:', currentUserId);
-    console.log('Current user ID type:', typeof currentUserId);
     
     // Clear loading spinner
     container.innerHTML = '';
@@ -132,58 +131,33 @@
     
     // Create event cards
     events.forEach(event => {
-        // More detailed debugging information
-        console.log(`Event ${event.id} data:`, event);
-        console.log(`Event creator fields:`, {
-            creator_id: event.creator_id,
-            creator_id_type: typeof event.creator_id,
-            organizer_id: event.organizer_id,
-            organizer_id_type: typeof event.organizer_id
-        });
+        const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'TBD';
         
-        // Also check for any other field that might contain the creator ID
-        const possibleCreatorFields = {};
-        for (const key in event) {
-            if (key.toLowerCase().includes('creator') || 
-                key.toLowerCase().includes('organizer') ||
-                key.toLowerCase().includes('owner') ||
-                key.toLowerCase().includes('user')) {
-                possibleCreatorFields[key] = event[key];
-            }
-        }
-        console.log("All possible creator fields:", possibleCreatorFields);
-        
-        const eventDate = event.event_date ? new Date(event.event_date).toLocaleDateString() : 'Date TBD';
+        // Format registration dates
         const registrationOpenDate = new Date(event.registration_open_date).toLocaleDateString();
         const registrationCloseDate = new Date(event.registration_close_date).toLocaleDateString();
         
-        // Try all possible fields that might contain the creator ID
+        // Check if user is the creator
         const isCreator = currentUserId && (
             (event.creator_id && parseInt(event.creator_id) === parseInt(currentUserId)) ||
             (event.organizer_id && parseInt(event.organizer_id) === parseInt(currentUserId))
         );
         
-        console.log(`Comparison values:`, {
-            currentUserId: parseInt(currentUserId),
-            creator_id: event.creator_id ? parseInt(event.creator_id) : null,
-            organizer_id: event.organizer_id ? parseInt(event.organizer_id) : null
-        });
-        console.log(`Is user ${currentUserId} the creator of event ${event.id}?`, isCreator);
-        
         const card = `
             <div class="col-md-4 mb-4">
-                <div class="card h-100">
+                <div class="card">
                     <img src="${event.banner_url || '/images/default-event.jpg'}" class="card-img-top" alt="${event.title}">
                     <div class="card-body">
                         <h5 class="card-title">${event.title}</h5>
-                        <p class="card-text">${event.description ? (event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description) : 'No description'}</p>
-                        <p><strong>Date:</strong> ${eventDate}</p>
-                        <p><strong>Location:</strong> ${event.location || 'TBD'}</p>
-                        <p><small class="text-muted">Registration: ${registrationOpenDate} - ${registrationCloseDate}</small></p>
+                        <div class="event-details">
+                            <p><strong>Date:</strong> ${eventDate}</p>
+                            <p><strong>Location:</strong> ${event.location || 'TBD'}</p>
+                            <p><strong>Registration:</strong> ${registrationOpenDate} - ${registrationCloseDate}</p>
+                        </div>
                     </div>
                     <div class="card-footer">
                         <a href="${isCreator ? `/manageEvent/${event.id}` : `/eventDetails/${event.id}`}" 
-                           class="btn btn-primary">
+                           class="btn btn-primary btn-sm w-100">
                             ${isCreator ? "Manage Event" : "View Details"}
                         </a>
                     </div>
@@ -192,7 +166,7 @@
         `;
         container.innerHTML += card;
     });
-}      
+}
 
         function filterEvents() {
             const searchTerm = document.getElementById('searchBar').value.toLowerCase();

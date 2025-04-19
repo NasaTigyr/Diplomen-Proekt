@@ -11,6 +11,21 @@ html, body {
     display: flex;
     flex-direction: column;
     min-height: 100vh; /* Full viewport height */
+    background: url('giakucuki.jpg') no-repeat top center; /* Image at top */
+    background-size: 100% auto; /* Control the width of the image */
+}
+
+/* Consistent whitish background for all content sections */
+.hero, .custom-background .content, .container, .card {
+    background: rgba(255, 255, 255, 0.8) !important; /* Light background for readability */
+    border-radius: 10px;
+}
+
+/* Specific styling for the hero section */
+.hero {
+    margin: 20px auto;
+    padding: 30px;
+    max-width: 90%;
 }
 
 .custom-background {
@@ -21,19 +36,25 @@ html, body {
 .custom-background .content {
     max-width: 800px;
     margin: auto;
-    background: rgba(255, 255, 255, 0.8); /* Light background for readability */
     padding: 20px;
-    border-radius: 10px;
     text-align: center;
 }
 
-.main-content {
-  flex:1;
-  background: url('giakucuki.jpg') no-repeat center center;
+/* Semi-transparent background for the events section */
+section.container.my-5 {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto !important;
+    max-width: 90%;
 }
 
-  footer {
-    background-color: #f8f9fa;
+.main-content {
+    flex: 1;
+}
+
+footer {
+    background-color: rgba(248, 249, 250, 0.8) !important; /* Semi-transparent footer */
     color: #333;
     padding: 10px;
     text-align: center;

@@ -63,6 +63,98 @@ h1 {
     color: #007bff;
 }
 
+/* Add these styles to your styleEvents.css file */
+
+/* Make the event cards more compact */
+.card {
+    max-height: 480px; /* Slightly increased to accommodate registration dates */
+    overflow: hidden;
+}
+
+/* Make the card image smaller */
+.card-img-top {
+    height: 150px; /* Reduce image height */
+    object-fit: cover; /* Maintain aspect ratio */
+}
+
+/* Reduce padding in card body */
+.card-body {
+    padding: 0.75rem; /* Smaller padding (default is 1.25rem) */
+}
+
+/* Smaller text for descriptions */
+.card-text {
+    font-size: 0.9rem;
+    max-height: 40px; /* Limit description height */
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+/* Make event details more compact */
+.card-body p {
+    margin-bottom: 0.25rem; /* Reduced margin between paragraphs */
+    font-size: 0.85rem;
+    line-height: 1.2; /* Tighter line height */
+}
+
+/* Registration date styling */
+.registration-dates {
+    font-size: 0.75rem; /* Smaller text for dates */
+    color: #6c757d; /* Muted color */
+    margin-top: 0.25rem;
+    border-top: 1px dotted #dee2e6;
+    padding-top: 0.25rem;
+}
+
+/* Make the title a bit smaller */
+.card-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Make the footer more compact */
+.card-footer {
+    padding: 0.5rem;
+    text-align: center;
+    border-top: none; /* Remove border to save space */
+}
+
+/* Ensure the button fits well */
+.card-footer .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Add these styles to your styleEvents.css file */
+
+/* Fix for search button alignment */
+.input-group {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+}
+
+.input-group .form-control {
+    flex: 1 1 auto;
+    width: auto;
+}
+
+.input-group .btn {
+    margin-left: -1px;
+    position: relative;
+    z-index: 2;
+}
+
+/* Override any conflicting styles */
+#searchBar {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#search-button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
 footer {
     background-color: #343a40;
     color: white;
