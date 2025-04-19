@@ -37,11 +37,10 @@ h1 {
 }
 
 #searchBar {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    width: auto !important; /* Override the 100% width */
+    margin-bottom: 0 !important; /* Remove bottom margin */
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
     font-size: 1rem;
 }
 
@@ -128,6 +127,10 @@ h1 {
 /* Add these styles to your styleEvents.css file */
 
 /* Fix for search button alignment */
+
+/* Update these styles in your styleEvents.css file */
+
+/* Fix for search button alignment and consistent height */
 .input-group {
     display: flex !important;
     flex-wrap: nowrap !important;
@@ -136,13 +139,23 @@ h1 {
 .input-group .form-control {
     flex: 1 1 auto;
     width: auto;
+    height: 38px !important; /* Fixed height */
+    box-sizing: border-box;
+    padding: 6px 12px !important; /* Consistent padding */
 }
 
 .input-group .btn {
     margin-left: -1px;
     position: relative;
     z-index: 2;
+    height: 38px !important; /* Match input height */
+    box-sizing: border-box;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
 }
+
 
 /* Override any conflicting styles */
 #searchBar {
