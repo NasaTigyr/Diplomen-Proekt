@@ -709,23 +709,28 @@ function isEligibleForCategory(category) {
     updateRegistrationSection();
   }
   
-  function fetchCategories() {
-    fetch(`/eventDetails/${eventId}/categories`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to load categories');
-        }
-        return response.json();
-      })
-      .then(data => {
-        categories = data;
-        displayCategories(data);
-      })
-      .catch(error => {
-        console.error('Error fetching categories:', error);
-        showError('categories-container', 'Failed to load categories. Please try refreshing the page.');
-      });
-  }
+function fetchCategories(bustCache = false) {
+  // Create URL with cache busting if needed
+  const url = bustCache 
+    ? `/eventDetails/${eventId}/categories?nocache=${Date.now()}` 
+    : `/eventDetails/${eventId}/categories`;
+  
+  fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to load categories');
+      }
+      return response.json();
+    })
+    .then(data => {
+      categories = data;
+      displayCategories(data);
+    })
+    .catch(error => {
+      console.error('Error fetching categories:', error);
+      showError('categories-container', 'Failed to load categories. Please try refreshing the page.');
+    });
+}
   
   function fetchCategoryStats() {
     return fetch(`/categories/stats/${eventId}?status=approved`)

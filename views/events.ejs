@@ -73,43 +73,57 @@
         let allEvents = [];
     
     // Load all events
-    document.addEventListener('DOMContentLoaded', function() {
-        // Use initial events if available, otherwise fetch them
-        <% if (typeof initialEvents !== 'undefined') { %>
-            try {
-                allEvents = JSON.parse('<%- initialEvents %>');
-                displayEvents(allEvents);
-            } catch (e) {
-                console.error('Error parsing initial events:', e);
-                fetchEvents(); // Fallback to fetch if parsing fails
-            }
-        <% } else { %>
-            fetchEvents();
-        <% } %>
-        
-        // Set up event listeners
-        document.getElementById('search-button').addEventListener('click', filterEvents);
-        document.getElementById('searchBar').addEventListener('keyup', function(event) {
-            if (event.key === 'Enter') {
-                filterEvents();
-            }
-        });
-        document.getElementById('sort-select').addEventListener('change', filterEvents);
-    });
-               
-        function fetchEvents() {
-            fetch('/events')
-                .then(response => response.json())
-                .then(events => {
-                    allEvents = events;
-                    displayEvents(events);
-                })
-                .catch(error => {
-                    console.error('Error fetching events:', error);
-                    const container = document.getElementById('eventsList');
-                    container.innerHTML = '<div class="col-12 text-center"><p>Failed to load events</p></div>';
-                });
+     document.addEventListener('DOMContentLoaded', function() {
+    // Always fetch fresh events data via AJAX
+    fetchEvents();
+    
+    // Set up event listeners
+    document.getElementById('search-button').addEventListener('click', filterEvents);
+    document.getElementById('searchBar').addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            filterEvents();
         }
+    });
+    document.getElementById('sort-select').addEventListener('change', filterEvents);
+});          
+function fetchEvents() {
+    fetch('/events', {
+        headers: {
+            'Accept': 'application/json' // Explicitly request JSON
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+            }
+            return response.text(); // Get the raw text first
+        })
+        .then(text => {
+            // Check if the response is empty
+            if (!text || text.trim() === '') {
+                console.log('Empty response received from server');
+                return [];
+            }
+            
+            try {
+                // Try to parse the text as JSON
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                console.log('Raw response:', text);
+                return []; // Return empty array on parse error
+            }
+        })
+        .then(events => {
+            allEvents = events;
+            displayEvents(events);
+        })
+        .catch(error => {
+            console.error('Error fetching events:', error);
+            const container = document.getElementById('eventsList');
+            container.innerHTML = '<div class="col-12 text-center"><p>Failed to load events: ' + error.message + '</p></div>';
+        });
+}
 
 function displayEvents(events) {
     const container = document.getElementById('eventsList');

@@ -71,6 +71,8 @@ async function addCategory(req, res) {
       ]
     );
     
+// After you execute the query, add:
+console.log(`New category created with ID: ${result.insertId} for event ${eventId}`);
     // Return success response with new category ID
     res.status(201).json({ 
       success: true,

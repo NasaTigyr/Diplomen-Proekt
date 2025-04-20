@@ -126,42 +126,48 @@ app.get('/createClub', isAuthenticated, (req, res) => {
   res.render('createClub', { user: req.session.user });
 });
 
+// In server.js, modify your /events route:
 app.get('/events', async (req, res) => {
     try {
-        const events = await controller.getEvents();  // Changed to getEvents (capital E)
+        const events = await controller.getEvents();
         
         // Check if the request wants JSON (likely an AJAX request)
         // or HTML (direct browser navigation)
-        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {  // Changed indexof to indexOf
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
             // If it's an AJAX request or specifically requesting JSON, return JSON data
             return res.json(events);
         }
         
-        // Otherwise render the page with the events data included
+        // For the initial page render, serialize the events safely
+        const safeInitialEvents = JSON.stringify(events)
+            .replace(/\\/g, '\\\\')  // Escape backslashes
+            .replace(/\n/g, '\\n')   // Escape newlines
+            .replace(/\r/g, '\\r')   // Escape carriage returns
+            .replace(/\t/g, '\\t')   // Escape tabs
+            .replace(/\f/g, '\\f')   // Escape form feeds
+            .replace(/"/g, '\\"')    // Escape double quotes
+            .replace(/'/g, "\\'");   // Escape single quotes
+        
         res.render('events', { 
             user: req.session.user,
-            userId: req.session.user ? req.session.user.id : null,  // Changed userid to userId
-            initialEvents: JSON.stringify(events)  // Changed initialevents to initialEvents
+            userId: req.session.user ? req.session.user.id : null,
+            initialEvents: safeInitialEvents
         });
     } catch (error) {
-        console.error('Error fetching events:', error);  // Changed error to Error
+        console.error('Error fetching events:', error);
         
-        // Similar handling for errors
-        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {  // Changed indexof to indexOf
-            return res.status(500).json({ error: 'Failed to load events' });  // Changed failed to Failed
+        if (req.xhr || req.headers.accept.indexOf('json') !== -1) {
+            return res.status(500).json({ error: 'Failed to load events' });
         }
         
-      console.log('the userId is this: ', req.session.user.id); 
         res.render('events', { 
             user: req.session.user,
-            userId: req.session.user ? req.session.user.id : null,  // Changed userid to userId
-            initialEvents: '[]',  // Changed initialevents to initialEvents
-            error: 'Failed to load events'  // Changed failed to Failed
+            userId: req.session.user ? req.session.user.id : null,
+            initialEvents: '[]',
+            error: 'Failed to load events'
         });
-
     }
 });
-
 app.get('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
