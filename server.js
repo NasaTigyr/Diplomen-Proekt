@@ -1728,6 +1728,8 @@ app.post('/events/:eventId/generate-brackets', isAuthenticated, async (req, res)
   }
 });
 
+app.delete('/user/account', isAuthenticated, controller.deleteAccount);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

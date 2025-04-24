@@ -310,12 +310,78 @@ async function changePassword(req, res) {
     }
 }
 
+// Add this function to src/users/controller.js
+async function deleteAccount(req, res) {
+    try {
+        // Ensure user is logged in
+        if (!req.session.user) {
+            return res.status(401).json({ message: 'You must be logged in to delete your account' });
+        }
+        
+        const userId = req.session.user.id;
+        const { password } = req.body;
+        
+        // Get current user with password hash
+        const userResult = await db.query(queries.getUserById, [userId]);
+        const user = userResult[0][0];
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Verify password
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Incorrect password' });
+        }
+        
+        // Start a transaction to handle cascading deletes properly
+        await db.query('START TRANSACTION');
+        
+        try {
+            // Delete the user
+            const [result] = await db.query(queries.deleteUser, [userId]);
+            
+            if (result.affectedRows === 0) {
+                await db.query('ROLLBACK');
+                return res.status(404).json({ message: 'Failed to delete user' });
+            }
+            
+            // Commit the transaction
+            await db.query('COMMIT');
+            
+            // Destroy the session
+            req.session.destroy();
+            
+            return res.status(200).json({ message: 'Account deleted successfully' });
+        } catch (error) {
+            // Rollback the transaction in case of error
+            await db.query('ROLLBACK');
+            throw error;
+        }
+    } catch (error) {
+        console.error('Account deletion error:', error);
+        return res.status(500).json({ message: 'An error occurred while deleting your account' });
+    }
+}
+
+// Update the module.exports to include deleteAccount
+module.exports = {
+    login,
+    register,
+    updateProfile,
+    changePassword,
+    deleteAccount,  // Add this line
+    // ... other exported functions
+};
 // Export all functions
 module.exports = {
     login,
     register,
     updateProfile,
     changePassword,
+    deleteAccount,
     // Include other functions from original users controller
     addUser: async (req, res) => {
         try { 

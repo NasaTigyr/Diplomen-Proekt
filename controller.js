@@ -12,6 +12,7 @@ module.exports = {
     register: usersController.register,
     updateProfile: usersController.updateProfile,
     changePassword: usersController.changePassword,
+    deleteAccount: usersController.deleteAccount,
     
     // Club Management
     createClub: clubsController.createClub,

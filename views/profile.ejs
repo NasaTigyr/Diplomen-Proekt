@@ -40,6 +40,7 @@
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item active" id="profile-tab">Profile Information</li>
                         <li class="list-group-item" id="change-password-tab">Change Password</li>
+                        <li class="list-group-item text-danger" id="delete-account-tab">Delete Account</li>
                     </ul>
                 </div>
             </div>
@@ -136,6 +137,59 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Delete Account Section -->
+                <div id="delete-account-section" class="content-section d-none">
+                    <div class="card border-danger">
+                        <div class="card-header bg-danger text-white">
+                            <h4 class="mb-0">Delete Account</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <h5 class="alert-heading">Warning: This action cannot be undone!</h5>
+                                <p>Deleting your account will permanently remove all your personal information, registrations, and any associations with clubs or events.</p>
+                                <hr>
+                                <p class="mb-0">Please ensure you want to proceed before confirming.</p>
+                            </div>
+                            
+                            <form id="delete-account-form">
+                                <div class="mb-3">
+                                    <label for="delete_password" class="form-label">Enter your password to confirm</label>
+                                    <input type="password" class="form-control" id="delete_password" required>
+                                </div>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="confirm_delete" required>
+                                    <label class="form-check-label" for="confirm_delete">
+                                        I understand that this action is permanent and cannot be undone.
+                                    </label>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-danger">Delete My Account</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Account Confirmation Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Account Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you absolutely sure you want to delete your account? This action <strong>cannot be reversed</strong>.</p>
+                    <p>All your personal data, registrations, club memberships, and other information will be permanently removed.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="finalDeleteConfirm">Yes, Delete My Account</button>
+                </div>
             </div>
         </div>
     </div>
@@ -160,6 +214,7 @@
             // Tab navigation
             document.getElementById('profile-tab').addEventListener('click', showProfileSection);
             document.getElementById('change-password-tab').addEventListener('click', showChangePasswordSection);
+            document.getElementById('delete-account-tab').addEventListener('click', showDeleteAccountSection);
             
             // Edit profile
             document.getElementById('edit-profile-btn').addEventListener('click', toggleProfileEdit);
@@ -167,6 +222,10 @@
             
             // Password form
             document.getElementById('password-form').addEventListener('submit', changePassword);
+            
+            // Delete account form
+            document.getElementById('delete-account-form').addEventListener('submit', confirmDeleteAccount);
+            document.getElementById('finalDeleteConfirm').addEventListener('click', deleteAccount);
             
             // Check URL for success or error messages
             checkUrlParams();
@@ -180,6 +239,11 @@
         function showChangePasswordSection() {
             setActiveTab('change-password-tab');
             showSection('change-password-section');
+        }
+        
+        function showDeleteAccountSection() {
+            setActiveTab('delete-account-tab');
+            showSection('delete-account-section');
         }
         
         function setActiveTab(tabId) {
@@ -328,6 +392,66 @@
             })
             .catch(error => {
                 showAlert(error.message || 'An error occurred while changing your password', 'danger');
+            });
+        }
+        
+        function confirmDeleteAccount(e) {
+            e.preventDefault();
+            
+            // Check if checkbox is checked
+            if (!document.getElementById('confirm_delete').checked) {
+                showAlert('You must confirm that you understand this action is permanent', 'danger');
+                return;
+            }
+            
+            // Show confirmation modal
+            const deleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            deleteModal.show();
+        }
+        
+        function deleteAccount() {
+            const password = document.getElementById('delete_password').value;
+            
+            if (!password) {
+                showAlert('Please enter your password to confirm deletion', 'danger');
+                return;
+            }
+            
+            // Close the modal first
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+            deleteModal.hide();
+            
+            // Show processing message
+            showAlert('Processing your request...', 'info');
+            
+            fetch('/user/account', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Failed to delete account');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showAlert('Account deleted successfully. Redirecting to homepage...', 'success');
+                
+                // Reset the form
+                document.getElementById('delete-account-form').reset();
+                
+                // Redirect to homepage after a short delay
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            })
+            .catch(error => {
+                showAlert(error.message || 'An error occurred while deleting your account', 'danger');
             });
         }
         
