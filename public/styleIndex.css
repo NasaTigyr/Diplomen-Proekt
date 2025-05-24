@@ -59,3 +59,172 @@ footer {
     padding: 10px;
     text-align: center;
 }
+
+/* MOBILE FIXES ONLY - Add this to the END of your existing CSS files */
+/* This keeps your design exactly the same but makes it work on phones */
+
+/* Mobile Viewport and Touch Fixes */
+@media (max-width: 767px) {
+    
+    /* Fix navigation on mobile - make links stack */
+    .nav {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .nav a {
+        padding: 12px 16px; /* Bigger touch targets */
+        text-align: center;
+        display: block;
+    }
+    
+    /* Fix main content on mobile */
+    main {
+        padding: 10px;
+        max-width: 100%;
+    }
+    
+    /* Fix search bar on mobile */
+    .input-group {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .input-group .form-control {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+    
+    .input-group .btn {
+        width: 100%;
+        height: 44px; /* Touch-friendly */
+    }
+    
+    /* Fix event cards on mobile - make them stack */
+    .col-md-4 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+    
+    /* Fix card images on mobile */
+    .card-img-top {
+        height: 200px;
+        width: 100%;
+        object-fit: cover;
+    }
+    
+    /* Make buttons bigger for touch */
+    .btn {
+        min-height: 44px;
+        padding: 12px 16px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Fix form inputs for mobile */
+    .form-control, .form-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px;
+    }
+    
+    /* Fix containers on mobile */
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+        max-width: 100%;
+    }
+    
+    /* Fix hero section on mobile */
+    .hero {
+        margin: 10px;
+        padding: 20px;
+        max-width: calc(100% - 20px);
+    }
+    
+    .hero .btn {
+        display: block;
+        width: 100%;
+        margin: 8px 0;
+    }
+    
+    /* Fix custom background content */
+    .custom-background .content {
+        max-width: 100%;
+        padding: 15px;
+    }
+    
+    /* Fix featured events section */
+    section.container.my-5 {
+        margin: 10px auto !important;
+        max-width: calc(100% - 20px);
+        padding: 15px;
+    }
+    
+    /* Fix event cards in featured section */
+    .col-md-6 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+        margin-bottom: 15px;
+    }
+    
+    /* Fix tables on mobile */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    /* Fix text sizing */
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.3rem;
+    }
+    
+    .display-4 {
+        font-size: 1.8rem;
+    }
+}
+
+/* Tablet fixes (768px to 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    
+    /* Stack cards in 2 columns on tablet */
+    .col-md-4 {
+        width: 50% !important;
+        max-width: 50% !important;
+    }
+    
+    .col-md-6 {
+        width: 50% !important;
+        max-width: 50% !important;
+    }
+}
+
+/* Touch improvements for all devices */
+@media (hover: none) and (pointer: coarse) {
+    /* Touch device improvements */
+    .btn:hover {
+        transform: none; /* Remove hover effects on touch */
+    }
+    
+    .card:hover {
+        transform: none;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* Fix input zoom on iOS */
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+    
+    /* Fix button appearance on iOS */
+    .btn {
+        -webkit-appearance: none;
+        border-radius: 4px;
+    }
+}
