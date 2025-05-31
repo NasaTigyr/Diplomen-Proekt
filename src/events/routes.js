@@ -23,6 +23,6 @@ router.get('/events/date/:date', getEventsByDate);
 router.post('/events', addEvent);
 router.put('events/:id', updateEvent); 
 //router.put('users/:id', updatePassword); 
-router.delete('/events', deleteEvent);
+router.delete('/events/:id', deleteEvent);
 
 module.exports = router;

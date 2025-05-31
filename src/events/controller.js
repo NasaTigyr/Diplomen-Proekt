@@ -368,13 +368,27 @@ module.exports = {
             res.status(500).json({error: error.message }); 
         }
     },
-    deleteEvent: async (req, res) => { 
-        try {
-            const [rows] = await db.query(queries.deleteEvent); 
-            console.log(rows); 
-            res.json(rows); 
-        } catch (error) {
-            res.status(500).json({error: error.message }); 
+    deleteEvent: async (req, res) => {
+      try {
+        const eventId = req.params.id;
+        if (!eventId) {
+          return res.status(400).json({ error: 'Event ID is required' });
         }
+
+        // Validate eventId is a number
+        if (isNaN(parseInt(eventId))) {
+          return res.status(400).json({ error: 'Invalid event ID' });
+        }
+
+        const [result] = await db.query(queries.deleteEvent, [eventId]);
+        
+        if (result.affectedRows === 0) {
+          return res.status(404).json({ error: 'Event not found' });
+        }
+
+        res.json({ message: 'Event deleted successfully' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
     }
 };

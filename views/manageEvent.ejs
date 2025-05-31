@@ -1333,6 +1333,29 @@ function updateBracketGenerationProgress(percent, message) {
   }
 }
 
+document.getElementById('confirmActionBtn').addEventListener('click', function() {
+  const action = this.getAttribute('data-action');
+  const id = this.getAttribute('data-id');
+
+  if (action === 'delete-event' && id) {
+    fetch(`/events/${id}`, {
+      method: 'DELETE',
+    })
+    .then(res => {
+      if (res.ok) {
+        // Hide the modal
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+
+        // Optional: update UI or redirect
+        alert('Event deleted successfully');
+        window.location.href = '/events'; // Redirect to event list or homepage
+      } else {
+        alert('Failed to delete event');
+      }
+    })
+    .catch(() => alert('Error deleting event'));
+  }
+});
 </script>
 
 </body>

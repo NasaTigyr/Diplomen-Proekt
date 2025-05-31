@@ -1729,6 +1729,7 @@ app.post('/events/:eventId/generate-brackets', isAuthenticated, async (req, res)
 });
 
 app.delete('/user/account', isAuthenticated, controller.deleteAccount);
+app.delete('/events/:id', isAuthenticated, controller.deleteEvent);
 
 // Start server
 app.listen(PORT, () => {

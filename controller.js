@@ -28,6 +28,7 @@ module.exports = {
     getEvents: eventsController.getEvents,
     getEventById: eventsController.getEventById,
     updateEvent: eventsController.updateEvent,
+    deleteEvent: eventsController.deleteEvent,
     
     // Category Management
     addCategory: categoriesController.addCategory,
